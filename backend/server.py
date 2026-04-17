@@ -98,6 +98,9 @@ class LeadUpdate(BaseModel):
     profession: Optional[str] = None
     promise_date: Optional[str] = None
 
+class UpdateCodeRequest(BaseModel):
+    code: str
+
 class DeletionRequest(BaseModel):
     lead_id: str
     vendeur_id: str
@@ -205,6 +208,27 @@ async def delete_user(user_id: str, user: dict = Depends(get_current_user)):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     return {"message": "Utilisateur supprimé"}
+
+@api_router.put("/users/{user_id}/code")
+async def update_user_code(user_id: str, data: UpdateCodeRequest, user: dict = Depends(get_current_user)):
+    require_admin_principal(user)
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    # Validate code length
+    if target_user["role"] == "vendeur":
+        if len(data.code) != 4 or not data.code.isdigit():
+            raise HTTPException(status_code=400, detail="Le code vendeur doit contenir exactement 4 chiffres")
+    else:
+        if len(data.code) != 6 or not data.code.isdigit():
+            raise HTTPException(status_code=400, detail="Le code admin doit contenir exactement 6 chiffres")
+    # Check duplicates
+    existing = await db.users.find_one({"code": data.code, "id": {"$ne": user_id}}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Ce code est déjà utilisé par un autre utilisateur")
+    await db.users.update_one({"id": user_id}, {"$set": {"code": data.code}})
+    updated = await db.users.find_one({"id": user_id}, {"_id": 0})
+    return {"user": updated}
 
 # ─── FORMATIONS ROUTE ───
 @api_router.get("/formations")
@@ -385,11 +409,22 @@ async def get_promises(
 async def dashboard_vendeur(
     marathon_id: str,
     vendeur_id: str,
+    period: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     user: dict = Depends(get_current_user)
 ):
-    total_leads = await db.leads.count_documents({"marathon_id": marathon_id, "vendeur_id": vendeur_id})
-    inscrits = await db.leads.count_documents({"marathon_id": marathon_id, "vendeur_id": vendeur_id, "status": "Inscrit"})
-    tres_interesses = await db.leads.count_documents({"marathon_id": marathon_id, "vendeur_id": vendeur_id, "status": "Très intéressé"})
+    query = {"marathon_id": marathon_id, "vendeur_id": vendeur_id}
+    if period and period not in ["all", "custom"]:
+        now = datetime.now(timezone.utc)
+        cutoff = (now - timedelta(days=int(period))).strftime("%Y-%m-%d")
+        query["date"] = {"$gte": cutoff}
+    if start_date and end_date:
+        query["date"] = {"$gte": start_date, "$lte": end_date}
+
+    total_leads = await db.leads.count_documents(query)
+    inscrits = await db.leads.count_documents({**query, "status": "Inscrit"})
+    tres_interesses = await db.leads.count_documents({**query, "status": "Très intéressé"})
 
     marathon = await db.marathons.find_one({"id": marathon_id}, {"_id": 0})
     objectif = 0
@@ -550,21 +585,30 @@ async def get_reports(
 async def marathon_time_remaining(marathon_id: str, user: dict = Depends(get_current_user)):
     marathon = await db.marathons.find_one({"id": marathon_id}, {"_id": 0})
     if not marathon or not marathon.get("end_date"):
-        return {"days_remaining": None, "alert": None}
+        return {"days_remaining": None, "alert": None, "time_percentage": 0}
 
     end = datetime.strptime(marathon["end_date"], "%Y-%m-%d").date()
     today = datetime.now(timezone.utc).date()
 
     if end <= today:
-        return {"days_remaining": 0, "alert": "Marathon terminée"}
+        return {"days_remaining": 0, "alert": "Marathon terminée", "time_percentage": 100}
 
-    # Count business days (exclude Sundays)
+    # Count business days remaining (exclude Sundays)
     days = 0
     current = today
     while current < end:
         current += timedelta(days=1)
-        if current.weekday() != 6:  # 6 = Sunday
+        if current.weekday() != 6:
             days += 1
+
+    # Calculate time_percentage elapsed
+    time_percentage = 0
+    if marathon.get("start_date"):
+        start = datetime.strptime(marathon["start_date"], "%Y-%m-%d").date()
+        total_days = (end - start).days
+        elapsed_days = (today - start).days
+        if total_days > 0:
+            time_percentage = round(min(elapsed_days / total_days * 100, 100), 1)
 
     alert = None
     if days <= 3:
@@ -572,7 +616,7 @@ async def marathon_time_remaining(marathon_id: str, user: dict = Depends(get_cur
     elif days <= 7:
         alert = "Moins d'une semaine restante"
 
-    return {"days_remaining": days, "alert": alert}
+    return {"days_remaining": days, "alert": alert, "time_percentage": time_percentage}
 
 # ─── ROOT ───
 @api_router.get("/")

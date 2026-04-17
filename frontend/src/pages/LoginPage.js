@@ -86,6 +86,9 @@ export default function LoginPage() {
         <p className="text-center text-xs text-slate-400 mt-6">
           Panacée CRM - Gestion des formations
         </p>
+        <p className="text-center text-[10px] text-slate-300/60 mt-2 italic tracking-wide">
+          Just For Smart and Strong People
+        </p>
       </div>
     </div>
   );

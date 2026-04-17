@@ -1,9 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, UserCheck, TrendingUp, Target, AlertTriangle, Clock } from 'lucide-react';
+import { Users, UserCheck, TrendingUp, Target, AlertTriangle, Clock, Flame } from 'lucide-react';
 import { toast } from 'sonner';
+
+const getTimeAlertStyle = (pct) => {
+  if (pct >= 80) return { bg: '#ff1a1a', text: '#fff', border: '#ff1a1a', pulse: true };
+  if (pct >= 50) return { bg: '#ff4d4d', text: '#fff', border: '#ff4d4d', pulse: false };
+  return { bg: '#ffe5e5', text: '#b91c1c', border: '#fecaca', pulse: false };
+};
 
 export default function DashboardPage() {
   const { api, user, selectedMarathon, isAdmin } = useAuth();
@@ -12,6 +20,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [filterVendeur, setFilterVendeur] = useState('all');
   const [filterPeriod, setFilterPeriod] = useState('all');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
   const [vendeurs, setVendeurs] = useState([]);
 
   const fetchData = useCallback(async () => {
@@ -21,7 +31,12 @@ export default function DashboardPage() {
       const params = { marathon_id: selectedMarathon.id };
       if (isAdmin) {
         if (filterVendeur !== 'all') params.vendeur_id = filterVendeur;
-        if (filterPeriod !== 'all') params.period = filterPeriod;
+        if (filterPeriod === 'custom' && customStart && customEnd) {
+          params.start_date = customStart;
+          params.end_date = customEnd;
+        } else if (filterPeriod !== 'all' && filterPeriod !== 'custom') {
+          params.period = filterPeriod;
+        }
         const [dashRes, timeRes, vendRes] = await Promise.all([
           api.get('/dashboard/admin', { params }),
           api.get(`/marathons/${selectedMarathon.id}/time-remaining`),
@@ -31,8 +46,15 @@ export default function DashboardPage() {
         setTimeRemaining(timeRes.data);
         setVendeurs(vendRes.data.vendeurs);
       } else {
+        const vendeurParams = { marathon_id: selectedMarathon.id, vendeur_id: user.id };
+        if (filterPeriod === 'custom' && customStart && customEnd) {
+          vendeurParams.start_date = customStart;
+          vendeurParams.end_date = customEnd;
+        } else if (filterPeriod !== 'all' && filterPeriod !== 'custom') {
+          vendeurParams.period = filterPeriod;
+        }
         const [dashRes, timeRes] = await Promise.all([
-          api.get('/dashboard/vendeur', { params: { ...params, vendeur_id: user.id } }),
+          api.get('/dashboard/vendeur', { params: vendeurParams }),
           api.get(`/marathons/${selectedMarathon.id}/time-remaining`)
         ]);
         setStats(dashRes.data);
@@ -40,7 +62,7 @@ export default function DashboardPage() {
       }
     } catch { toast.error('Erreur chargement dashboard'); }
     setLoading(false);
-  }, [api, selectedMarathon, user, isAdmin, filterVendeur, filterPeriod]);
+  }, [api, selectedMarathon, user, isAdmin, filterVendeur, filterPeriod, customStart, customEnd]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -52,9 +74,21 @@ export default function DashboardPage() {
 
   if (!stats) return null;
 
+  const timePct = timeRemaining?.time_percentage || 0;
+  const timeStyle = getTimeAlertStyle(timePct);
+
   return (
     <div className="p-4 md:p-6 space-y-6" data-testid="dashboard-page">
-      {/* Marathon info bar */}
+      {/* HARDCORE BUSINESS ZONE branding */}
+      <div className="flex items-center gap-2 opacity-[0.08] select-none pointer-events-none">
+        <Flame className="w-4 h-4" />
+        <span className="text-xs font-black uppercase tracking-[0.3em]" style={{ fontFamily: "'Outfit', sans-serif" }}>
+          Hardcore Business Zone
+        </span>
+        <Flame className="w-4 h-4" />
+      </div>
+
+      {/* Marathon info bar + Time Alert */}
       <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4 md:p-5">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -63,28 +97,28 @@ export default function DashboardPage() {
             </h2>
             <p className="text-sm text-emerald-600 font-medium">{selectedMarathon.formation}</p>
           </div>
-          {timeRemaining?.days_remaining !== null && (
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium ${
-              timeRemaining.days_remaining <= 3 ? 'bg-red-50 text-red-600' :
-              timeRemaining.days_remaining <= 7 ? 'bg-amber-50 text-amber-600' :
-              'bg-emerald-50 text-emerald-600'
-            }`}>
+          {timeRemaining?.days_remaining !== null && timeRemaining?.days_remaining !== undefined && (
+            <div
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold ${timeStyle.pulse ? 'animate-pulse' : ''}`}
+              style={{ backgroundColor: timeStyle.bg, color: timeStyle.text, border: `1px solid ${timeStyle.border}` }}
+              data-testid="time-remaining-badge"
+            >
               <Clock className="w-4 h-4" />
               {timeRemaining.days_remaining} jours restants
             </div>
           )}
         </div>
         {timeRemaining?.alert && (
-          <div className="mt-3 flex items-center gap-2 text-sm text-amber-600 bg-amber-50 rounded-xl px-3 py-2">
+          <div className="mt-3 flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">
             <AlertTriangle className="w-4 h-4 shrink-0" />
             {timeRemaining.alert}
           </div>
         )}
       </div>
 
-      {/* Admin Filters */}
-      {isAdmin && (
-        <div className="flex gap-3 flex-wrap">
+      {/* Filters */}
+      <div className="flex gap-3 flex-wrap items-end">
+        {isAdmin && (
           <Select value={filterVendeur} onValueChange={setFilterVendeur}>
             <SelectTrigger className="w-[180px] h-10 rounded-xl" data-testid="filter-vendeur">
               <SelectValue placeholder="Tous les vendeurs" />
@@ -96,19 +130,32 @@ export default function DashboardPage() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-            <SelectTrigger className="w-[160px] h-10 rounded-xl" data-testid="filter-period">
-              <SelectValue placeholder="Toute la période" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toute la période</SelectItem>
-              <SelectItem value="7">7 jours</SelectItem>
-              <SelectItem value="15">15 jours</SelectItem>
-              <SelectItem value="30">30 jours</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+        )}
+        <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+          <SelectTrigger className="w-[180px] h-10 rounded-xl" data-testid="filter-period">
+            <SelectValue placeholder="Toute la période" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toute la période</SelectItem>
+            <SelectItem value="7">7 jours</SelectItem>
+            <SelectItem value="15">15 jours</SelectItem>
+            <SelectItem value="30">30 jours</SelectItem>
+            <SelectItem value="custom">Période personnalisée</SelectItem>
+          </SelectContent>
+        </Select>
+        {filterPeriod === 'custom' && (
+          <div className="flex items-center gap-2">
+            <div>
+              <Label className="text-xs text-slate-500">Début</Label>
+              <Input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="h-10 rounded-xl w-[140px]" data-testid="custom-start-date" />
+            </div>
+            <div>
+              <Label className="text-xs text-slate-500">Fin</Label>
+              <Input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="h-10 rounded-xl w-[140px]" data-testid="custom-end-date" />
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3 md:gap-4">

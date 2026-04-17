@@ -250,10 +250,9 @@ export default function LeadsPage() {
                     <SelectValue placeholder="Choisir..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Cash">Cash</SelectItem>
-                    <SelectItem value="Carte">Carte</SelectItem>
-                    <SelectItem value="Virement">Virement</SelectItem>
-                    <SelectItem value="Autre">Autre</SelectItem>
+                    <SelectItem value="MONCASH">MONCASH</SelectItem>
+                    <SelectItem value="NATCASH">NATCASH</SelectItem>
+                    <SelectItem value="LOCAL">LOCAL</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

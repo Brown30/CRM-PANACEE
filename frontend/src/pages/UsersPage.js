@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, User, Shield, ShieldCheck, Trash2 } from 'lucide-react';
+import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function UsersPage() {
@@ -13,6 +13,9 @@ export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showCodeEdit, setShowCodeEdit] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [newCode, setNewCode] = useState('');
   const [formData, setFormData] = useState({ name: '', code: '', role: 'vendeur' });
 
   useEffect(() => { fetchUsers(); }, []);
@@ -44,6 +47,30 @@ export default function UsersPage() {
       toast.success('Utilisateur supprimé');
       fetchUsers();
     } catch { toast.error('Erreur suppression'); }
+  };
+
+  const openCodeEdit = (u) => {
+    setEditingUser(u);
+    setNewCode(u.code);
+    setShowCodeEdit(true);
+  };
+
+  const handleCodeUpdate = async (e) => {
+    e.preventDefault();
+    if (!newCode.trim()) { toast.error('Code requis'); return; }
+    try {
+      await api.put(`/users/${editingUser.id}/code`, { code: newCode.trim() });
+      toast.success('Code modifié avec succès');
+      setShowCodeEdit(false);
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Erreur modification code');
+    }
+  };
+
+  const getCodeHint = (role) => {
+    if (role === 'vendeur') return '4 chiffres requis';
+    return '6 chiffres requis';
   };
 
   const getRoleIcon = (role) => {
@@ -98,15 +125,23 @@ export default function UsersPage() {
                 <span className="text-xs text-slate-400">Code: {u.code}</span>
               </div>
             </div>
-            {isAdminPrincipal && u.role !== 'admin_principal' && (
-              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 shrink-0" onClick={() => handleDelete(u.id)} data-testid={`delete-user-${u.id}`}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
+            {isAdminPrincipal && (
+              <div className="flex items-center gap-1 shrink-0">
+                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-500 h-8 w-8" onClick={() => openCodeEdit(u)} data-testid={`edit-code-${u.id}`} title="Modifier le code">
+                  <KeyRound className="w-4 h-4" />
+                </Button>
+                {u.role !== 'admin_principal' && (
+                  <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 h-8 w-8" onClick={() => handleDelete(u.id)} data-testid={`delete-user-${u.id}`}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         ))}
       </div>
 
+      {/* Add User Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
@@ -120,7 +155,8 @@ export default function UsersPage() {
             </div>
             <div>
               <Label className="text-xs font-semibold text-slate-500">Code *</Label>
-              <Input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} className="input-field mt-1" placeholder="Code d'accès" data-testid="user-code" required />
+              <Input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} className="input-field mt-1" placeholder={formData.role === 'vendeur' ? '4 chiffres' : '6 chiffres'} data-testid="user-code" required inputMode="numeric" />
+              <p className="text-xs text-slate-400 mt-1">{getCodeHint(formData.role)}</p>
             </div>
             <div>
               <Label className="text-xs font-semibold text-slate-500">Rôle</Label>
@@ -137,6 +173,42 @@ export default function UsersPage() {
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => setShowForm(false)}>Annuler</Button>
               <Button type="submit" className="btn-primary flex-1" data-testid="user-submit-btn">Créer</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Code Dialog */}
+      <Dialog open={showCodeEdit} onOpenChange={setShowCodeEdit}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>
+              Modifier le code
+            </DialogTitle>
+            <DialogDescription>
+              {editingUser?.name} ({getRoleLabel(editingUser?.role || '')})
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCodeUpdate} className="space-y-4">
+            <div>
+              <Label className="text-xs font-semibold text-slate-500">Nouveau code</Label>
+              <Input
+                value={newCode}
+                onChange={e => setNewCode(e.target.value)}
+                className="input-field mt-1 text-center text-lg tracking-[0.3em] font-semibold"
+                placeholder={editingUser?.role === 'vendeur' ? '4 chiffres' : '6 chiffres'}
+                inputMode="numeric"
+                data-testid="edit-code-input"
+                maxLength={editingUser?.role === 'vendeur' ? 4 : 6}
+                required
+              />
+              <p className="text-xs text-slate-400 mt-1 text-center">
+                {editingUser ? getCodeHint(editingUser.role) : ''}
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => setShowCodeEdit(false)}>Annuler</Button>
+              <Button type="submit" className="btn-primary flex-1" data-testid="edit-code-submit-btn">Modifier</Button>
             </div>
           </form>
         </DialogContent>
