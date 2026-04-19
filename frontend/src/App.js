@@ -12,6 +12,7 @@ import PromisesPage from "@/pages/PromisesPage";
 import RankingPage from "@/pages/RankingPage";
 import ReportsPage from "@/pages/ReportsPage";
 import UsersPage from "@/pages/UsersPage";
+import ProfilePage from "@/pages/ProfilePage";
 import AppLayout from "@/components/AppLayout";
 
 function ProtectedRoute({ children }) {
@@ -52,6 +53,7 @@ function App() {
             <Route path="ranking" element={<RankingPage />} />
             <Route path="rapports" element={<ReportsPage />} />
             <Route path="utilisateurs" element={<UsersPage />} />
+            <Route path="profile" element={<ProfilePage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

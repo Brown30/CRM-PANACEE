@@ -1,7 +1,9 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { LayoutDashboard, Users, CalendarClock, Trophy, BarChart3, FileText, UserCog, LogOut, ChevronDown, Flag } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarClock, Trophy, BarChart3, UserCog, LogOut, ChevronDown, Flag, User, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import InstallPrompt from '@/components/InstallPrompt';
 
 export default function AppLayout() {
   const { user, logout, selectedMarathon, selectMarathon, isAdmin } = useAuth();
@@ -32,8 +34,19 @@ export default function AppLayout() {
 
   const allItems = isAdmin ? [...navItems, ...adminItems] : navItems;
 
+  const bottomNavItems = [
+    { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
+    { to: '/leads', icon: Users, label: 'Leads' },
+    { to: '/profile', icon: User, label: 'Profile' },
+  ];
+
+  const moreItems = allItems.filter(item => item.to !== '/' && item.to !== '/leads');
+
   return (
     <div className="min-h-screen bg-slate-50" data-testid="app-layout">
+      {/* Install Prompt */}
+      <InstallPrompt />
+
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-slate-200/60 flex-col z-30">
         {/* Logo */}
@@ -101,9 +114,21 @@ export default function AppLayout() {
             <button onClick={handleChangeMarathon} className="text-xs bg-emerald-50 text-emerald-700 font-medium px-3 py-1.5 rounded-full max-w-[140px] truncate" data-testid="change-marathon-mobile">
               {selectedMarathon?.name}
             </button>
-            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-slate-400 hover:text-red-500 h-8 w-8" data-testid="logout-mobile">
-              <LogOut className="w-4 h-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-slate-700 h-8 w-8 transition-colors">
+                  <MoreVertical className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                {moreItems.map(item => (
+                  <DropdownMenuItem key={item.to} onClick={() => navigate(item.to)} className="flex items-center gap-3 py-3 cursor-pointer">
+                    <item.icon className="w-4 h-4 text-emerald-600" />
+                    <span className="font-medium text-slate-700">{item.label}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
@@ -114,20 +139,22 @@ export default function AppLayout() {
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200/50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-30">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200/50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-30 pb-safe">
         <div className="flex items-center justify-around px-2 py-1">
-          {allItems.slice(0, 5).map(item => (
+          {bottomNavItems.map(item => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `nav-item ${isActive ? 'active' : ''}`
+                `flex flex-col items-center justify-center w-full py-2 gap-1 rounded-xl transition-all duration-200 ${
+                  isActive ? 'text-emerald-600 bg-emerald-50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                }`
               }
               data-testid={`mobile-nav-${item.label.toLowerCase()}`}
             >
-              <item.icon className="w-5 h-5" />
-              <span className="text-[10px]">{item.label}</span>
+              <item.icon className={`w-5 h-5 transition-transform duration-200`} />
+              <span className="text-[10px] font-medium">{item.label}</span>
             </NavLink>
           ))}
         </div>
