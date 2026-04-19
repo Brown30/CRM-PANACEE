@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users, UserCheck, TrendingUp, Target, AlertTriangle, Clock, Flame } from 'lucide-react';
 import { toast } from 'sonner';
+import NoMarathonFallback from '@/components/NoMarathonFallback';
 
 const getTimeAlertStyle = (pct) => {
   if (pct >= 80) return { bg: '#ff1a1a', text: '#fff', border: '#ff1a1a', pulse: true };
@@ -25,7 +26,10 @@ export default function DashboardPage() {
   const [vendeurs, setVendeurs] = useState([]);
 
   const fetchData = useCallback(async () => {
-    if (!selectedMarathon) return;
+    if (!selectedMarathon) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const params = { marathon_id: selectedMarathon.id };
@@ -71,6 +75,8 @@ export default function DashboardPage() {
       <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
+
+  if (!selectedMarathon) return <NoMarathonFallback />;
 
   if (!stats) return null;
 

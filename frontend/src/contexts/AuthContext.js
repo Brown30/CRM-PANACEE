@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { api as supabaseApi } from '../lib/api';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -13,15 +12,8 @@ export function AuthProvider({ children }) {
   });
   const [loading, setLoading] = useState(true);
 
-  const axiosInstance = React.useMemo(() => {
-    const instance = axios.create({ baseURL: API });
-    instance.interceptors.request.use((config) => {
-      const t = localStorage.getItem('panacee_token');
-      if (t) config.headers.Authorization = `Bearer ${t}`;
-      return config;
-    });
-    return instance;
-  }, []);
+  // We expose the supersonic shim under the same name `api`
+  const axiosInstance = supabaseApi;
 
   const checkAuth = useCallback(async () => {
     if (!token) { setLoading(false); return; }
@@ -30,6 +22,7 @@ export function AuthProvider({ children }) {
       setUser(data.user);
     } catch {
       localStorage.removeItem('panacee_token');
+      localStorage.removeItem('panacee_user_id');
       setToken(null);
       setUser(null);
     }
@@ -41,6 +34,7 @@ export function AuthProvider({ children }) {
   const login = async (code) => {
     const { data } = await axiosInstance.post('/auth/login', { code });
     localStorage.setItem('panacee_token', data.token);
+    localStorage.setItem('panacee_user_id', data.user.id);
     setToken(data.token);
     setUser(data.user);
     return data.user;
@@ -49,6 +43,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem('panacee_token');
     localStorage.removeItem('panacee_marathon');
+    localStorage.removeItem('panacee_user_id');
     setToken(null);
     setUser(null);
     setSelectedMarathon(null);

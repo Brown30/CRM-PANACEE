@@ -60,7 +60,10 @@ export default function MarathonSelectPage() {
           <div className="text-center py-16">
             <Trophy className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-500 font-medium">Aucune marathon active</p>
-            <p className="text-sm text-slate-400 mt-1">Contactez un administrateur pour créer une marathon</p>
+            <p className="text-sm text-slate-400 mt-1 mb-6">Contactez un administrateur pour créer une marathon</p>
+            <Button onClick={() => navigate('/')} variant="outline" className="gap-2">
+              Continuer vers le tableau de bord <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
         ) : (
           <div className="space-y-3">
@@ -99,6 +102,11 @@ export default function MarathonSelectPage() {
                 </div>
               </button>
             ))}
+            <div className="pt-4 flex justify-center">
+              <Button variant="ghost" onClick={() => navigate('/')} className="text-slate-500 hover:text-slate-800">
+                Continuer sans sélectionner de marathon
+              </Button>
+            </div>
           </div>
         )}
       </div>

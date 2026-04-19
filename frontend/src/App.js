@@ -22,7 +22,6 @@ function ProtectedRoute({ children }) {
     </div>
   );
   if (!user) return <Navigate to="/login" />;
-  if (!selectedMarathon) return <Navigate to="/select-marathon" />;
   return children;
 }
 
