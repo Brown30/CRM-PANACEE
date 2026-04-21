@@ -1,0 +1,51 @@
+/* Panacée CRM Styles */
+.login-bg {
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 50%, #f8fafc 100%);
+}
+
+.stat-card {
+  @apply bg-white border border-slate-200/60 shadow-sm rounded-2xl p-5 transition-all duration-300;
+}
+.stat-card:hover {
+  @apply shadow-md -translate-y-0.5;
+}
+
+.nav-item {
+  @apply flex flex-col items-center gap-1 px-3 py-2 text-xs font-medium text-slate-500 transition-all duration-200;
+}
+.nav-item.active {
+  @apply text-emerald-600;
+}
+.nav-item:hover {
+  @apply text-emerald-500;
+}
+
+.btn-primary {
+  @apply bg-emerald-500 text-white font-semibold rounded-xl h-12 px-6 shadow-[0_4px_14px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] hover:bg-emerald-600 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98];
+}
+
+.input-field {
+  @apply h-12 rounded-xl border-slate-200 bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all;
+}
+
+.badge-inscrit {
+  @apply bg-emerald-800 text-white text-xs font-semibold px-3 py-1 rounded-full;
+}
+
+.badge-tres-interesse {
+  @apply bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-300;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }

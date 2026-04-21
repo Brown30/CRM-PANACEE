@@ -1,0 +1,128 @@
+{
+  "theme": "light",
+  "archetype": "Modern Utility Green",
+  "colors": {
+    "background": "#F8FAFC",
+    "surface": "#FFFFFF",
+    "primary": {
+      "DEFAULT": "#10B981",
+      "hover": "#059669",
+      "active": "#047857",
+      "foreground": "#FFFFFF"
+    },
+    "secondary": {
+      "DEFAULT": "#F1F5F9",
+      "hover": "#E2E8F0",
+      "active": "#CBD5E1",
+      "foreground": "#0F172A"
+    },
+    "status": {
+      "very_interested": {
+        "bg": "#D1FAE5",
+        "text": "#065F46",
+        "border": "#34D399"
+      },
+      "enrolled": {
+        "bg": "#065F46",
+        "text": "#FFFFFF",
+        "border": "#047857"
+      },
+      "pending": {
+        "bg": "#FEF3C7",
+        "text": "#92400E",
+        "border": "#FBBF24"
+      }
+    },
+    "text": {
+      "primary": "#0F172A",
+      "secondary": "#64748B",
+      "muted": "#94A3B8"
+    },
+    "border": "#E2E8F0"
+  },
+  "typography": {
+    "fonts": {
+      "heading": "'Outfit', sans-serif",
+      "body": "'Figtree', sans-serif",
+      "mono": "'JetBrains Mono', monospace"
+    },
+    "hierarchy": {
+      "h1": "text-4xl md:text-5xl font-bold tracking-tight text-slate-900",
+      "h2": "text-2xl md:text-3xl font-bold tracking-tight text-slate-900",
+      "h3": "text-xl font-semibold text-slate-800",
+      "h4": "text-lg font-semibold text-slate-800",
+      "body": "text-base text-slate-600 leading-relaxed",
+      "small": "text-sm text-slate-500 font-medium",
+      "label": "text-xs font-semibold uppercase tracking-[0.1em] text-slate-500"
+    }
+  },
+  "spacing_and_layout": {
+    "container_padding": "p-4 md:p-8",
+    "card_padding": "p-5 md:p-6",
+    "gap": "gap-4 md:gap-6",
+    "radius": {
+      "card": "rounded-2xl",
+      "button": "rounded-xl",
+      "input": "rounded-xl",
+      "badge": "rounded-full"
+    },
+    "grid_patterns": {
+      "dashboard_mobile": "grid grid-cols-1 gap-4",
+      "dashboard_desktop": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
+      "stats_bento": "grid grid-cols-2 gap-3 md:gap-4"
+    }
+  },
+  "surface_styles": {
+    "card": "bg-white border border-slate-200/60 shadow-sm",
+    "glass_header": "bg-white/80 backdrop-blur-xl border-b border-slate-200/50",
+    "floating_nav": "bg-white/90 backdrop-blur-xl border-t border-slate-200/50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]",
+    "primary_button": "bg-emerald-500 text-white font-semibold shadow-[0_4px_14px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] transition-all hover:-translate-y-0.5"
+  },
+  "motion": {
+    "transition_default": "transition-all duration-200 ease-in-out",
+    "hover_lift": "hover:-translate-y-1 hover:shadow-md transition-all duration-300",
+    "active_press": "active:scale-[0.98] transition-transform"
+  },
+  "components_instructions": {
+    "buttons": "Must be large on mobile (h-12 or h-14). Primary buttons use emerald-500 with custom colored shadow. Use icon + text for clarity.",
+    "cards": "Use rounded-2xl. White background. Never use harsh drop shadows, use Tailwind's shadow-sm. Add a subtle 1px border (`border-slate-100` or `border-slate-200/60`).",
+    "inputs": "Forms must use Shadcn customized inputs but with `h-12` and `rounded-xl` for better mobile tapping. Focus state must use `focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500`.",
+    "badges": "Status badges must use the semantic colors defined in the theme (very_interested = light green, enrolled = dark green). Fully rounded.",
+    "charts": "Use Shadcn charts (Recharts) with clean, minimal axes. Use `emerald-500` as the primary chart color, maybe paired with `slate-200` for empty segments.",
+    "navigation": "For mobile, implement a sticky bottom navigation bar with icons (Home, Leads, Marathon, Reports). For desktop, a left sidebar.",
+    "data_testid": "ALL interactive elements (buttons, inputs, links, tabs) MUST have a `data-testid` attribute in kebab-case."
+  },
+  "icons": {
+    "library": "lucide-react",
+    "stroke_width": 2,
+    "size": {
+      "small": 16,
+      "default": 20,
+      "large": 24
+    }
+  },
+  "media": {
+    "image_urls": {
+      "login_bg": {
+        "url": "https://images.unsplash.com/photo-1773700066931-f33f507cfbd3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGdyZWVuJTIwd2hpdGUlMjBncmFkaWVudHxlbnwwfHx8fDE3NzY0MDc0ODJ8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Green and white abstract gradient, to be used selectively with an overlay or just as a subtle texture in the login screen.",
+        "usage": "login_background"
+      },
+       "office_bg": {
+        "url": "https://images.unsplash.com/photo-1666790676906-0295230c121d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzB8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBvZmZpY2UlMjB3b3JrcGxhY2V8ZW58MHx8fHwxNzc2NDA3NDg1fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Modern office workplace, can be used for marathon banners or empty states with a heavy white overlay.",
+        "usage": "hero_or_banner"
+      }
+    }
+  },
+  "instructions_to_main_agent": [
+    "This is a mobile-first application. Start all designs with grid-cols-1 and apply responsive classes (md:, lg:) for larger screens.",
+    "Use 'Outfit' for headings and 'Figtree' for body text. Add these to Tailwind config.",
+    "Prioritize large, tappable areas. Buttons and inputs should be at least h-12 on mobile.",
+    "Follow the specific green logic: #D1FAE5 for 'Très intéressé' (lead status) and #065F46 for 'Inscrit' (enrolled). Default actions use emerald-500.",
+    "The login is ultra-simple: 'Entrez votre code'. Focus heavily on a clean aesthetic, large typography, and maybe a subtle background texture using CSS gradients or the provided image with a 90% white overlay.",
+    "Do not use dark gray backgrounds; use #F8FAFC (slate-50) for the app background to keep it looking fresh and 'épuré'.",
+    "Implement the mobile navigation as a bottom tab bar (Home, Leads, Promesses, Admin/Stats) and switch to a sidebar on md+.",
+    "Ensure all lists and tables are mobile-friendly. Instead of standard data tables on mobile, use stacked cards."
+  ]
+}
