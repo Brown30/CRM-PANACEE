@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,9 +19,7 @@ export default function MarathonPage() {
     objectif_total: 0, objectif_par_vendeur: {}
   });
 
-  useEffect(() => { fetchData(); }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [mRes, vRes] = await Promise.all([
         api.get(isAdmin ? '/marathons/all' : '/marathons'),
@@ -31,7 +29,9 @@ export default function MarathonPage() {
       setVendeurs(vRes.data.vendeurs);
     } catch { toast.error('Erreur chargement'); }
     setLoading(false);
-  };
+  }, [api, isAdmin]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

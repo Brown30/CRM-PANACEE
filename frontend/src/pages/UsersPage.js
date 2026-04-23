@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,15 +18,15 @@ export default function UsersPage() {
   const [newCode, setNewCode] = useState('');
   const [formData, setFormData] = useState({ name: '', code: '', role: 'vendeur' });
 
-  useEffect(() => { fetchUsers(); }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const { data } = await api.get('/users');
       setUsers(data.users);
     } catch { toast.error('Erreur chargement'); }
     setLoading(false);
-  };
+  }, [api]);
+
+  useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -11,18 +11,18 @@ export default function MarathonSelectPage() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (selectedMarathon) { navigate('/'); return; }
-    fetchMarathons();
-  }, [selectedMarathon, navigate]);
-
-  const fetchMarathons = async () => {
+  const fetchMarathons = useCallback(async () => {
     try {
       const { data } = await api.get('/marathons');
       setMarathons(data.marathons);
     } catch { toast.error('Erreur de chargement'); }
     setLoading(false);
-  };
+  }, [api]);
+
+  useEffect(() => {
+    if (selectedMarathon) { navigate('/'); return; }
+    fetchMarathons();
+  }, [selectedMarathon, navigate, fetchMarathons]);
 
   const handleSelect = (marathon) => {
     selectMarathon(marathon);
