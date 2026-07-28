@@ -90,12 +90,19 @@ export const api = {
       return res({ leads: data });
     }
     
+    if (url === '/leads/count') {
+      let q = supabase.from('leads').select('*', { count: 'exact', head: true }).eq('marathon_id', params.marathon_id);
+      if (params.exclude_status) q = q.neq('status', params.exclude_status);
+      const { count } = await q;
+      return res({ count: count || 0 });
+    }
+
     if (url.match(/^\/leads\/([^/]+)$/)) {
       const id = url.split('/')[2];
       const { data } = await supabase.from('leads').select('*').eq('id', id).single();
       return res({ lead: data });
     }
-    
+
     if (url === '/dashboard/vendeur') {
       let q = supabase.from('leads').select('status, date').eq('marathon_id', params.marathon_id).eq('vendeur_id', params.vendeur_id);
       
@@ -239,7 +246,7 @@ export const api = {
       const { data } = await supabase.from('deletion_requests').select('*').eq('status', 'pending');
       return res({ requests: data });
     }
-    
+
     console.warn("Unmocked GET", url);
     return res({});
   },
@@ -275,6 +282,45 @@ export const api = {
       const reqId = url.split('/')[2];
       await supabase.from('deletion_requests').update({ status: 'rejected' }).eq('id', reqId);
       return res({ message: 'Suppression rejetée' });
+    }
+
+    if (url === '/leads/bulk-redistribute') {
+      const { source_marathon_id, target_marathon_id, exclude_status, allocations } = payload;
+
+      let q = supabase.from('leads').select('*').eq('marathon_id', source_marathon_id);
+      if (exclude_status) q = q.neq('status', exclude_status);
+      const { data: candidates } = await q;
+
+      const totalRequested = allocations.reduce((sum, a) => sum + a.quantity, 0);
+      if (totalRequested > candidates.length) {
+        throw new Error(`Apenas ${candidates.length} lead(s) disponível(is), mas ${totalRequested} foram solicitados`);
+      }
+
+      const { data: sourceMarathon } = await supabase.from('marathons').select('*').eq('id', source_marathon_id).single();
+      const { data: targetMarathon } = await supabase.from('marathons').select('*').eq('id', target_marathon_id).single();
+
+      const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+      const today = new Date().toISOString().split('T')[0];
+
+      let cursor = 0;
+      let movedCount = 0;
+      for (const { vendeur_id, quantity } of allocations) {
+        const chunk = shuffled.slice(cursor, cursor + quantity);
+        cursor += quantity;
+        for (const lead of chunk) {
+          const note = `Realocado da maratona "${sourceMarathon?.name || ''}" em ${today}`;
+          const comments = lead.comments ? `${lead.comments}\n${note}` : note;
+          await supabase.from('leads').update({
+            marathon_id: target_marathon_id,
+            vendeur_id,
+            formation: targetMarathon?.formation,
+            status: 'Potentiel',
+            comments
+          }).eq('id', lead.id);
+          movedCount++;
+        }
+      }
+      return res({ moved: movedCount });
     }
   },
   

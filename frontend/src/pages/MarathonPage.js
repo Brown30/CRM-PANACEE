@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, Trophy, Calendar, Target, Users, Trash2 } from 'lucide-react';
+import { Plus, Trophy, Calendar, Target, Users, Trash2, RotateCcw, Shuffle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function MarathonPage() {
@@ -18,6 +18,13 @@ export default function MarathonPage() {
     name: '', formation: '', start_date: '', end_date: '',
     objectif_total: 0, objectif_par_vendeur: {}
   });
+
+  const [redistributeSource, setRedistributeSource] = useState(null);
+  const [redistTargetId, setRedistTargetId] = useState('');
+  const [excludeInscrit, setExcludeInscrit] = useState(true);
+  const [availableCount, setAvailableCount] = useState(null);
+  const [allocations, setAllocations] = useState({});
+  const [redistLoading, setRedistLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -54,6 +61,65 @@ export default function MarathonPage() {
       toast.success('Marathon désactivée');
       fetchData();
     } catch { toast.error('Erreur suppression'); }
+  };
+
+  const handleReactivate = async (id) => {
+    try {
+      await api.put(`/marathons/${id}`, { active: true });
+      toast.success('Marathon réactivée');
+      fetchData();
+    } catch { toast.error('Erreur réactivation'); }
+  };
+
+  const openRedistribute = (marathon) => {
+    setRedistributeSource(marathon);
+    setRedistTargetId('');
+    setExcludeInscrit(true);
+    setAvailableCount(null);
+    setAllocations({});
+  };
+
+  useEffect(() => {
+    if (!redistributeSource) return;
+    api.get('/leads/count', {
+      params: {
+        marathon_id: redistributeSource.id,
+        exclude_status: excludeInscrit ? 'Inscrit' : undefined
+      }
+    }).then(r => setAvailableCount(r.data.count)).catch(() => setAvailableCount(null));
+  }, [redistributeSource, excludeInscrit, api]);
+
+  const setAllocation = (vendeurId, value) => {
+    setAllocations(prev => ({ ...prev, [vendeurId]: parseInt(value) || 0 }));
+  };
+
+  const allocationTotal = Object.values(allocations).reduce((s, v) => s + v, 0);
+
+  const handleRedistribute = async () => {
+    if (!redistTargetId) { toast.error('Escolha a maratona de destino'); return; }
+    if (allocationTotal === 0) { toast.error('Informe ao menos uma quantidade'); return; }
+    if (availableCount !== null && allocationTotal > availableCount) {
+      toast.error(`Total (${allocationTotal}) maior que os leads disponíveis (${availableCount})`);
+      return;
+    }
+    const payloadAllocations = Object.entries(allocations)
+      .filter(([, qty]) => qty > 0)
+      .map(([vendeur_id, quantity]) => ({ vendeur_id, quantity }));
+    setRedistLoading(true);
+    try {
+      const { data } = await api.post('/leads/bulk-redistribute', {
+        source_marathon_id: redistributeSource.id,
+        target_marathon_id: redistTargetId,
+        exclude_status: excludeInscrit ? 'Inscrit' : undefined,
+        allocations: payloadAllocations
+      });
+      toast.success(`${data.moved} lead(s) redistribué(s)`);
+      setRedistributeSource(null);
+      fetchData();
+    } catch (err) {
+      toast.error(err.message || 'Erreur redistribution');
+    }
+    setRedistLoading(false);
   };
 
   const setVendeurObjectif = (vendeurId, value) => {
@@ -109,10 +175,21 @@ export default function MarathonPage() {
                   </div>
                 )}
               </div>
-              {isAdminPrincipal && m.active && (
-                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 shrink-0" onClick={() => handleDelete(m.id)} data-testid={`delete-marathon-${m.id}`}>
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+              {isAdminPrincipal && (
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-600" onClick={() => openRedistribute(m)} data-testid={`redistribute-marathon-${m.id}`} title="Redistribuir leads">
+                    <Shuffle className="w-4 h-4" />
+                  </Button>
+                  {m.active ? (
+                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500" onClick={() => handleDelete(m.id)} data-testid={`delete-marathon-${m.id}`} title="Desativar">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  ) : (
+                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-600" onClick={() => handleReactivate(m.id)} data-testid={`reactivate-marathon-${m.id}`} title="Reativar">
+                      <RotateCcw className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -187,6 +264,80 @@ export default function MarathonPage() {
               <Button type="submit" className="btn-primary flex-1" data-testid="marathon-submit-btn">Créer</Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Redistribute Dialog */}
+      <Dialog open={!!redistributeSource} onOpenChange={(open) => !open && setRedistributeSource(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>Redistribuir leads</DialogTitle>
+            <DialogDescription>
+              De "{redistributeSource?.name}" para outra maratona, divididos por vendedor
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="exclude-inscrit"
+                checked={excludeInscrit}
+                onChange={e => setExcludeInscrit(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <Label htmlFor="exclude-inscrit" className="text-sm text-slate-600">
+                Apenas leads não inscritos (excluir status "Inscrit")
+              </Label>
+            </div>
+
+            <p className="text-sm text-slate-500">
+              {availableCount === null ? 'Carregando...' : `${availableCount} lead(s) disponível(is)`}
+            </p>
+
+            <div>
+              <Label className="text-xs font-semibold text-slate-500">Maratona de destino *</Label>
+              <Select value={redistTargetId} onValueChange={setRedistTargetId}>
+                <SelectTrigger className="input-field mt-1" data-testid="redistribute-target">
+                  <SelectValue placeholder="Escolher maratona..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {marathons.filter(m => m.active && m.id !== redistributeSource?.id).map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold text-slate-500 mb-2 block">Quantidade por vendedor</Label>
+              <div className="space-y-2">
+                {vendeurs.map(v => (
+                  <div key={v.id} className="flex items-center gap-3">
+                    <span className="text-sm text-slate-600 w-28 truncate">{v.name}</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={allocations[v.id] || ''}
+                      onChange={e => setAllocation(v.id, e.target.value)}
+                      className="h-9 rounded-lg flex-1"
+                      placeholder="0"
+                      data-testid={`redistribute-qty-${v.id}`}
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-slate-400 mt-2">Total: {allocationTotal}</p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => setRedistributeSource(null)}>
+                Cancelar
+              </Button>
+              <Button type="button" className="btn-primary flex-1" onClick={handleRedistribute} disabled={redistLoading} data-testid="redistribute-submit-btn">
+                {redistLoading ? 'Redistribuindo...' : 'Redistribuir'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
