@@ -140,12 +140,23 @@ export default function ObjectivesPage() {
         <Accordion type="single" collapsible>
           {performancePlans.map((plan) => (
             <AccordionItem key={plan.name} value={plan.name} data-testid={`objectives-item-${plan.name}`}>
-              <AccordionTrigger>
-                <div className="flex items-center justify-between w-full pr-3">
-                  <span className="font-semibold text-slate-800">{plan.name}</span>
-                  <span className="text-xs text-slate-400">
-                    Salaire fixe {fmtHTG(plan.salaireFixe)} · Revenu estimé {fmtHTG(plan.revenuEstime.total)}
-                  </span>
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex items-center gap-3 w-full pr-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                    <span className="text-sm font-bold text-emerald-700">{plan.name[0]}</span>
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="font-semibold text-slate-800 text-sm">{plan.name}</p>
+                    <p className="text-xs text-slate-400 truncate">{plan.formationPrincipale}</p>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-2 shrink-0">
+                    <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-medium">
+                      Fixe {fmtHTG(plan.salaireFixe)}
+                    </span>
+                    <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium">
+                      Estimé {fmtHTG(plan.revenuEstime.total)}
+                    </span>
+                  </div>
                 </div>
               </AccordionTrigger>
               <AccordionContent>
