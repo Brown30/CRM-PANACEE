@@ -258,7 +258,8 @@ export const api = {
       return res({ token: 'fake-jwt', user: data });
     }
     if (url === '/users') {
-      const { data } = await supabase.from('users').insert({ ...payload, id: uuidv4() }).select().single();
+      const { data, error } = await supabase.from('users').insert({ ...payload, id: uuidv4() }).select().single();
+      if (error) throw new Error(error.message);
       return res({ user: data });
     }
     if (url === '/marathons') {
