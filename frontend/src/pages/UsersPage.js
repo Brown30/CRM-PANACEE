@@ -37,7 +37,7 @@ export default function UsersPage() {
       setShowForm(false);
       fetchUsers();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Erreur');
+      toast.error(err.response?.data?.detail || err.message || 'Erreur');
     }
   };
 
