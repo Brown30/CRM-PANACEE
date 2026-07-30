@@ -32,7 +32,7 @@ export default function UsersPage() {
     e.preventDefault();
     if (!formData.name || !formData.code) { toast.error('Nom et code requis'); return; }
     try {
-      await api.post(`/users?name=${encodeURIComponent(formData.name)}&code=${formData.code}&role=${formData.role}`);
+      await api.post('/users', formData);
       toast.success('Utilisateur créé');
       setShowForm(false);
       fetchUsers();
