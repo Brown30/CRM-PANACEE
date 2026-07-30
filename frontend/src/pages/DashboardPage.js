@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, UserCheck, TrendingUp, Target, AlertTriangle, Clock, Flame } from 'lucide-react';
+import { Users, UserCheck, TrendingUp, Target, AlertTriangle, Clock, Flame, ClipboardList, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import NoMarathonFallback from '@/components/NoMarathonFallback';
 
@@ -16,6 +17,7 @@ const getTimeAlertStyle = (pct) => {
 
 export default function DashboardPage() {
   const { api, user, selectedMarathon, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -121,6 +123,26 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Instructions et Objectifs card */}
+      <button
+        onClick={() => navigate('/objectifs')}
+        className="w-full bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4 flex items-center gap-3 hover:shadow-md hover:border-emerald-200 transition-all text-left"
+        data-testid="card-objectifs"
+      >
+        <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+          <ClipboardList className="w-5 h-5 text-emerald-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-slate-800 text-sm" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            Instructions et Objectifs
+          </p>
+          <p className="text-xs text-slate-400">
+            {isAdmin ? 'Voir le plan de performance de chaque vendeur' : 'Voir votre plan de performance'}
+          </p>
+        </div>
+        <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+      </button>
 
       {/* Filters */}
       <div className="flex gap-3 flex-wrap items-end">
