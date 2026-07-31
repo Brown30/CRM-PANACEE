@@ -267,7 +267,8 @@ export const api = {
       return res({ marathon: data });
     }
     if (url === '/leads') {
-      const { data } = await supabase.from('leads').insert({ ...payload, id: uuidv4() }).select().single();
+      const { data, error } = await supabase.from('leads').insert({ ...payload, id: uuidv4() }).select().single();
+      if (error) throw new Error(error.message);
       return res({ lead: data });
     }
     if (url.match(/^\/deletion-requests\/([^/]+)\/approve$/)) {
