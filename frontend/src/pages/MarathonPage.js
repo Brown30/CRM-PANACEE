@@ -2,11 +2,25 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, Trophy, Calendar, Target, Users, Trash2, RotateCcw, Shuffle } from 'lucide-react';
+import { Plus, Trophy, Calendar, Target, Users, Trash2, RotateCcw, Shuffle, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+
+const parseImportText = (text) => {
+  return text.split('\n').map(l => l.trim()).filter(Boolean).map(line => {
+    let parts;
+    if (line.includes('\t')) parts = line.split('\t');
+    else if (line.includes(',')) parts = line.split(',');
+    else {
+      const match = line.match(/^(.*?)[\s,]+([\d\s\-()]{7,})$/);
+      parts = match ? [match[1], match[2]] : [line, ''];
+    }
+    return { full_name: (parts[0] || '').trim(), phone: (parts[1] || '').trim() };
+  }).filter(l => l.full_name);
+};
 
 export default function MarathonPage() {
   const { api, isAdmin, isAdminPrincipal } = useAuth();
@@ -25,6 +39,12 @@ export default function MarathonPage() {
   const [availableCount, setAvailableCount] = useState(null);
   const [allocations, setAllocations] = useState({});
   const [redistLoading, setRedistLoading] = useState(false);
+
+  const [showImport, setShowImport] = useState(false);
+  const [importTargetId, setImportTargetId] = useState('');
+  const [importText, setImportText] = useState('');
+  const [importAllocations, setImportAllocations] = useState({});
+  const [importLoading, setImportLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -122,6 +142,62 @@ export default function MarathonPage() {
     setRedistLoading(false);
   };
 
+  const openImport = () => {
+    setImportTargetId('');
+    setImportText('');
+    setImportAllocations({});
+    setShowImport(true);
+  };
+
+  const setImportAllocation = (vendeurId, value) => {
+    setImportAllocations(prev => ({ ...prev, [vendeurId]: parseInt(value) || 0 }));
+  };
+
+  const importParsed = parseImportText(importText);
+  const importAllocationTotal = Object.values(importAllocations).reduce((s, v) => s + v, 0);
+
+  const handleImport = async () => {
+    if (!importTargetId) { toast.error('Escolha a maratona de destino'); return; }
+    if (importParsed.length === 0) { toast.error('Cole ao menos um nome e telefone'); return; }
+    if (importAllocationTotal !== importParsed.length) {
+      toast.error(`Total distribuído (${importAllocationTotal}) precisa ser igual ao número de leads colados (${importParsed.length})`);
+      return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    const blocks = Object.entries(importAllocations).filter(([, qty]) => qty > 0);
+    setImportLoading(true);
+    try {
+      let cursor = 0;
+      let created = 0;
+      for (const [vendeur_id, quantity] of blocks) {
+        const chunk = importParsed.slice(cursor, cursor + quantity);
+        cursor += quantity;
+        for (const { full_name, phone } of chunk) {
+          await api.post('/leads', {
+            date: today,
+            full_name,
+            phone,
+            email: '',
+            payment_method: '',
+            comments: '',
+            status: 'Potentiel',
+            address: '',
+            profession: '',
+            vendeur_id,
+            marathon_id: importTargetId,
+            promise_date: null
+          });
+          created++;
+        }
+      }
+      toast.success(`${created} lead(s) importé(s)`);
+      setShowImport(false);
+    } catch (err) {
+      toast.error(err.message || 'Erreur import');
+    }
+    setImportLoading(false);
+  };
+
   const setVendeurObjectif = (vendeurId, value) => {
     setFormData(prev => ({
       ...prev,
@@ -142,9 +218,14 @@ export default function MarathonPage() {
           Marathons
         </h2>
         {isAdminPrincipal && (
-          <Button onClick={() => { setFormData({ name: '', formation: '', start_date: '', end_date: '', objectif_total: 0, objectif_par_vendeur: {} }); setShowForm(true); }} className="btn-primary flex items-center gap-2 h-10 text-sm" data-testid="add-marathon-btn">
-            <Plus className="w-4 h-4" /> Créer
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={openImport} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="import-leads-btn">
+              <Upload className="w-4 h-4" /> Importer leads
+            </Button>
+            <Button onClick={() => { setFormData({ name: '', formation: '', start_date: '', end_date: '', objectif_total: 0, objectif_par_vendeur: {} }); setShowForm(true); }} className="btn-primary flex items-center gap-2 h-10 text-sm" data-testid="add-marathon-btn">
+              <Plus className="w-4 h-4" /> Créer
+            </Button>
+          </div>
         )}
       </div>
 
@@ -335,6 +416,76 @@ export default function MarathonPage() {
               </Button>
               <Button type="button" className="btn-primary flex-1" onClick={handleRedistribute} disabled={redistLoading} data-testid="redistribute-submit-btn">
                 {redistLoading ? 'Redistribuindo...' : 'Redistribuir'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Leads Dialog */}
+      <Dialog open={showImport} onOpenChange={setShowImport}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>Importer des leads</DialogTitle>
+            <DialogDescription>
+              Collez une liste (Nom + Téléphone), un par ligne, puis répartissez entre les vendeurs
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs font-semibold text-slate-500">Maratona de destino *</Label>
+              <Select value={importTargetId} onValueChange={setImportTargetId}>
+                <SelectTrigger className="input-field mt-1" data-testid="import-target">
+                  <SelectValue placeholder="Escolher maratona..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {marathons.filter(m => m.active).map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold text-slate-500">Nom + Téléphone (un par ligne)</Label>
+              <Textarea
+                value={importText}
+                onChange={e => setImportText(e.target.value)}
+                className="rounded-xl mt-1 font-mono text-xs"
+                rows={8}
+                placeholder={'Jean Baptiste\t42 05 38 85\nMarie Claire, 32 16 66 16'}
+                data-testid="import-textarea"
+              />
+              <p className="text-xs text-slate-400 mt-1">{importParsed.length} lead(s) détecté(s)</p>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold text-slate-500 mb-2 block">Quantidade por vendedor</Label>
+              <div className="space-y-2">
+                {vendeurs.map(v => (
+                  <div key={v.id} className="flex items-center gap-3">
+                    <span className="text-sm text-slate-600 w-28 truncate">{v.name}</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={importAllocations[v.id] || ''}
+                      onChange={e => setImportAllocation(v.id, e.target.value)}
+                      className="h-9 rounded-lg flex-1"
+                      placeholder="0"
+                      data-testid={`import-qty-${v.id}`}
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-slate-400 mt-2">Total: {importAllocationTotal} / {importParsed.length}</p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => setShowImport(false)}>
+                Cancelar
+              </Button>
+              <Button type="button" className="btn-primary flex-1" onClick={handleImport} disabled={importLoading} data-testid="import-submit-btn">
+                {importLoading ? 'Importando...' : 'Importar'}
               </Button>
             </div>
           </div>
