@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Plus, Trophy, Calendar, Target, Users, Trash2, RotateCcw, Shuffle, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { pendingImport } from '@/data/pendingImport';
 
 const parseImportText = (text) => {
   return text.split('\n').map(l => l.trim()).filter(Boolean).map(line => {
@@ -143,9 +144,21 @@ export default function MarathonPage() {
   };
 
   const openImport = () => {
-    setImportTargetId('');
-    setImportText('');
-    setImportAllocations({});
+    if (pendingImport) {
+      const targetMarathon = marathons.find(m => m.active && pendingImport.formationMatch.test(m.formation));
+      const resolvedAllocations = {};
+      for (const { namePrefix, quantity } of pendingImport.allocations) {
+        const vendeur = vendeurs.find(v => v.name.toLowerCase().startsWith(namePrefix.toLowerCase()));
+        if (vendeur) resolvedAllocations[vendeur.id] = quantity;
+      }
+      setImportTargetId(targetMarathon?.id || '');
+      setImportText(pendingImport.text);
+      setImportAllocations(resolvedAllocations);
+    } else {
+      setImportTargetId('');
+      setImportText('');
+      setImportAllocations({});
+    }
     setShowImport(true);
   };
 
@@ -431,6 +444,11 @@ export default function MarathonPage() {
               Collez une liste (Nom + Téléphone), un par ligne, puis répartissez entre les vendeurs
             </DialogDescription>
           </DialogHeader>
+          {pendingImport && (
+            <p className="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg px-3 py-2">
+              Pré-preenchido com a lista pendente. Confira a maratona e as quantidades antes de confirmar.
+            </p>
+          )}
           <div className="space-y-4">
             <div>
               <Label className="text-xs font-semibold text-slate-500">Maratona de destino *</Label>
