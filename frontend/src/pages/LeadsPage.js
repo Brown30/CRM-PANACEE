@@ -144,6 +144,7 @@ export default function LeadsPage() {
             <SelectItem value="Potentiel">Potentiel</SelectItem>
             <SelectItem value="Très intéressé">Très intéressé</SelectItem>
             <SelectItem value="Inscrit">Inscrit</SelectItem>
+            <SelectItem value="Participant">Participant</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -166,7 +167,8 @@ export default function LeadsPage() {
                   <h3 className="font-semibold text-slate-800 text-sm truncate">{lead.full_name}</h3>
                   <span className={
                     lead.status === 'Inscrit' ? 'badge-inscrit' :
-                    lead.status === 'Potentiel' ? 'badge-potentiel' : 'badge-tres-interesse'
+                    lead.status === 'Potentiel' ? 'badge-potentiel' :
+                    lead.status === 'Participant' ? 'badge-participant' : 'badge-tres-interesse'
                   }>
                     {lead.status}
                   </span>
@@ -225,6 +227,7 @@ export default function LeadsPage() {
                     <SelectItem value="Potentiel">Potentiel</SelectItem>
                     <SelectItem value="Très intéressé">Très intéressé</SelectItem>
                     <SelectItem value="Inscrit">Inscrit</SelectItem>
+                    <SelectItem value="Participant">Participant</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

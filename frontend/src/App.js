@@ -15,6 +15,7 @@ import UsersPage from "@/pages/UsersPage";
 import ObjectivesPage from "@/pages/ObjectivesPage";
 import ProfilePage from "@/pages/ProfilePage";
 import CertificatsPage from "@/pages/CertificatsPage";
+import CertificatCoursePage from "@/pages/CertificatCoursePage";
 import VerifyCertificatePage from "@/pages/VerifyCertificatePage";
 import AppLayout from "@/components/AppLayout";
 
@@ -59,6 +60,7 @@ function App() {
             <Route path="utilisateurs" element={<UsersPage />} />
             <Route path="objectifs" element={<ObjectivesPage />} />
             <Route path="certificats" element={<CertificatsPage />} />
+            <Route path="certificats/:marathonId" element={<CertificatCoursePage />} />
             <Route path="profile" element={<ProfilePage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" />} />
