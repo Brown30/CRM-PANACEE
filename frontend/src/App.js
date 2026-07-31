@@ -14,6 +14,8 @@ import ReportsPage from "@/pages/ReportsPage";
 import UsersPage from "@/pages/UsersPage";
 import ObjectivesPage from "@/pages/ObjectivesPage";
 import ProfilePage from "@/pages/ProfilePage";
+import CertificatsPage from "@/pages/CertificatsPage";
+import VerifyCertificatePage from "@/pages/VerifyCertificatePage";
 import AppLayout from "@/components/AppLayout";
 
 function ProtectedRoute({ children }) {
@@ -41,6 +43,7 @@ function App() {
         <Toaster position="top-right" richColors />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/verificar/:id" element={<VerifyCertificatePage />} />
           <Route path="/select-marathon" element={
             <MarathonRoute><MarathonSelectPage /></MarathonRoute>
           } />
@@ -55,6 +58,7 @@ function App() {
             <Route path="rapports" element={<ReportsPage />} />
             <Route path="utilisateurs" element={<UsersPage />} />
             <Route path="objectifs" element={<ObjectivesPage />} />
+            <Route path="certificats" element={<CertificatsPage />} />
             <Route path="profile" element={<ProfilePage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" />} />

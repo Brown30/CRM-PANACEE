@@ -1,12 +1,12 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { LayoutDashboard, Users, CalendarClock, Trophy, BarChart3, UserCog, LogOut, ChevronDown, Flag, User, MoreVertical, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarClock, Trophy, BarChart3, UserCog, LogOut, ChevronDown, Flag, User, MoreVertical, ClipboardList, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import InstallPrompt from '@/components/InstallPrompt';
 
 export default function AppLayout() {
-  const { user, logout, selectedMarathon, selectMarathon, isAdmin } = useAuth();
+  const { user, logout, selectedMarathon, selectMarathon, isAdmin, isPedagogia } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -33,15 +33,24 @@ export default function AppLayout() {
     { to: '/utilisateurs', icon: UserCog, label: 'Utilisateurs' },
   ];
 
-  const allItems = isAdmin ? [...navItems, ...adminItems] : navItems;
+  const certificatesItem = { to: '/certificats', icon: Award, label: 'Certificats' };
 
-  const bottomNavItems = [
-    { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
-    { to: '/leads', icon: Users, label: 'Leads' },
-    { to: '/profile', icon: User, label: 'Profile' },
-  ];
+  const allItems = isPedagogia
+    ? [certificatesItem]
+    : isAdmin
+      ? [...navItems, ...adminItems, certificatesItem]
+      : navItems;
 
-  const moreItems = allItems.filter(item => item.to !== '/' && item.to !== '/leads');
+  const bottomNavItems = isPedagogia
+    ? [certificatesItem, { to: '/profile', icon: User, label: 'Profile' }]
+    : [
+        { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
+        { to: '/leads', icon: Users, label: 'Leads' },
+        { to: '/profile', icon: User, label: 'Profile' },
+      ];
+
+  const bottomPaths = bottomNavItems.map(item => item.to);
+  const moreItems = allItems.filter(item => !bottomPaths.includes(item.to));
 
   return (
     <div className="min-h-screen bg-slate-50" data-testid="app-layout">
@@ -58,13 +67,15 @@ export default function AppLayout() {
         </div>
 
         {/* Marathon selector */}
-        <button onClick={handleChangeMarathon} className="mx-4 mt-4 p-3 bg-emerald-50 rounded-xl text-left hover:bg-emerald-100 transition-colors" data-testid="change-marathon-desktop">
-          <p className="text-xs text-emerald-600 font-semibold uppercase tracking-wide">Marathon active</p>
-          <div className="flex items-center justify-between mt-1">
-            <p className="text-sm font-medium text-slate-800 truncate">{selectedMarathon?.name}</p>
-            <ChevronDown className="w-4 h-4 text-emerald-500 shrink-0" />
-          </div>
-        </button>
+        {!isPedagogia && (
+          <button onClick={handleChangeMarathon} className="mx-4 mt-4 p-3 bg-emerald-50 rounded-xl text-left hover:bg-emerald-100 transition-colors" data-testid="change-marathon-desktop">
+            <p className="text-xs text-emerald-600 font-semibold uppercase tracking-wide">Marathon active</p>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-sm font-medium text-slate-800 truncate">{selectedMarathon?.name}</p>
+              <ChevronDown className="w-4 h-4 text-emerald-500 shrink-0" />
+            </div>
+          </button>
+        )}
 
         {/* Nav */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -112,9 +123,11 @@ export default function AppLayout() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleChangeMarathon} className="text-xs bg-emerald-50 text-emerald-700 font-medium px-3 py-1.5 rounded-full max-w-[140px] truncate" data-testid="change-marathon-mobile">
-              {selectedMarathon?.name}
-            </button>
+            {!isPedagogia && (
+              <button onClick={handleChangeMarathon} className="text-xs bg-emerald-50 text-emerald-700 font-medium px-3 py-1.5 rounded-full max-w-[140px] truncate" data-testid="change-marathon-mobile">
+                {selectedMarathon?.name}
+              </button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-slate-400 hover:text-slate-700 h-8 w-8 transition-colors">

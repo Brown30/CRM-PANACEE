@@ -329,17 +329,20 @@ export const api = {
   put: async (url, payload = {}) => {
     if (url.match(/^\/users\/([^/]+)\/code$/)) {
       const id = url.split('/')[2];
-      const { data } = await supabase.from('users').update({ code: payload.code }).eq('id', id).select().single();
+      const { data, error } = await supabase.from('users').update({ code: payload.code }).eq('id', id).select().single();
+      if (error) throw new Error(error.message);
       return res({ user: data });
     }
     if (url.match(/^\/marathons\/([^/]+)$/)) {
       const id = url.split('/')[2];
-      const { data } = await supabase.from('marathons').update(payload).eq('id', id).select().single();
+      const { data, error } = await supabase.from('marathons').update(payload).eq('id', id).select().single();
+      if (error) throw new Error(error.message);
       return res({ marathon: data });
     }
     if (url.match(/^\/leads\/([^/]+)$/)) {
       const id = url.split('/')[2];
-      const { data } = await supabase.from('leads').update(payload).eq('id', id).select().single();
+      const { data, error } = await supabase.from('leads').update(payload).eq('id', id).select().single();
+      if (error) throw new Error(error.message);
       return res({ lead: data });
     }
   },
