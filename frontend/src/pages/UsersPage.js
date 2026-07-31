@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound } from 'lucide-react';
+import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function UsersPage() {
@@ -76,18 +76,21 @@ export default function UsersPage() {
   const getRoleIcon = (role) => {
     if (role === 'admin_principal') return <ShieldCheck className="w-4 h-4 text-emerald-500" />;
     if (role === 'admin_secondary') return <Shield className="w-4 h-4 text-blue-500" />;
+    if (role === 'pedagogia') return <GraduationCap className="w-4 h-4 text-purple-500" />;
     return <User className="w-4 h-4 text-slate-400" />;
   };
 
   const getRoleBadge = (role) => {
     if (role === 'admin_principal') return 'bg-emerald-100 text-emerald-700';
     if (role === 'admin_secondary') return 'bg-blue-100 text-blue-700';
+    if (role === 'pedagogia') return 'bg-purple-100 text-purple-700';
     return 'bg-slate-100 text-slate-600';
   };
 
   const getRoleLabel = (role) => {
     if (role === 'admin_principal') return 'Admin Principal';
     if (role === 'admin_secondary') return 'Admin Secondaire';
+    if (role === 'pedagogia') return 'Pédagogie';
     return 'Vendeur';
   };
 
@@ -167,6 +170,7 @@ export default function UsersPage() {
                 <SelectContent>
                   <SelectItem value="vendeur">Vendeur</SelectItem>
                   <SelectItem value="admin_secondary">Admin Secondaire</SelectItem>
+                  <SelectItem value="pedagogia">Pédagogie</SelectItem>
                 </SelectContent>
               </Select>
             </div>
