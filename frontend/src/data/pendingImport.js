@@ -1,203 +1,174 @@
-// Temporary one-off data for the PROSPECTION_ET_VENTE_ROLLING_DOOR lead import.
+// Temporary one-off data for the PROSPECTION_ET_VENTE_ROLLING_DOOR (Sheet9) lead import.
 // Safe to delete this file (and its usage in MarathonPage.js) after the import is done.
+// Note: "Brave Loubenson" was excluded (no phone number in the source sheet).
 export const pendingImport = {
-  formationMatch: /rolling.?door/i,
+  formationMatch: /installation de cam[ée]ra/i,
   allocations: [
-    { namePrefix: 'e', quantity: 97 },
-    { namePrefix: 'j', quantity: 97 },
+    { namePrefix: 'l', quantity: 82 },
+    { namePrefix: 'm', quantity: 82 },
   ],
-  text: `FILS AIMÉ Walky, 4057 2441
-JEAN-LIMA Rodelin, 4309 0072
-LAGUERRE PIERRE Bernard, 3629 7497
-ORELUS Arland, 3824 8929
-JEAN Wilbert, 4139 4242
-OBAS Odly, 3522 6664
-SAINTIL Walky, 3212 0791
-NOËL  Elie, 4121 5380
-JOSEPH Walex, 3277 2854
-EUGÈNE Gary, 4338 1449
-MÉUS Lesly, 4084 6747
-OCKNEL Isma, 3592 1160
-DESLAURIERS ETMAY Kendy Godfort, 4071 7996
-CHARLES Henry, 3489 8940
-PIERRE Widelson, 3291 2662
-PLEDINOR Wilderson, 3329 3983
-SIMÉON Hermane, 5523 4823
-LOUIS Walky, 3633 9750
-BELL Erickson, 3594 8672
-COMPÈRE Mackenson, 3282 9346
-DORVIL Frantz, 4207 7097
-AUGUSTE Geffry, 4072 8397
-LOUIS Wilner, 4651 8409
-ANDRÉ Gilbert, 3734 0812
-FLEURANT Carleb, 4391 9034
-CADET Jamesly, 4803 2409
-PIERRE Ricardo, 4199 1490
-GAETAN Taquiot, 4376 7940
-PIERRE LOUIS Davidson, 4362 5719
-DUPRÉVIL Marc Milin, 3521 9408
-MEDELA Enoc, 4285 7811
-JOSEPH Ralph Eddy, 3812 9098
-LOUISSAINT Jhenie, 3189 2396
-FLOREAL Wilkenson, 4144 0986
-JAQUES Otilus, 3531 5562
-VERMONT Samuel G., 3878 8484
-ST PREUX Roudvens, 4483 6664
-JOSEPH Gédéon Emmanuel, 4384 6185
-FRANÇOIS Sarnoff Osmandy, 3800 4381
-JEAN-CHARLES James Méradieu, 3680 6249
-MAREUS Fanel, 4772 7372
-PHUCIEN Junior, 4812 7739
-ST-AMOUR Wilsaint, 4482 1210
-ZÉPHIRIN Sanon, 4452 8747
-ROGER Raoul, 3899 4112
-JEAN Jovenel, 5583 6848
-AUGUSTIN Chrisly, 3244 4941
-JOSEPH Djerry, 3545 2721
-LEONIDAS Cassandro, 3362 7291
-VALCE Jimmy, 4340 1734
-ELVARISTE Lunex, 3591 4576
-JEAN BAPTISTE Asten Tamson, 3160 7887
-ISMA Juliot, 3117 9446
-MONDÉLUS Julio, 4117 9259
-JEAN Ronald, 3291 6453
-BIEN-AIMÉ Daniel, 3365 9910
-JEAN CHARLES Jackson, 4027 9749
-FILS-AIMÉ Adenai, 4017 2088
-BLAISE François Alfred, 5516 5400
-JAQUES Jocelène, 4080 6987
-VIGILIEN Andres, 3346 5898
-JEAN Carl-Henry, 4376 0910
-EMMANUEL Stevenson, 3363 1839
-BATAILLE Mighlovson, 3296 7737
-PIERRE Ledert, 4054 8123
-DELY Alex, 4022 5322
-JEAN Samuel, 4107 9110
-SAUSTENE Delancia, 4339 9595
-MONFISTON Emmanuel, 4766 2162
-RIBEN Rodney, 3883 1608
-JEAN Marckendy, 4457 8717
-JOSEPH Smith, 3595 8527
-Augustin wesly, 3219 4148
-JEAN-ROMAIN Gregoire Junior, 3458 4027
-Lima Jameslay, 3484 1837
-Joseph Loovens, 4699 0948
-Joseph Malcince, 3680 8802
-MARCELLUS Ruben, 4723 4641
-Payoute Rockendy, 3698 7516
-Pierre wentruck, 3627 4369
-Océan Sameul, 3797 1737
-Mathiew Samson, 3331 1087
-Pierre Renard, 3364 3003
-Jean Louis Roger, 3247 6716
-Jaques Berman, 3550 1717
-Robillard Guynaldo, 4807 5912
-Durosier Bendjy, 5507 7652
-Mede Donalson, 4387 0112
-Pierre Bastien, 5536 6690
-Mombayard Wismith, 4288 9915
-Jeanot Clervil TILIAS, 3518 5237
-Jean Frito, 3521 1964
-Georges Fredex, 3533 2178
-Musset Desamour, 4003 3763
-Jean-Jaques Renaud, 4284 0461
-Joseph Wildroos Bryams .D, 4095 2266
-François Frantzley, 4052 0303
-Sévère Gonel, 4266 8546
-Jean-Jaques Idonalson, 4288 4083
-Florestal Maxime, 5633 1872
-Dautruche Néhémie, 4151 6169
-Joseph Stanley, 4123 9946
-Tony Fritznel, 4136 9152
-Jean Rondney, 4205 0700
-Bien-Aimé Hans kelly, 3327 8923
-Deriston Gitelson, 5514 4806
-Sylsaint jean, 4214 2285
-Solem Chérélud, 4204 4730
-Abmer Pierre, 4263 4247
-Darly Petit-homme, 4076 7592
-Saül Sasna, 4079 9603
-Napoléon Jeff Salvens, 3390 9559
-Saint-Jaques Elony, 4287 8623
-Monpoint Pegy, 4179 7220
-Agoma Louvens, 4309 2767
-Paul Romenel, 3290 3114
-Pierre Blundy, 4369 8458
-Samson Paul, 4358 9871
-Louis Jean Pierre, 4395 9080
-Charles Marvel, 3591 8091
-Davidson Joliné, 3517 4197
-Chouloute Wensly, 4356 4816
-Renald Simon, 4259 6055
-Estanley Bernard, 3325 8933
-Guervilin Luckny, 4287 4136
-Jean Renel Louis, 3292 1188
-Alce Riphin, 4249 1388
-Brutus Vesly, 4118 2844
-Désir Frisnel, 4113 4208
-Ronald Jean Jaques, 3773 3063
-Bertil Bernard, 3751 2056
-Samuel DAMILUS, 3780 6450
-Robert Wendy, 3898 8040
-Ferdinand Louis Jean, 3770 3040
-Vainqueur John, 4214 6442
-Foreste  Cleeph Herbeto, 3927 2761
-Tony Eventz, 5536 3020
-Estanley Bernadin, 3326 1098
-Louis Phanius, 3266 8804
-Joseph Johnny, 3523 7746
-Marvens Alfred, 5602 4289
-Georges Franson, 4058 9505
-Duveau Marc-Jean, 4286 2123
-Deffier Robinson, 4310 4243
-Saint-Jaques Bind, 3210 7723
-Dorvil Cleomin, 4116 7299
-Johnny Pierre, 3626 7460
-Steve Charles, 3396 8183
-Givenson Alcindor, 3523 6032
-Bastien Maxy, 4059 6901
-Jocelet Pierre, 3506 0204
-François Claudson, 4274 5653
-Etienne Frtzner, 3637 0118
-Joseph junior, 4041 1771
-Bendjy Sylvain, 3782 7161
-Petit-Frère Chedly, 5527 9864
-Ronalson Etienne, 3535 0965
-Cabouet Wensley Emmanuel, 4040 0440
-Bertholyn Cedieu, 4063 4801
-Landry Saint Hilair, 4279 7496
-Garçon Emmanuel, 3846 1058
-Durosier Ronald, 3442 7589
-Tessier Mendel, 3161 8661
-petit jeune Aldaï, 3352 4522
-Pierre Ciranord, 5590 8426
-Nelson Shedly, 3254 8162
-Charles Ézechiel, 4265 4515
-Kerson Jean-Batispte, 4677 6307
-Valmir  Valwendz, 4102 7262
-Joseph Ubernald Jey, 5540 0967
-Fleurant Mackenley, 4351 7940
-Fleurimond Samuel, 3795 9565
-Aldajuste Phaneus, 3829 0401
-Jocelyn Pierre, 4101 5131
-Jean Michel Jaques, 3480 6698
-Pressoir Duck-Awhinson, 4195 1369
-Dorzin Louisdiet, 3842 3027
-Assilien Johnsly, 4911 8658
-Petit Ilvens, 3945 4050
-Anel Jean, 3942 5031
-Daniel Fredo, 3389 6839
-James Resolus, 4743 1485
-Toussaint Louny, 3718 3206
-Jean Willy Louis, 3721 2664
-Saintilma Loubentz, 4711 1433
-Theolin Joassaint, 4008 0194
-Marcelin Wassecheslla, 4288 5679
-Chenet Joseph, 4278 0172
-Evaris Rubencky, 3751 3757
-Wilson Noël, 4765 2395
-Jodelin Joseph, 4342 7242
-Lucsène Jean, 3315 2597
-Junior Michel, 4262 7882
-Jean Samuel, 4006 8799`,
+  text: `Bernard Dieuvenson, 4789 5285
+Marc-Garel Monpoint, 3629 6116
+Alty Fednor, 3760 3164
+Telfort Renelson, 4472 1636
+Joseph Sandley, 4406 3541
+Weguensly Merzier, 4817 1837
+Richard Fils-Aimé, 3428 7353
+Jolin Jeune, 3898 2875
+Felix Isline, 3125 0291
+Marckenley Vertilus, 4357 2543
+Sanon Jeffly, 3898 1947
+Osias Djoulens, 4924 3642
+Chenet Nevelus Remond, 3712 0344
+Plancher Gensy, 3713 2864
+Jhonson Saint Hilaire, 4866 6677
+Emmanuel Jean Baptiste, 3693 7976
+Duverné John-Willy, 3938 3701
+Kervens Jean Baptiste, 4083 9367
+Alexis Kervens, 4098 0179
+Daniel Michel, 3585 4587
+Celestin Shumberg, 5548 1306
+Paul-Max Brenord, 3208 6255
+Nelson Ghevens, 4310 9572
+Séant Camil, 3209 5960
+Marseille Youcely Seagle, 3636 2000
+Wendy Jean, 4168 9191
+Jules Claudisson, 3431 2251
+Wandy Alteus, 3198 9356
+Augustin Wesner, 3728 0785
+Wilky Semerant, 4909 8209
+Blaise Evens, 4465 7491
+Blot Ricot, 3400 9915
+Gregory Pierre, 4468 5439
+Hunsley St Fleur, 4691 1362
+Jean François Valestin, 4611 9435
+Redondo Simil, 4860 2702
+Steeve Noël, 3217 9152
+Josué Jean, 4445 2624
+Junior Désir, 3639 8675
+Geston Lorméus, 4470 6855
+Robens Clément, 4392 7330
+Similien Jefferson Edlin, 3363 4592
+Alexis Samuel, 3383 3601
+Tony Lucien, 4052 5802
+Louis Paul Eddy, 4173 4649
+Dieudonné Elmies, 4268 2523
+Apply Guempson, 3104 6582
+Jean-Baptiste Roody, 4318 8012
+Jhefno Jeudine, 3221 4124
+Ernso Myrtil, 3344 7930
+Placide Mackenson, 4811 3561
+Pierre Stephenson, 5565 2188
+Yves Vekend Joinville, 3823 6964
+Frantz Marcellus, 4280 3721
+Joseph Huguens, 3285 8737
+Cenatus Rock-Dinsley, 3502 4319
+Jonel Decimus, 4457 0838
+Meleus Witchson, 3413 8382
+Louis Kelly, 3824 1930
+Emma Jimmy, 4780 0642
+Louis Menson, 3652 8586
+Augustin Dieudley, 3447 1483
+Fayette Winslor, 4287 7053
+Kenly Guillaume, 5538 2551
+Gedeon Jn Wilguens, 4433 1238
+Jean Lesly, 4392 2481
+Blain Jeff, 4323 8489
+Dasly Sully, 3762 6222
+Sylvestre Dieufaite, 1 809 990 8265
+Rene Jean, 3613 1626
+Pierre Ernsto, 3890 3766
+Kenel Hector, 4911 7273
+Felix James Kerby, 3911 7016
+Baptiste Rode-Yvenson, 4624 0164
+Jean Pierre Abraham Jeremy, 3736 0458
+Desnoyer Paul, 4240 9227
+Saul Jamesly, 3910 8299
+Waldy Gabriel d’Haiti, 4830 2971
+Joseph Aniel Fils Jean, 3737 7629
+Florvil Dervens, 4835 9241
+Pericles Hervé, 4835 9241
+Fanes Simeon, 3495 5055
+Marcellin Maxoul, 4105 4330
+Vladimir Raphaël, 3546 3931
+Menelus Jeffry, 4076 2261
+Sterling Eliscar, 3290 2259
+Yolin Augustin, 4350 5938
+Jean Robert, 4468 1287
+Joseph Wilner, 4888 6561
+Miclinton Moïse, 4388 2840
+Jean Evens, 3795 7639
+Dorvil Wislyn, 4498 4927
+Goman Manel, 4746 6760
+Jacques Peterly, 4740 9574
+Leonelson St Preux, 4326 2960
+Luckny Dutérvil, 3498 7263
+Diverly Peterson, 3139 9973
+Ezechias Brenor, 3208 9863
+James Noël, 3738 2020
+Carl Henry, 4496 3390
+Fragé Calixte, 4293 2129
+Samuel Vilus, 3496 9856
+Gabriel Macaronne, 3141 7183
+Jean-Baptiste Aldoni, 3990 7616
+Kervens Kervetus, 3131 1278
+Alvareste Ydivenson, 4805 9810
+Lanneau Frantz-Junior, 3827 9431
+Charles Wesly, 4730 1266
+Jhonson Charles, 4708 7028
+Tony Rovensky, 3208 2399
+Dorleans Smith Joel, 3612 7379
+Yvenson Daguindeau, 4766 7202
+Rodney Cherenfant, 3599 8245
+César Marckendy, 3677 7582
+Placide Dave, 4636 5862
+Belizaire Jose, 3796 1571
+Gabriel, 3899 3742
+Valcin Olbert, 4353 8144
+Pierre Rodney, 5532 0348
+Belvie Annel, 3399 5011
+Guerrier Woulkens, 4375 0765
+Romelus Essansley, 4210 8120
+Dormé Wadson, 4102 7503
+Louis Joseph, 4031 8860
+Casimir, 3911 7770
+Richardson, 3928 5063
+St-Phar Withmy Emmanuel, 3757 5288
+Alcenard Dieuventsly, 4263 3871
+Lubin Junior, 4239 2152
+Morisset Johnny Antoinne, 4624 2448
+Odena Ethny, 3320 3625
+Georges Bosnel, 4198 0180
+Charles Steevenson, 4044 1818
+Luckenson Pierre, 3375 0282
+Jean Claude, 4065 6214
+Delix Alouidor, 5543 7758
+Jermin Wesgard, 4313 5376
+Julmiste Looko, 3319 9018
+Stéphano Vilmar, 4735 2977
+Désir Marc, 4220 9985
+Jacques Jeff, 3482 5530
+Joseph Zeky, 4330 4315
+Jean Louis Semcy, 4487 7586
+Alméant Dieudonné, 3757 6688
+Etienne Maled, 3114 9282
+Kensley Noë, 3271 7796
+Bernis Estervil, 4746 5954
+Saintilma Dieufils, 3273 9710
+Fleuridor Peterson, 4295 7969
+Dave Joseph, 3243 3004
+Jean Clovins, 4843 1639
+Georges Berlin, 3767 3995
+Clairvil Stevenson, 4486 6698
+Jean Marie Beeverly, 4242 6974
+Stanley LAMOUR, 4317 8973
+Félix Michel, 3636 4717
+James Napoléon, 3442 3257
+Staradjina Bolivard, 4170 1632
+Jack Seinsttelus, 4124 9845
+Orelus Olcenn, 3341 3305
+Valestin Evely, 4022 4642
+Jory, 4011 9779
+Dumorné Rolinx, 3862 9662
+Saintdic Marc Esdras, 5567 4517`,
 };
