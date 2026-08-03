@@ -13,6 +13,7 @@ import RankingPage from "@/pages/RankingPage";
 import ReportsPage from "@/pages/ReportsPage";
 import UsersPage from "@/pages/UsersPage";
 import ObjectivesPage from "@/pages/ObjectivesPage";
+import MethodologyPage from "@/pages/MethodologyPage";
 import ProfilePage from "@/pages/ProfilePage";
 import CertificatsPage from "@/pages/CertificatsPage";
 import CertificatCoursePage from "@/pages/CertificatCoursePage";
@@ -59,6 +60,7 @@ function App() {
             <Route path="rapports" element={<ReportsPage />} />
             <Route path="utilisateurs" element={<UsersPage />} />
             <Route path="objectifs" element={<ObjectivesPage />} />
+            <Route path="methodologie" element={<MethodologyPage />} />
             <Route path="certificats" element={<CertificatsPage />} />
             <Route path="certificats/:marathonId" element={<CertificatCoursePage />} />
             <Route path="profile" element={<ProfilePage />} />

@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { LayoutDashboard, Users, CalendarClock, Trophy, BarChart3, UserCog, LogOut, ChevronDown, Flag, User, MoreVertical, ClipboardList, Award } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarClock, Trophy, BarChart3, UserCog, LogOut, ChevronDown, Flag, User, MoreVertical, ClipboardList, Award, PhoneCall } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import InstallPrompt from '@/components/InstallPrompt';
@@ -25,6 +25,7 @@ export default function AppLayout() {
     { to: '/promesses', icon: CalendarClock, label: 'Promesses' },
     { to: '/ranking', icon: Trophy, label: 'Ranking' },
     { to: '/objectifs', icon: ClipboardList, label: 'Objectifs' },
+    { to: '/methodologie', icon: PhoneCall, label: 'Méthodologie' },
   ];
 
   const adminItems = [
