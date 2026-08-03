@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, Search, Phone, Mail, MapPin, Calendar, Filter } from 'lucide-react';
+import { Plus, Search, Phone, Mail, MapPin, Calendar, Filter, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LeadsPage() {
@@ -17,6 +17,8 @@ export default function LeadsPage() {
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [vendeurFilter, setVendeurFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('');
   const [editLead, setEditLead] = useState(null);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -30,7 +32,9 @@ export default function LeadsPage() {
     try {
       const params = { marathon_id: selectedMarathon.id };
       if (!isAdmin) params.vendeur_id = user.id;
+      else if (vendeurFilter !== 'all') params.vendeur_id = vendeurFilter;
       if (statusFilter !== 'all') params.status = statusFilter;
+      if (dateFilter) params.date = dateFilter;
       const [leadsRes, vendeursRes] = await Promise.all([
         api.get('/leads', { params }),
         api.get('/users/vendeurs')
@@ -39,7 +43,7 @@ export default function LeadsPage() {
       setVendeurs(vendeursRes.data.vendeurs);
     } catch { toast.error('Erreur chargement'); }
     setLoading(false);
-  }, [api, selectedMarathon, user, isAdmin, statusFilter]);
+  }, [api, selectedMarathon, user, isAdmin, statusFilter, vendeurFilter, dateFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -122,18 +126,33 @@ export default function LeadsPage() {
         </Button>
       </div>
 
-      {/* Search + Filter */}
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            data-testid="search-leads"
-            placeholder="Rechercher..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-10 rounded-xl"
-          />
-        </div>
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Input
+          data-testid="search-leads"
+          placeholder="Rechercher..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 h-10 rounded-xl"
+        />
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 items-center">
+        {isAdmin && (
+          <Select value={vendeurFilter} onValueChange={setVendeurFilter}>
+            <SelectTrigger className="w-[160px] h-10 rounded-xl" data-testid="filter-vendeur">
+              <SelectValue placeholder="Vendeur" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les vendeurs</SelectItem>
+              {vendeurs.map(v => (
+                <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[160px] h-10 rounded-xl" data-testid="filter-status">
             <Filter className="w-4 h-4 mr-1 text-slate-400" />
@@ -147,6 +166,24 @@ export default function LeadsPage() {
             <SelectItem value="Participant">Participant</SelectItem>
           </SelectContent>
         </Select>
+        <Input
+          type="date"
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+          className="w-[160px] h-10 rounded-xl"
+          data-testid="filter-date"
+        />
+        {(vendeurFilter !== 'all' || statusFilter !== 'all' || dateFilter) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-10 text-xs text-slate-500 flex items-center gap-1"
+            onClick={() => { setVendeurFilter('all'); setStatusFilter('all'); setDateFilter(''); }}
+            data-testid="clear-filters"
+          >
+            <X className="w-3.5 h-3.5" /> Effacer les filtres
+          </Button>
+        )}
       </div>
 
       {/* Leads count */}

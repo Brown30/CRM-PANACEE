@@ -86,6 +86,7 @@ export const api = {
       let q = supabase.from('leads').select('*').eq('marathon_id', params.marathon_id);
       if (params.vendeur_id) q = q.eq('vendeur_id', params.vendeur_id);
       if (params.status) q = q.eq('status', params.status);
+      if (params.date) q = q.eq('date', params.date);
       const { data } = await q.order('date', { ascending: false });
       return res({ leads: data });
     }
