@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { PhoneCall, HelpCircle } from 'lucide-react';
-import { salesMethodologies } from '@/data/salesMethodologies';
+import { salesMethodologies, commonObjections } from '@/data/salesMethodologies';
 
 function Section({ section, vendorName }) {
   const body = section.body?.replace('{vendorName}', vendorName);
@@ -58,11 +58,11 @@ export default function MethodologyPage() {
                     <h4 className="font-semibold text-slate-800 text-sm flex items-center gap-1.5" style={{ fontFamily: "'Outfit', sans-serif" }}>
                       <HelpCircle className="w-4 h-4 text-emerald-500" /> Objections & Réponses
                     </h4>
-                    {m.objections.length === 0 ? (
+                    {commonObjections.length === 0 && m.objections.length === 0 ? (
                       <p className="text-sm text-slate-400">Aucune objection enregistrée pour le moment</p>
                     ) : (
                       <div className="space-y-3">
-                        {m.objections.map((o, i) => (
+                        {[...commonObjections, ...m.objections].map((o, i) => (
                           <div key={i} className="bg-slate-50 rounded-xl p-3">
                             <p className="text-sm font-medium text-slate-800">{o.question}</p>
                             <p className="text-sm text-slate-600 mt-1 whitespace-pre-line">{o.answer}</p>
