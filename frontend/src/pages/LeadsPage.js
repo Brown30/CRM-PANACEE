@@ -109,6 +109,11 @@ export default function LeadsPage() {
 
   const vendeurMap = Object.fromEntries(vendeurs.map(v => [v.id, v.name]));
 
+  const getAnsyenTag = (comments) => {
+    const match = comments?.match(/Ansyen Enterese [^\n(]+\([^)]+\)/);
+    return match ? match[0].trim() : null;
+  };
+
   if (loading) return (
     <div className="flex justify-center py-20">
       <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
@@ -211,6 +216,11 @@ export default function LeadsPage() {
                     {lead.status}
                   </span>
                 </div>
+                {getAnsyenTag(lead.comments) && (
+                  <span className="inline-block bg-purple-50 text-purple-700 border border-purple-200 text-[11px] font-medium px-2 py-0.5 rounded-full mb-1">
+                    {getAnsyenTag(lead.comments)}
+                  </span>
+                )}
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 mt-2">
                   <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</span>
                   {lead.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{lead.email}</span>}
