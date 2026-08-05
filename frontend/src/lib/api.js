@@ -248,6 +248,12 @@ export const api = {
       return res({ requests: data });
     }
 
+    if (url === '/notifications') {
+      const { data, error } = await supabase.from('notifications').select('*').eq('vendeur_id', params.vendeur_id).order('created_at', { ascending: false });
+      if (error) throw new Error(error.message);
+      return res({ notifications: data });
+    }
+
     console.warn("Unmocked GET", url);
     return res({});
   },
@@ -325,8 +331,14 @@ export const api = {
       }
       return res({ moved: movedCount });
     }
+
+    if (url === '/notifications') {
+      const { data, error } = await supabase.from('notifications').insert({ ...payload, id: uuidv4() }).select().single();
+      if (error) throw new Error(error.message);
+      return res({ notification: data });
+    }
   },
-  
+
   put: async (url, payload = {}) => {
     if (url.match(/^\/users\/([^/]+)\/code$/)) {
       const id = url.split('/')[2];
@@ -345,6 +357,12 @@ export const api = {
       const { data, error } = await supabase.from('leads').update(payload).eq('id', id).select().single();
       if (error) throw new Error(error.message);
       return res({ lead: data });
+    }
+    if (url.match(/^\/notifications\/([^/]+)$/)) {
+      const id = url.split('/')[2];
+      const { data, error } = await supabase.from('notifications').update(payload).eq('id', id).select().single();
+      if (error) throw new Error(error.message);
+      return res({ notification: data });
     }
   },
   
