@@ -170,6 +170,7 @@ export default function LeadsPage() {
             <SelectItem value="Très intéressé">Très intéressé</SelectItem>
             <SelectItem value="Inscrit">Inscrit</SelectItem>
             <SelectItem value="Participant">Participant</SelectItem>
+            <SelectItem value="Pa enterese ditou">Pa enterese ditou</SelectItem>
           </SelectContent>
         </Select>
         <Input
@@ -211,7 +212,8 @@ export default function LeadsPage() {
                   <span className={
                     lead.status === 'Inscrit' ? 'badge-inscrit' :
                     lead.status === 'Potentiel' ? 'badge-potentiel' :
-                    lead.status === 'Participant' ? 'badge-participant' : 'badge-tres-interesse'
+                    lead.status === 'Participant' ? 'badge-participant' :
+                    lead.status === 'Pa enterese ditou' ? 'badge-pa-enterese' : 'badge-tres-interesse'
                   }>
                     {lead.status}
                   </span>
@@ -276,6 +278,7 @@ export default function LeadsPage() {
                     <SelectItem value="Très intéressé">Très intéressé</SelectItem>
                     <SelectItem value="Inscrit">Inscrit</SelectItem>
                     <SelectItem value="Participant">Participant</SelectItem>
+                    <SelectItem value="Pa enterese ditou">Pa enterese ditou</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
