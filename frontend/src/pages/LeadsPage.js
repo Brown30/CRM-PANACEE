@@ -103,7 +103,8 @@ export default function LeadsPage() {
 
   const filtered = leads.filter(l =>
     l.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    l.phone?.includes(searchTerm)
+    l.phone?.includes(searchTerm) ||
+    l.comments?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const vendeurMap = Object.fromEntries(vendeurs.map(v => [v.id, v.name]));
@@ -131,7 +132,7 @@ export default function LeadsPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <Input
           data-testid="search-leads"
-          placeholder="Rechercher..."
+          placeholder="Rechercher (nom, téléphone, commentaire)..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10 h-10 rounded-xl"

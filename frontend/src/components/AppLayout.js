@@ -4,10 +4,12 @@ import { LayoutDashboard, Users, CalendarClock, Trophy, BarChart3, UserCog, LogO
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import InstallPrompt from '@/components/InstallPrompt';
+import NotificationBell from '@/components/NotificationBell';
 
 export default function AppLayout() {
   const { user, logout, selectedMarathon, selectMarathon, isAdmin, isPedagogia } = useAuth();
   const navigate = useNavigate();
+  const isVendeur = user?.role === 'vendeur';
 
   const handleLogout = () => {
     logout();
@@ -61,10 +63,11 @@ export default function AppLayout() {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-slate-200/60 flex-col z-30">
         {/* Logo */}
-        <div className="p-5 border-b border-slate-100">
+        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
           <h1 className="text-xl font-bold text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
             Panacée <span className="text-emerald-500">CRM</span>
           </h1>
+          {isVendeur && <NotificationBell />}
         </div>
 
         {/* Marathon selector */}
@@ -129,6 +132,7 @@ export default function AppLayout() {
                 {selectedMarathon?.name}
               </button>
             )}
+            {isVendeur && <NotificationBell />}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-slate-400 hover:text-slate-700 h-8 w-8 transition-colors">

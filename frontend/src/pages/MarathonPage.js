@@ -16,15 +16,19 @@ const parseImportText = (text) => {
     if (line.includes('\t')) parts = line.split('\t');
     else if (line.includes(',')) parts = line.split(',');
     else {
-      const match = line.match(/^(.*?)[\s,]+([\d\s\-()]{7,})$/);
+      const match = line.match(/^(.*?)[\s,]+([\d\s\-()/]{7,})$/);
       parts = match ? [match[1], match[2]] : [line, ''];
     }
-    return { full_name: (parts[0] || '').trim(), phone: (parts[1] || '').trim() };
+    return {
+      full_name: (parts[0] || '').trim(),
+      phone: (parts[1] || '').trim(),
+      address: (parts[2] || '').trim()
+    };
   }).filter(l => l.full_name);
 };
 
 export default function MarathonPage() {
-  const { api, isAdmin, isAdminPrincipal } = useAuth();
+  const { api, user, isAdmin, isAdminPrincipal } = useAuth();
   const [marathons, setMarathons] = useState([]);
   const [vendeurs, setVendeurs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -178,6 +182,7 @@ export default function MarathonPage() {
     }
     const today = new Date().toISOString().split('T')[0];
     const blocks = Object.entries(importAllocations).filter(([, qty]) => qty > 0);
+    const targetMarathon = marathons.find(m => m.id === importTargetId);
     setImportLoading(true);
     try {
       let cursor = 0;
@@ -185,7 +190,7 @@ export default function MarathonPage() {
       for (const [vendeur_id, quantity] of blocks) {
         const chunk = importParsed.slice(cursor, cursor + quantity);
         cursor += quantity;
-        for (const { full_name, phone } of chunk) {
+        for (const { full_name, phone, address } of chunk) {
           await api.post('/leads', {
             date: today,
             full_name,
@@ -194,13 +199,22 @@ export default function MarathonPage() {
             payment_method: '',
             comments: pendingImport?.comment || '',
             status: 'Potentiel',
-            address: '',
+            address: address || '',
             profession: '',
             vendeur_id,
             marathon_id: importTargetId,
             promise_date: null
           });
           created++;
+        }
+        try {
+          await api.post('/notifications', {
+            vendeur_id,
+            message: `${user?.name || 'Admin'} ajoute ${quantity} nouvo Leads ki te enterese nan Fòmasyon ${targetMarathon?.formation || ''} pou ou`,
+            read: false
+          });
+        } catch {
+          // notification is best-effort, don't block the import on it
         }
       }
       toast.success(`${created} lead(s) importé(s)`);
