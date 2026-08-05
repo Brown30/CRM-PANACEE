@@ -192,7 +192,7 @@ export default function MarathonPage() {
             phone,
             email: '',
             payment_method: '',
-            comments: '',
+            comments: pendingImport?.comment || '',
             status: 'Potentiel',
             address: '',
             profession: '',
