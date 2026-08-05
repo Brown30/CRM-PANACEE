@@ -1,68 +1,116 @@
-// Temporary one-off data for the MOUN_KI_TE_ENTERESE_NAN_ELEKTRISITE (Février 2026) lead import.
+// Temporary one-off data for the ENTERESE_NAN_KAMERA (Janvier 2026) lead import.
 // Safe to delete this file (and its usage in MarathonPage.js) after the import is done.
 export const pendingImport = {
-  formationMatch: /electricit|\u00e9lectricit/i,
-  comment: 'Ansyen Enterese Elektrisite (Février 2026)',
+  formationMatch: /installation de cam[\u00e9e]ra/i,
+  comment: 'Enterese Kamera (Janvier 2026)',
   allocations: [
-    { namePrefix: 'j', quantity: 21 },
-    { namePrefix: 'e', quantity: 21 },
-    { namePrefix: 'm', quantity: 7 },
-    { namePrefix: 'l', quantity: 7 },
+    { namePrefix: 'l', quantity: 54 },
+    { namePrefix: 'm', quantity: 52 },
   ],
-  text: `JEAN EVENS, 3658 4393, Morne Rouge
-Augustin Harland, 3630 3062,
-DARIUS JOVENEL, 3501 2084, Bel Air
-LEGRAND Charier, 3821 5562, Charier
-Antoine Willynx, 4376 2769, Morne rouge
-Pierrevil Woodly, 3390 6009, Charier
-Anace Kenztler, 3292 3156, Rue 22
-Samilien  Wilkenson, 3504 9072, Blvrd
-Max Choubert Joseph, 3663 7606, Vaudreuil
-Ferdinand Jean Neck, 3873 2663, Rue 1
-Altidor Wensky, 5604 3851, Haut du Cap
-Jean Baptiste Fenio, 4304 6347, Fort St Michel
-Charles Chedelin, 4368 6419, Vaudreueil
-Charles Judeson, 3247 6796, Petit-Anse
-Saintilus Jodson, 4077 2237, Caracol
-Breus Vilfrant, 4731 1604, Limonade
-Daceus Jacquenold, 4884 2249, St-Michel
-Exalus Piere Jean Étienne, 3359 2819, Madeline
-Séide Wislin, 4326 0738, Trou du Nord
-Thertulien Jeff Galensky, 4231 8531, Petit-anse
-Jeune Wathson, 3396 9143, Fort St Michel
-Petit Adios, 4040 1713, Lafosette
-Celis Louiders, 809 507 8527, Limonade
-Francoeur Tchaby, 3776 7254, Cité du peuple
-Louis Roode Latortue, 4772 8827, Montache
-Lorja Ricardo, 3519 4597, Blue hils
-Monplaisir Jeffte, 5516 0393, Madeline
-Chedelet Francois, 4123 3405, Brado
-Rémy Guito, 3266 2079, Trou du nord
-Delicieux Delinx, 3998 3120, Vodrey
-Petion Wilnaire, 5532 8073, Dubout
-Pierre Aslin, 3595 8622, Limbé
-Joseph Elie, 4250 2669, Haut C
-Scheider Francis, 4113 0310, Haut du cap
-Jean Baptiste Fenio, 4304 6347, Fort St-Michel
-Pierret Max, 4200 4088, Fort St - Michel
-Cenatus Jackenson, 4846 5649, Blue hils
-Moricette Rolkens, 4901 6986, Fondation
-Jean Evens, 3658 4393, Morne Rouge
-Cezar Caleb, 4474 9618, Vertieres
-Donald Dorisca, 4117 6082, Limonade
-Ronald Desauguste, 3299 6265, Rue 12
-Clauvens Vixama, 4228 7927, Trou du Nord
-Mathurin Samuel, 3374 1198, Limbe
-Denis Laurendy, 4172 4884, Fort St-Michel
-Jeff Kendley, 4940 9987, Morne rouge
-Luckdney Sainvilus, 4144 7612, Port-Margot
-Augustin Dieudeley, 3447 1483, Rue 24j
-Prenelus Rolex, 3828 1705, Morne rouge
-Gracien Kenderson, 3807 9987, Rue etoile
-Stanley Rene, 4234 8052, Moustique
-Nicolas Steeve, 5568 0117 0, Chef boulvard
-Mathurin Widlyn, 3596 0754, Charier
-Jean Kenel, 4265 7211, Cange
-James, 4085 0618, C. Abattoirs
-Ashley Predelus, 5548 1540, Vaudreuil`,
+  text: `Pierre Charles Jempson, 3916 6488, Chanpin
+Jean Noel Samuel, 4202 7424, Mon rouj
+Athure Junior, 3504 2646, Vodrey
+Joseph Holando, 4765 4033, Fort Saint Michel
+Clervain Carlo, 3593 2165, Limonade
+Michel Sandro, 4285 8471, Fort Saint Michel
+Paul Kervenson, 5561 2648, Charier
+Desravin Ronel, 4005 5097, Madeline
+Gorges Marc Henry, 4391 7645, Mon rouj
+Philipe Markenson, 3358 2619, Mon rouj
+Wody Etienne, 4606 1790, Limonade
+Riche Guislin, 3692 7714, Trou-de-Nord
+Rouchette Pierre Cadin, 3189 5247, Fort Saint Michel
+Saint Hilaire Francelot, 4642 5756, Trou-de-Nord
+Lucifort Gelin, 4259 1048, Mon rouj
+Louidor Rodolph, 4632 6793, Limonade
+Louis Jean Baptiste, 3678 1624, Madeline
+Ralph Gregory, 4935 9691, Limbe
+Jean Boni, 3788 9013, Madeline
+Robert Rolin, 3267 7777, Limbe
+Judelyn Tanis, 4163 4765, 
+Dantes Berry, 3631 8210, 
+Stcyr Sylvestre, 4066 1229, Bas limbe
+Kendy Frisin, 4331 4477, Petit tans
+Gensly Jean Baptist, 3237 9947, Otrou
+Jonalson Phrophete, 4266 0484, Port-Magot
+Val Richard, 4238 6329, Madeline
+Dorcely Dannys, 3277 3467, Madeline
+Geherel Fabin, 3236 8079, Cite chauvel
+Woldy B. Dolcin, 5512 0289, Limbe
+Alexis Guechlin, 4683 3464, Cite chauvel
+Marc Marckinson, 4161 0999, Milot
+Cherilien Loyens, 5567 0067, Vertiere
+Andre Jean Baptiste, 4205 3885, Gy Malari
+Antoine Judelin, 3266 7836, Madeline
+Roseberline Brenord, 4450 3319, Bel-air
+Deudley toussaint, 4723 3054, Petit tans
+Jules Felix, 4136 1762, Fort St Michel
+Chery Dickson, 3366 4146, La Suisse
+Pierre Ronaldo, 4849 4524, Brarriere
+Emmanuel Mompremier, 4310 2960, Aviation
+Ronelson Alexandre, 3268 9121, Mon rouj
+Denesan Hans, 4037 1391, Fort-St-Michel
+Alexis Djulen, 4315 9211, Katye morin
+Asner, 4713 7939, Trou-du Nord
+Jod Cadelsley Xavier, 3437 7789, Katye morin
+Vilbrun Wilgens, 4785 8870, Babiole
+Sainvil Fransly, 4154 8842, Kraze zo
+Gaby Vilbrun, 4369 5210, Champin
+Lucnel Prophete, 3743 9678, Katye morin
+Emmanuel Adeldhin, 3453 4041, Babiole
+Tenson, 3590 7692, Plaine-du-nord
+Oupette Jeanderson, 4212 0917, Vertiere
+Lovenson Boyer, 5529 0064, Madeline
+Previlus Jean Noel, 3533 8604, Charier
+Michel Judnel, 3331 2548, Trou-du-Nord
+Alcema Rodner, 3216 6616, 
+Ricardy Surfin, 4324 7606, Trou-du-Nord
+Wensky Altidor, 5504 3851, Odikap
+Bernard Antho, 3202 9955, Plaine du nord
+Mathelus Derniers, 5567 4395, Gronaives
+Jean Charles Jamesway, 4293 7165, Aviyason
+Julien Fredlin, 4188 3652, Fort liberte
+JEAN Erick, 3793 2431, Petit-anse
+PIERRE WISLY, 4343 8958, MADELINE
+ULYSSE DENIO, 4002 3662, Fort-libertė
+Evenson, 5551 8119, Petit-anse
+Norvelus Kenson, 3707 5833, Carenage
+Miracles Valery, 4371 0316, Petit-anse
+Jean Joseph Guerlin, 4099 1151, Rue 21 M
+Louis Ronaldo, 4376 6331, Zoe Vincent
+Ysaac Ally, 4244 6832, Carfour Jesus
+Alexis Jetro, 4267 6427, Lascahobas
+Romelus Witchy, 4154 5399, Citė Chauvel
+Pierre Lerius, 5573 9495, Vaudreil
+Exavier Maxene, 4781 5708, Barriere
+Etienne Tolender, 4314 2021, Barriere
+Fleurina Vilson, 4167 6218, Vertieres
+Dubreus Herby, 3388 8399, Fort St
+Medidor Jonas, 4382 4008, Quartier morin
+Louis Samuel, 4789 2521, Vertieres
+SaintFleur Fridelin, 4269 3597, Terrier rouge
+Presumė Presilmer, 3355 6051, Ofatma
+Etienne Jordany, 4018 7402, Nazon
+Docteur Ednerson, 4152 5692, Patience
+Évariste Makenson, 4273 6602, Limonade
+Defenseur Marcson, 3279 5966, Fort St-Michel
+Louis kenderly, 4103 7830, Limbé
+Docteur Raynald, 5530 3627, Milot
+Jean Irame Vladimir, 4011 2037, Vila capoise
+Stanley Eugene, 4365 5471, St-Philomene
+Philippe Marc-Andy, 4404 6311, Rival
+Charles Pierre Judson, 5533 8525, Fort St Michel
+Louis Dominique Wesson, 3481 0130, Labadee
+Germain Mullerson, 5516 6925, Caracol
+Amboise Chili, 4808 3327, 
+Laurore Carvenson, 3354 4624, P. Paix
+André, 1 849 478 8038, Trou du Nord
+Fleurent Vladimyr, 4243 7020, Limonade
+Ciril She-love, 5609 2901, Petit. Goave
+François Emmanuel, 4224 5007, Krazezo
+Patenson Dalveriste, 4703 0451, Madeline
+Nelson Michelor, 3247 8519, Limonade
+Delva Justin, 3106 0704, Morne Rouge
+Pyronneau Ronald, 4043 4602, Pillatree
+Jean Wildy, 4366 6070, limonade`,
 };
