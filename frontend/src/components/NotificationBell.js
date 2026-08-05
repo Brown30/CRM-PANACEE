@@ -16,27 +16,34 @@ const timeAgo = (iso) => {
   return `il y a ${days}j`;
 };
 
-export default function NotificationBell() {
+export default function NotificationBell({ mode = 'vendeur' }) {
   const { api, user } = useAuth();
   const [notifications, setNotifications] = useState([]);
+  const [vendeurMap, setVendeurMap] = useState({});
   const [open, setOpen] = useState(false);
+  const isAdminMode = mode === 'admin';
 
   const fetchNotifications = useCallback(async () => {
     if (!user?.id) return;
     try {
-      const { data } = await api.get('/notifications', { params: { vendeur_id: user.id } });
+      const params = isAdminMode ? {} : { vendeur_id: user.id };
+      const { data } = await api.get('/notifications', { params });
       setNotifications(data.notifications || []);
+      if (isAdminMode) {
+        const { data: vData } = await api.get('/users/vendeurs');
+        setVendeurMap(Object.fromEntries((vData.vendeurs || []).map(v => [v.id, v.name])));
+      }
     } catch {
       // notifications are non-critical, fail silently
     }
-  }, [api, user]);
+  }, [api, user, isAdminMode]);
 
   useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = isAdminMode ? 0 : notifications.filter(n => !n.read).length;
 
   const markRead = async (notif) => {
-    if (notif.read) return;
+    if (isAdminMode || notif.read) return;
     setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
     try {
       await api.put(`/notifications/${notif.id}`, { read: true });
@@ -58,19 +65,29 @@ export default function NotificationBell() {
   return (
     <DropdownMenu open={open} onOpenChange={(o) => { setOpen(o); if (o) fetchNotifications(); }}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative text-slate-400 hover:text-slate-700 h-9 w-9" data-testid="notification-bell">
-          <Bell className="w-5 h-5" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`relative h-9 w-9 ${unreadCount > 0 ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-700'}`}
+          data-testid="notification-bell"
+        >
+          <Bell className={`w-5 h-5 ${unreadCount > 0 ? 'animate-bounce' : ''}`} />
           {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-              {unreadCount > 9 ? '9+' : unreadCount}
+            <span className="absolute top-0.5 right-0.5 flex h-4 w-4">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-[10px] font-bold items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
             </span>
           )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
         <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
-          <span className="text-sm font-semibold text-slate-700">Notifications</span>
-          {unreadCount > 0 && (
+          <span className="text-sm font-semibold text-slate-700">
+            {isAdminMode ? 'Notifications (tous les lancements)' : 'Notifications'}
+          </span>
+          {!isAdminMode && unreadCount > 0 && (
             <button onClick={markAllRead} className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1" data-testid="mark-all-read">
               <CheckCheck className="w-3.5 h-3.5" /> Tout marquer lu
             </button>
@@ -81,20 +98,23 @@ export default function NotificationBell() {
         ) : (
           <div className="divide-y divide-slate-100">
             {notifications.map(n => (
-              <button
+              <div
                 key={n.id}
                 onClick={() => markRead(n)}
-                className={`w-full text-left px-3 py-2.5 hover:bg-slate-50 transition-colors ${!n.read ? 'bg-emerald-50/50' : ''}`}
+                className={`w-full text-left px-3 py-2.5 ${!isAdminMode ? 'hover:bg-slate-50 cursor-pointer' : ''} transition-colors ${!n.read && !isAdminMode ? 'bg-emerald-50/50' : ''}`}
                 data-testid={`notification-${n.id}`}
               >
                 <div className="flex items-start gap-2">
-                  {!n.read && <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />}
+                  {!n.read && <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${isAdminMode ? 'bg-slate-300' : 'bg-emerald-500'}`} />}
                   <div className="flex-1 min-w-0">
+                    {isAdminMode && (
+                      <p className="text-xs font-semibold text-emerald-600">{vendeurMap[n.vendeur_id] || 'Vendeur'}</p>
+                    )}
                     <p className={`text-sm ${!n.read ? 'font-medium text-slate-800' : 'text-slate-600'}`}>{n.message}</p>
                     <p className="text-xs text-slate-400 mt-0.5">{timeAgo(n.created_at)}</p>
                   </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}

@@ -67,7 +67,8 @@ export default function AppLayout() {
           <h1 className="text-xl font-bold text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
             Panacée <span className="text-emerald-500">CRM</span>
           </h1>
-          {isVendeur && <NotificationBell />}
+          {isVendeur && <NotificationBell mode="vendeur" />}
+          {isAdmin && <NotificationBell mode="admin" />}
         </div>
 
         {/* Marathon selector */}
@@ -132,7 +133,8 @@ export default function AppLayout() {
                 {selectedMarathon?.name}
               </button>
             )}
-            {isVendeur && <NotificationBell />}
+            {isVendeur && <NotificationBell mode="vendeur" />}
+            {isAdmin && <NotificationBell mode="admin" />}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-slate-400 hover:text-slate-700 h-8 w-8 transition-colors">
