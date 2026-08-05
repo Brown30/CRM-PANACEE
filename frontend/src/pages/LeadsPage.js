@@ -109,9 +109,13 @@ export default function LeadsPage() {
 
   const vendeurMap = Object.fromEntries(vendeurs.map(v => [v.id, v.name]));
 
-  const getAnsyenTag = (comments) => {
-    const match = comments?.match(/Ansyen Enterese [^\n(]+\([^)]+\)/);
-    return match ? match[0].trim() : null;
+  // Import batches tag leads with a short one-line comment (e.g. "Ansyen Enterese X (date)",
+  // "Enterese Kamera (Janvier 2026)"). Any single-line comment is shown as a badge; longer,
+  // multi-line free-text notes are not, since those aren't tags.
+  const getTagBadge = (comments) => {
+    const trimmed = comments?.trim();
+    if (!trimmed || trimmed.includes('\n') || trimmed.length > 80) return null;
+    return trimmed;
   };
 
   if (loading) return (
@@ -218,9 +222,9 @@ export default function LeadsPage() {
                     {lead.status}
                   </span>
                 </div>
-                {getAnsyenTag(lead.comments) && (
+                {getTagBadge(lead.comments) && (
                   <span className="inline-block bg-purple-50 text-purple-700 border border-purple-200 text-[11px] font-medium px-2 py-0.5 rounded-full mb-1">
-                    {getAnsyenTag(lead.comments)}
+                    {getTagBadge(lead.comments)}
                   </span>
                 )}
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 mt-2">
