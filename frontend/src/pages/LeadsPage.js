@@ -74,7 +74,8 @@ export default function LeadsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.full_name || !formData.phone || !formData.payment_method || !formData.address || !formData.date) {
+    const isLost = formData.status === 'Pa enterese ditou';
+    if (!formData.full_name || !formData.phone || !formData.date || (!isLost && (!formData.payment_method || !formData.address))) {
       toast.error('Veuillez remplir les champs obligatoires');
       return;
     }
@@ -302,12 +303,12 @@ export default function LeadsPage() {
               </div>
             </div>
             <div>
-              <Label className="text-xs font-semibold text-slate-500">Adresse *</Label>
-              <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="input-field mt-1" placeholder="Adresse" data-testid="lead-address" required />
+              <Label className="text-xs font-semibold text-slate-500">Adresse{formData.status !== 'Pa enterese ditou' && ' *'}</Label>
+              <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="input-field mt-1" placeholder="Adresse" data-testid="lead-address" required={formData.status !== 'Pa enterese ditou'} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-500">Mode de paiement *</Label>
+                <Label className="text-xs font-semibold text-slate-500">Mode de paiement{formData.status !== 'Pa enterese ditou' && ' *'}</Label>
                 <Select value={formData.payment_method} onValueChange={v => setFormData({...formData, payment_method: v})}>
                   <SelectTrigger className="input-field mt-1" data-testid="lead-payment">
                     <SelectValue placeholder="Choisir..." />
