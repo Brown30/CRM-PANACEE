@@ -254,6 +254,12 @@ export const api = {
       return res({ notifications: data });
     }
 
+    if (url === '/methodologies') {
+      const { data, error } = await supabase.from('sales_methodologies').select('*').order('formation', { ascending: true });
+      if (error) throw new Error(error.message);
+      return res({ methodologies: data });
+    }
+
     console.warn("Unmocked GET", url);
     return res({});
   },
@@ -337,6 +343,12 @@ export const api = {
       if (error) throw new Error(error.message);
       return res({ notification: data });
     }
+
+    if (url === '/methodologies') {
+      const { data, error } = await supabase.from('sales_methodologies').insert({ ...payload, id: uuidv4() }).select().single();
+      if (error) throw new Error(error.message);
+      return res({ methodology: data });
+    }
   },
 
   put: async (url, payload = {}) => {
@@ -364,6 +376,12 @@ export const api = {
       if (error) throw new Error(error.message);
       return res({ notification: data });
     }
+    if (url.match(/^\/methodologies\/([^/]+)$/)) {
+      const id = url.split('/')[2];
+      const { data, error } = await supabase.from('sales_methodologies').update(payload).eq('id', id).select().single();
+      if (error) throw new Error(error.message);
+      return res({ methodology: data });
+    }
   },
   
   delete: async (url) => {
@@ -381,7 +399,7 @@ export const api = {
       const id = url.split('/')[2];
       const uId = localStorage.getItem('panacee_user_id');
       const { data: me } = await supabase.from('users').select('*').eq('id', uId).single();
-      
+
       if (me.role === 'admin_principal') {
         await supabase.from('leads').delete().eq('id', id);
         return res({ message: 'Lead supprimé' });
@@ -391,6 +409,11 @@ export const api = {
         });
         return res({ message: 'Demande de suppression envoyée' });
       }
+    }
+    if (url.match(/^\/methodologies\/([^/]+)$/)) {
+      const id = url.split('/')[2];
+      await supabase.from('sales_methodologies').delete().eq('id', id);
+      return res({ message: 'Méthodologie supprimée' });
     }
   }
 };
