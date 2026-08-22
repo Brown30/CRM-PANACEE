@@ -216,7 +216,7 @@ export default function MethodologyPage() {
                   <div className="space-y-4">
                     {m.body && (
                       <div
-                        className="text-sm text-slate-600"
+                        className="text-sm text-slate-600 whitespace-pre-wrap"
                         dangerouslySetInnerHTML={{ __html: m.body.replace('{vendorName}', vendorName) }}
                       />
                     )}
@@ -232,7 +232,7 @@ export default function MethodologyPage() {
                           {[...commonObjections, ...(m.objections || [])].map((o, i) => (
                             <div key={i} className="bg-slate-50 rounded-xl p-3">
                               <p className="text-sm font-medium text-slate-800">{o.question}</p>
-                              <div className="text-sm text-slate-600 mt-1" dangerouslySetInnerHTML={{ __html: o.answer }} />
+                              <div className="text-sm text-slate-600 mt-1 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: o.answer }} />
                             </div>
                           ))}
                         </div>
