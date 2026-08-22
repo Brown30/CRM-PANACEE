@@ -11,7 +11,6 @@ import { toast } from 'sonner';
 import { commonObjections } from '@/data/salesMethodologies';
 import RichTextEditor from '@/components/RichTextEditor';
 
-const DEFAULT_HEADINGS = ['1- SALITASYON', '2- PREMYE PWOMÈS', '3- KONEKSYON', '4- PREZANTASYON', '5- CLOSING VIBE'];
 const FORMATION_OPTIONS = [
   'Installation de caméra de surveillance',
   'Électricité',
@@ -20,50 +19,15 @@ const FORMATION_OPTIONS = [
   'Sheetrock',
 ];
 
-function ViewSection({ section, vendorName }) {
-  const body = section.body?.replace('{vendorName}', vendorName);
-  return (
-    <div className="space-y-2">
-      <h4 className="font-semibold text-slate-800 text-sm" style={{ fontFamily: "'Outfit', sans-serif" }}>
-        {section.heading}
-      </h4>
-      {body && <div className="text-sm text-slate-600" dangerouslySetInnerHTML={{ __html: body }} />}
-      {section.list?.length > 0 && (
-        <ul className="list-disc list-inside text-sm text-slate-600 space-y-1">
-          {section.list.map((item, i) => <li key={i} dangerouslySetInnerHTML={{ __html: item }} />)}
-        </ul>
-      )}
-      {section.footer && <div className="text-sm text-slate-600" dangerouslySetInnerHTML={{ __html: section.footer }} />}
-    </div>
-  );
-}
-
 function MethodologyEditor({ methodology, api, onSaved, onCancel }) {
   const [title, setTitle] = useState(methodology.title);
-  const [listItemsBySection, setListItemsBySection] = useState(() =>
-    methodology.sections.map((s, i) => (s.list || []).map((text, j) => ({ id: `s${i}-l${j}`, text })))
-  );
   const [objections, setObjections] = useState(() =>
     (methodology.objections || []).map((o, i) => ({ id: o.id || `o${i}`, question: o.question, answer: o.answer }))
   );
   const [saving, setSaving] = useState(false);
 
-  const bodyRefs = useRef({});
-  const footerRefs = useRef({});
-  const listRefs = useRef({});
+  const bodyRef = useRef(null);
   const answerRefs = useRef({});
-
-  const addListItem = (sectionIdx) => {
-    setListItemsBySection(prev => prev.map((items, i) =>
-      i === sectionIdx ? [...items, { id: `s${sectionIdx}-l${Date.now()}`, text: '' }] : items
-    ));
-  };
-  const removeListItem = (sectionIdx, itemId) => {
-    setListItemsBySection(prev => prev.map((items, i) =>
-      i === sectionIdx ? items.filter(li => li.id !== itemId) : items
-    ));
-    delete listRefs.current[itemId];
-  };
 
   const addObjection = () => {
     setObjections(prev => [...prev, { id: `o-new-${Date.now()}`, question: '', answer: '' }]);
@@ -77,15 +41,7 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel }) {
   };
 
   const handleSave = async () => {
-    const newSections = methodology.sections.map((s, i) => {
-      const items = listItemsBySection[i].map(li => listRefs.current[li.id]?.getHTML() ?? li.text ?? '');
-      return {
-        heading: s.heading,
-        body: bodyRefs.current[i]?.getHTML() ?? s.body ?? '',
-        list: items,
-        footer: footerRefs.current[i]?.getHTML() ?? s.footer ?? '',
-      };
-    });
+    const newBody = bodyRef.current?.getHTML() ?? methodology.body ?? '';
     const newObjections = objections
       .map(o => ({
         id: o.id,
@@ -96,7 +52,7 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel }) {
 
     setSaving(true);
     try {
-      await api.put(`/methodologies/${methodology.id}`, { title, sections: newSections, objections: newObjections });
+      await api.put(`/methodologies/${methodology.id}`, { title, body: newBody, objections: newObjections });
       toast.success('Méthodologie enregistrée');
       onSaved();
     } catch (err) {
@@ -112,30 +68,10 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel }) {
         <Input value={title} onChange={e => setTitle(e.target.value)} className="input-field mt-1" />
       </div>
 
-      {methodology.sections.map((s, i) => (
-        <div key={i} className="space-y-2 border-t border-slate-100 pt-3">
-          <h4 className="font-semibold text-slate-800 text-sm">{s.heading}</h4>
-          <RichTextEditor ref={el => { bodyRefs.current[i] = el; }} defaultValue={s.body} placeholder="Texte..." minRows={2} />
-
-          <div className="space-y-1.5 pl-2">
-            {listItemsBySection[i].map(li => (
-              <div key={li.id} className="flex items-start gap-2">
-                <div className="flex-1">
-                  <RichTextEditor ref={el => { listRefs.current[li.id] = el; }} defaultValue={li.text} minRows={1} />
-                </div>
-                <Button type="button" variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 shrink-0 h-9 w-9" onClick={() => removeListItem(i, li.id)}>
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
-            <Button type="button" variant="outline" size="sm" className="text-xs h-8 rounded-lg" onClick={() => addListItem(i)}>
-              <Plus className="w-3.5 h-3.5 mr-1" /> Ajouter une ligne
-            </Button>
-          </div>
-
-          <RichTextEditor ref={el => { footerRefs.current[i] = el; }} defaultValue={s.footer} placeholder="Texte de conclusion (optionnel)..." minRows={2} />
-        </div>
-      ))}
+      <div>
+        <Label className="text-xs font-semibold text-slate-500 mb-1 block">Méthodologie</Label>
+        <RichTextEditor ref={bodyRef} defaultValue={methodology.body} placeholder="Texte de la méthodologie..." minRows={16} />
+      </div>
 
       <div className="space-y-2 border-t border-slate-100 pt-3">
         <h4 className="font-semibold text-slate-800 text-sm flex items-center gap-1.5">
@@ -205,7 +141,7 @@ export default function MethodologyPage() {
       await api.post('/methodologies', {
         formation: newFormation,
         title: newTitle,
-        sections: DEFAULT_HEADINGS.map(heading => ({ heading, body: '', list: [], footer: '' })),
+        body: '',
         objections: [],
       });
       toast.success('Méthodologie créée');
@@ -278,9 +214,12 @@ export default function MethodologyPage() {
                   />
                 ) : (
                   <div className="space-y-4">
-                    {m.sections.map((section, i) => (
-                      <ViewSection key={i} section={section} vendorName={vendorName} />
-                    ))}
+                    {m.body && (
+                      <div
+                        className="text-sm text-slate-600"
+                        dangerouslySetInnerHTML={{ __html: m.body.replace('{vendorName}', vendorName) }}
+                      />
+                    )}
 
                     <div className="space-y-2 pt-2 border-t border-slate-100">
                       <h4 className="font-semibold text-slate-800 text-sm flex items-center gap-1.5" style={{ fontFamily: "'Outfit', sans-serif" }}>
