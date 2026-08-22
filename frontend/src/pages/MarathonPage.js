@@ -355,6 +355,8 @@ export default function MarathonPage() {
                   <SelectItem value="Installation de caméra de surveillance">Installation de caméra de surveillance</SelectItem>
                   <SelectItem value="Électricité">Électricité</SelectItem>
                   <SelectItem value="Rolling Door">Rolling Door</SelectItem>
+                  <SelectItem value="Windows">Windows</SelectItem>
+                  <SelectItem value="Sheetrock">Sheetrock</SelectItem>
                 </SelectContent>
               </Select>
             </div>
