@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, Search, Phone, Mail, MapPin, Calendar, Filter, X } from 'lucide-react';
+import { Plus, Search, Phone, Mail, MapPin, Calendar, Filter, X, FileText, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { buildFichaInscricaoPdf } from '@/lib/fichaInscricao';
+import { slugifyFileName } from '@/lib/certificate';
 
 export default function LeadsPage() {
   const { api, user, selectedMarathon, isAdmin } = useAuth();
@@ -20,6 +22,10 @@ export default function LeadsPage() {
   const [vendeurFilter, setVendeurFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('');
   const [editLead, setEditLead] = useState(null);
+  const [fichaPdf, setFichaPdf] = useState(null);
+  const [fichaPreviewUrl, setFichaPreviewUrl] = useState(null);
+  const [fichaFileName, setFichaFileName] = useState('');
+  const [generatingFicha, setGeneratingFicha] = useState(false);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     full_name: '', phone: '', email: '', payment_method: '',
@@ -100,6 +106,32 @@ export default function LeadsPage() {
       toast.success(data.message);
       fetchData();
     } catch { toast.error('Erreur suppression'); }
+  };
+
+  const handleGenerateFicha = async () => {
+    if (!editLead || !selectedMarathon) return;
+    setGeneratingFicha(true);
+    try {
+      const dateStr = new Date().toLocaleDateString('fr-FR');
+      const pdf = buildFichaInscricaoPdf({
+        fullName: editLead.full_name,
+        formation: selectedMarathon.formation,
+        dateStr,
+        vendorName: user?.name || ''
+      });
+      setFichaPdf(pdf);
+      setFichaFileName(`Fiche_Inscription_${slugifyFileName(editLead.full_name)}.pdf`);
+      setFichaPreviewUrl(pdf.output('bloburl'));
+    } catch (err) {
+      toast.error(err.message || 'Erreur génération fiche');
+    }
+    setGeneratingFicha(false);
+  };
+
+  const closeFichaPreview = () => {
+    if (fichaPreviewUrl) URL.revokeObjectURL(fichaPreviewUrl);
+    setFichaPreviewUrl(null);
+    setFichaPdf(null);
   };
 
   const filtered = leads.filter(l =>
@@ -346,6 +378,19 @@ export default function LeadsPage() {
                 <Input type="date" value={formData.promise_date} onChange={e => setFormData({...formData, promise_date: e.target.value})} className="input-field mt-1" data-testid="lead-promise-date" />
               </div>
             )}
+            {editLead && formData.status === 'Très intéressé' && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-11 rounded-xl text-sm flex items-center justify-center gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                onClick={handleGenerateFicha}
+                disabled={generatingFicha}
+                data-testid="lead-generate-ficha-btn"
+              >
+                <FileText className="w-4 h-4" />
+                {generatingFicha ? 'Génération...' : "Générer la fiche d'inscription"}
+              </Button>
+            )}
             <div>
               <Label className="text-xs font-semibold text-slate-500">Commentaires</Label>
               <Textarea value={formData.comments} onChange={e => setFormData({...formData, comments: e.target.value})} className="rounded-xl mt-1" placeholder="Commentaires..." data-testid="lead-comments" />
@@ -370,6 +415,32 @@ export default function LeadsPage() {
               </Button>
             )}
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ficha d'inscription preview */}
+      <Dialog open={!!fichaPreviewUrl} onOpenChange={(open) => !open && closeFichaPreview()}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>Fiche d'inscription</DialogTitle>
+            <DialogDescription>Vérifiez avant de télécharger ou d'envoyer au lead</DialogDescription>
+          </DialogHeader>
+          {fichaPreviewUrl && (
+            <iframe src={fichaPreviewUrl} title="Fiche d'inscription" className="w-full h-96 rounded-xl border border-slate-200" />
+          )}
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="outline" className="flex-1 h-11 rounded-xl" onClick={closeFichaPreview}>
+              Fermer
+            </Button>
+            <Button
+              type="button"
+              className="btn-primary flex-1 flex items-center justify-center gap-2"
+              onClick={() => fichaPdf?.save(fichaFileName)}
+              data-testid="ficha-download-btn"
+            >
+              <Download className="w-4 h-4" /> Télécharger
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
