@@ -126,12 +126,13 @@ export const api = {
       
       return res({
         total_leads, inscrits, tres_interesses,
-        taux_conversion: total_leads > 0 ? Number(((inscrits / total_leads) * 100).toFixed(1)) : 0,
+        taux_conversion: objectif > 0 ? Number(((inscrits / objectif) * 100).toFixed(1)) : 0,
+        taux_closing: tres_interesses > 0 ? Number(((inscrits / tres_interesses) * 100).toFixed(1)) : 0,
         objectif,
         progression: objectif > 0 ? Math.min(Number(((inscrits / objectif) * 100).toFixed(1)), 100) : 0
       });
     }
-    
+
     if (url === '/dashboard/admin') {
       let q = supabase.from('leads').select('*').eq('marathon_id', params.marathon_id);
       if (params.vendeur_id) q = q.eq('vendeur_id', params.vendeur_id);
@@ -156,6 +157,7 @@ export const api = {
       const vendeur_stats = vendeurs.map(v => {
         const vLeads = leads.filter(l => l.vendeur_id === v.id);
         const vInscrits = vLeads.filter(l => l.status === 'Inscrit').length;
+        const vTresInteresses = vLeads.filter(l => l.status === 'Très intéressé').length;
         const vTotal = vLeads.length;
         const vObj = (mar?.objectif_par_vendeur || {})[v.id] || 0;
         return {
@@ -164,13 +166,15 @@ export const api = {
           total_leads: vTotal,
           inscrits: vInscrits,
           objectif: vObj,
-          taux_conversion: vTotal > 0 ? Number(((vInscrits / vTotal) * 100).toFixed(1)) : 0
+          taux_conversion: vObj > 0 ? Number(((vInscrits / vObj) * 100).toFixed(1)) : 0,
+          taux_closing: vTresInteresses > 0 ? Number(((vInscrits / vTresInteresses) * 100).toFixed(1)) : 0
         };
       });
-      
+
       return res({
         total_leads, inscrits, tres_interesses,
-        taux_conversion: total_leads > 0 ? Number(((inscrits / total_leads) * 100).toFixed(1)) : 0,
+        taux_conversion: objectif_total > 0 ? Number(((inscrits / objectif_total) * 100).toFixed(1)) : 0,
+        taux_closing: tres_interesses > 0 ? Number(((inscrits / tres_interesses) * 100).toFixed(1)) : 0,
         objectif_total,
         progression: objectif_total > 0 ? Math.min(Number(((inscrits / objectif_total) * 100).toFixed(1)), 100) : 0,
         vendeur_stats
