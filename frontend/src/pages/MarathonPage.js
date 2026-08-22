@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, Trophy, Calendar, Target, Users, Trash2, RotateCcw, Shuffle, Upload } from 'lucide-react';
+import { Plus, Trophy, Calendar, Target, Users, Trash2, RotateCcw, Shuffle, Upload, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { pendingImport } from '@/data/pendingImport';
 
@@ -33,6 +33,7 @@ export default function MarathonPage() {
   const [vendeurs, setVendeurs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editMarathon, setEditMarathon] = useState(null);
   const [formData, setFormData] = useState({
     name: '', formation: '', start_date: '', end_date: '',
     objectif_total: 0, objectif_par_vendeur: {}
@@ -71,13 +72,32 @@ export default function MarathonPage() {
       toast.error('Nom et formation requis'); return;
     }
     try {
-      await api.post('/marathons', formData);
-      toast.success('Marathon créée');
+      if (editMarathon) {
+        await api.put(`/marathons/${editMarathon.id}`, formData);
+        toast.success('Marathon modifiée');
+      } else {
+        await api.post('/marathons', formData);
+        toast.success('Marathon créée');
+      }
       setShowForm(false);
+      setEditMarathon(null);
       fetchData();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Erreur');
     }
+  };
+
+  const openEdit = (marathon) => {
+    setEditMarathon(marathon);
+    setFormData({
+      name: marathon.name || '',
+      formation: marathon.formation || '',
+      start_date: marathon.start_date || '',
+      end_date: marathon.end_date || '',
+      objectif_total: marathon.objectif_total || 0,
+      objectif_par_vendeur: marathon.objectif_par_vendeur || {}
+    });
+    setShowForm(true);
   };
 
   const handleDelete = async (id) => {
@@ -249,7 +269,7 @@ export default function MarathonPage() {
             <Button onClick={openImport} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="import-leads-btn">
               <Upload className="w-4 h-4" /> Importer leads
             </Button>
-            <Button onClick={() => { setFormData({ name: '', formation: '', start_date: '', end_date: '', objectif_total: 0, objectif_par_vendeur: {} }); setShowForm(true); }} className="btn-primary flex items-center gap-2 h-10 text-sm" data-testid="add-marathon-btn">
+            <Button onClick={() => { setEditMarathon(null); setFormData({ name: '', formation: '', start_date: '', end_date: '', objectif_total: 0, objectif_par_vendeur: {} }); setShowForm(true); }} className="btn-primary flex items-center gap-2 h-10 text-sm" data-testid="add-marathon-btn">
               <Plus className="w-4 h-4" /> Créer
             </Button>
           </div>
@@ -285,6 +305,9 @@ export default function MarathonPage() {
               </div>
               {isAdminPrincipal && (
                 <div className="flex items-center gap-1 shrink-0">
+                  <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-600" onClick={() => openEdit(m)} data-testid={`edit-marathon-${m.id}`} title="Modifier">
+                    <Pencil className="w-4 h-4" />
+                  </Button>
                   <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-600" onClick={() => openRedistribute(m)} data-testid={`redistribute-marathon-${m.id}`} title="Redistribuir leads">
                     <Shuffle className="w-4 h-4" />
                   </Button>
@@ -310,12 +333,12 @@ export default function MarathonPage() {
         )}
       </div>
 
-      {/* Create Dialog */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
+      {/* Create/Edit Dialog */}
+      <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) setEditMarathon(null); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>Créer une marathon</DialogTitle>
-            <DialogDescription>Définissez les détails de la nouvelle campagne</DialogDescription>
+            <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>{editMarathon ? 'Modifier la marathon' : 'Créer une marathon'}</DialogTitle>
+            <DialogDescription>{editMarathon ? 'Modifiez les détails de la campagne' : 'Définissez les détails de la nouvelle campagne'}</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -368,8 +391,8 @@ export default function MarathonPage() {
               </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <Button type="button" variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => setShowForm(false)}>Annuler</Button>
-              <Button type="submit" className="btn-primary flex-1" data-testid="marathon-submit-btn">Créer</Button>
+              <Button type="button" variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => { setShowForm(false); setEditMarathon(null); }}>Annuler</Button>
+              <Button type="submit" className="btn-primary flex-1" data-testid="marathon-submit-btn">{editMarathon ? 'Enregistrer' : 'Créer'}</Button>
             </div>
           </form>
         </DialogContent>
