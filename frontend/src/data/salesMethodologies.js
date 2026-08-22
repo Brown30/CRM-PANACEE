@@ -10,51 +10,6 @@ Anplis se sèlman 2h de temps nan jou Samdi/Dimanch sa pandan 1 mwa sèlman.
   }
 ];
 
-export const salesMethodologies = [
-  {
-    formation: 'Électricité',
-    title: 'Elektrisite',
-    sections: [
-      {
-        heading: '1- SALITASYON',
-        body: 'Bonjou, mwen se {vendorName}, mwen se Responsab nan Panacée Éducation'
-      },
-      {
-        heading: '2- PREMYE PWOMÈS',
-        body: "Ou très interessé pouw aprann Elektrisite e ou te voye mesaj sou WhatsApp nou, èske ou disponib pou kèk minit pou mwen baw plis detay avan ou enskri?"
-      },
-      {
-        heading: '3- KONEKSYON',
-        list: [
-          'Kijanw rele svp ?',
-          'Ou rete Okap oubyen nan rejyon nò a?',
-          'Poukisa ou deside aprann Elektrisite ?',
-          'Ou gen eksperyans nan domèn sa deja oubyen se premye fwa ou pral fè eksperyans lan?',
-          'Ou pwofesyonèl nan lòt domèn deja ?'
-        ]
-      },
-      {
-        heading: '4- PREZANTASYON',
-        body: "Avan nou pale de pri kou an, mwen pral baw plis enfòmasyon sou Panacée Éducation e sou fòmasyon an tou\n\nÈske w'ap tandem byen ??",
-        list: [
-          'Nou gen plis pase 200 Etidyan ki aprann avèk nou deja nan Panacée (Anpil nan yo potko gen okenn eksperyans nan domèn nan) (Anpil nan yo te gen yon nivo deja nan domèn nan)',
-          'Pwofesè ki pral fòmew lan se yon Tekniksyen ki gen plis ke 20 ans eksperyans nan domèn nan e ki fè pwojè nan tout peyi an sou anpil gwo chantye.',
-          "W'ap gen nosyon ni nan Elektrisite batiman ni nan Elektrisite endistriyèl",
-          'Ou pap fè sèlman teyori, ap gen pratik kap fèt nan salle de classe lan menm e ap gen pratik sou chantye tou',
-          "Lèw rantre nan Panacée, ou pa jis rantre nan yon senp lekòl pwofesyonèl men otomatikman ou fè pati kominote nou an e ou montre ou très motive pouw aprann, ou ka vin yonn nan pwofesyonèl nan Panacée Services ki se yon lòt antrepriz nou genyen ki konn jwenn chantye Elektrisite. Anpil fwa nou konn gen chantye nou bezwen bon jan pwofesyonèl ki konpetan pou yo e anpil fwa se etidyan ki te nan Panacée, nap rele pou travay sa yo."
-        ],
-        footer: "Èske jiskaprezan ou klè sou tout pwen yo ?\n\n- Yonn nan pi gwo avantaj wap gen lèw fin etidye nan Panacée, wap sòti ak 2 sètifika e dezyèm sètifika a ap gratis. Gen yon lòt kou bonus ke nap fè anliy pou ou. Nan kou sa, ou pral aprann strateji ou ka mete anplas pouw ka gen plis kliyan ki bezwen sèvis Elektrisite.\n- Fòmasyon Elektrisite Avanse a ap kòmanse Samdi 22 Août sa\nL'ap dire 3 mwa\nKou yo ap fèt Samdi, Dimanch e lè an se 4h-6h nan aprèmidi.\n\nÈske tout bagay klè oubyen ou gen kesyon ?"
-      },
-      {
-        heading: '5- CLOSING VIBE',
-        body: "Ofisyèlman, frè enskripsyon an se 1000 Goud e frè patisipasyon an se 25.000 Goud.\nTout bagay klè pou ou sou kesyon pri an ?\n\nNou gen yon pwogram ki rele PFP, nan pwogram sa nou bay rabè a kèk moun ki trè motive e trè enterese a Fòmasyon Elektrisite an eki pwouve sa.\n\nMen avan tout bagay, fÒm verifye èske toujou gen plas pou moun jwenn rabè sa jodian paske li trè limite e trè spesyal, banm 1 minit sèlman poum verifye nan sistèm nou, fè yon ti tann svp!\n\nHello, ou la ?\n\nOu gentan gen yon premye chans la paske Mwen sot verifye la nan sistèm nou e nou gen rabè ki disponib pou jodian.\n\nMwen pral pozew yon kesyon poum ka konnen èske reyèlman ou trè enterese e si ou merite benefisye rabè sa.\n\nÈske ou pare ?\n\nPouki rezon ou panse mwen ta sipoze fèw jwenn opòtinite rantre nan pwogram sa epi benefisye rabè sa ? Banm yon rezon!!\n\n{NON ENTERESE AN} m'ap felisitew paske mwen menm spesyalman kòm yon responsab nan Panacée, mwen seleksyonew nan pwogram nan kote w'ap benefisye yon gwo rabè de 5.000 Goud, olye de 25.000 Goud, wap peye sèlman 20.000 GOUD pou frè pATISIpasyon an.\n\nPouw pa pèdi rabè sa ou seleksyone pou li an, jere enskripsyon ou jiska demen ak sèlman 1000 Goud.\n\nPouw enskri, ou ka pase nan lokal nou ki nan #12, Rue 22 B-C\n\nE imedyatman ou enskri jiska demen, ou ka jwenn lòt sipriz ou pa menm imajine lèw vini nan fòmasyon an.\n\nBanm non konplèw poum metew nan lis moun ki benefisye rabè an\n\nSi ou santi moun nan pap ka deplase oubyen li diw sa:\nsiw pa ka deplase tou, ou ka peye pa Moncash/Natcash, nap voye foto fich lan ak tout so pou ou nòmalman aprè Enskripsyon."
-      }
-    ],
-    objections: [
-      // { question: '...', answer: '...' } - à compléter au fur et à mesure
-    ]
-  }
-];
-
-export const getMethodology = (formation) =>
-  salesMethodologies.find(m => m.formation === formation);
+// The per-formation methodologies (sections + objections) used to live here as a static
+// array, but are now stored in Supabase (table `sales_methodologies`) and edited directly
+// from the Méthodologie page in the app. See MethodologyPage.js.
