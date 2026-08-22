@@ -220,7 +220,7 @@ export default function DashboardPage() {
           <p className="text-2xl md:text-3xl font-bold text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
             {stats.taux_conversion}%
           </p>
-          <p className="text-xs text-slate-500 mt-1">Taux conversion</p>
+          <p className="text-xs text-slate-500 mt-1">Taux conversion (Inscrits/Objectif)</p>
         </div>
 
         <div className="stat-card animate-fade-in-up stagger-4" data-testid="stat-objectif">
@@ -233,6 +233,18 @@ export default function DashboardPage() {
             {isAdmin ? stats.objectif_total : stats.objectif}
           </p>
           <p className="text-xs text-slate-500 mt-1">Objectif</p>
+        </div>
+
+        <div className="stat-card animate-fade-in-up stagger-4 col-span-2" data-testid="stat-closing">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center">
+              <Flame className="w-4 h-4 text-rose-500" />
+            </div>
+          </div>
+          <p className="text-2xl md:text-3xl font-bold text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            {stats.taux_closing}%
+          </p>
+          <p className="text-xs text-slate-500 mt-1">Taux de closing (Inscrits/Très intéressés)</p>
         </div>
       </div>
 
@@ -264,7 +276,8 @@ export default function DashboardPage() {
                   <p className="text-xs text-slate-400">{v.total_leads} leads | {v.inscrits} inscrits</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-emerald-600">{v.taux_conversion}%</p>
+                  <p className="text-sm font-bold text-emerald-600">{v.taux_conversion}% <span className="text-slate-400 font-normal">conv.</span></p>
+                  <p className="text-sm font-bold text-rose-500">{v.taux_closing}% <span className="text-slate-400 font-normal">closing</span></p>
                   {v.objectif > 0 && (
                     <p className="text-xs text-slate-400">{v.inscrits}/{v.objectif}</p>
                   )}
