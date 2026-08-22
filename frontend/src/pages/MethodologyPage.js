@@ -26,6 +26,7 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel }) {
   const [saving, setSaving] = useState(false);
 
   const bodyRef = useRef(null);
+  const questionRefs = useRef({});
   const answerRefs = useRef({});
 
   const addObjection = () => {
@@ -33,10 +34,8 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel }) {
   };
   const removeObjection = (id) => {
     setObjections(prev => prev.filter(o => o.id !== id));
+    delete questionRefs.current[id];
     delete answerRefs.current[id];
-  };
-  const setObjectionQuestion = (id, value) => {
-    setObjections(prev => prev.map(o => (o.id === id ? { ...o, question: value } : o)));
   };
 
   const handleSave = async () => {
@@ -44,10 +43,10 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel }) {
     const newObjections = objections
       .map(o => ({
         id: o.id,
-        question: o.question,
+        question: questionRefs.current[o.id]?.getHTML() ?? o.question ?? '',
         answer: answerRefs.current[o.id]?.getHTML() ?? o.answer ?? '',
       }))
-      .filter(o => o.question.trim() || o.answer.replace(/<[^>]*>/g, '').trim());
+      .filter(o => o.question.replace(/<[^>]*>/g, '').trim() || o.answer.replace(/<[^>]*>/g, '').trim());
 
     setSaving(true);
     try {
@@ -79,12 +78,9 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel }) {
         {objections.map(o => (
           <div key={o.id} className="bg-slate-50 rounded-xl p-3 space-y-2">
             <div className="flex items-start gap-2">
-              <Input
-                value={o.question}
-                onChange={e => setObjectionQuestion(o.id, e.target.value)}
-                placeholder="Question / objection"
-                className="input-field flex-1"
-              />
+              <div className="flex-1">
+                <RichTextEditor ref={el => { questionRefs.current[o.id] = el; }} defaultValue={o.question} placeholder="Question / objection" minRows={1} />
+              </div>
               <Button type="button" variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 shrink-0 h-9 w-9" onClick={() => removeObjection(o.id)}>
                 <X className="w-4 h-4" />
               </Button>
@@ -230,7 +226,7 @@ export default function MethodologyPage() {
                         <div className="space-y-3">
                           {(m.objections || []).map((o, i) => (
                             <div key={i} className="bg-slate-50 rounded-xl p-3">
-                              <p className="text-sm font-medium text-slate-800">{o.question}</p>
+                              <div className="text-sm font-medium text-slate-800 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: o.question }} />
                               <div className="text-sm text-slate-600 mt-1 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: o.answer }} />
                             </div>
                           ))}
