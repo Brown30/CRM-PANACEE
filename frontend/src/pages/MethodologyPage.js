@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { PhoneCall, HelpCircle, Pencil, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { commonObjections } from '@/data/salesMethodologies';
 import RichTextEditor from '@/components/RichTextEditor';
 
 const FORMATION_OPTIONS = [
@@ -225,11 +224,11 @@ export default function MethodologyPage() {
                       <h4 className="font-semibold text-slate-800 text-sm flex items-center gap-1.5" style={{ fontFamily: "'Outfit', sans-serif" }}>
                         <HelpCircle className="w-4 h-4 text-emerald-500" /> Objections & Réponses
                       </h4>
-                      {commonObjections.length === 0 && (m.objections || []).length === 0 ? (
+                      {(m.objections || []).length === 0 ? (
                         <p className="text-sm text-slate-400">Aucune objection enregistrée pour le moment</p>
                       ) : (
                         <div className="space-y-3">
-                          {[...commonObjections, ...(m.objections || [])].map((o, i) => (
+                          {(m.objections || []).map((o, i) => (
                             <div key={i} className="bg-slate-50 rounded-xl p-3">
                               <p className="text-sm font-medium text-slate-800">{o.question}</p>
                               <div className="text-sm text-slate-600 mt-1 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: o.answer }} />
