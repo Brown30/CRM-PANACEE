@@ -4,19 +4,11 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { PhoneCall, HelpCircle, Pencil, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import RichTextEditor from '@/components/RichTextEditor';
-
-const FORMATION_OPTIONS = [
-  'Installation de caméra de surveillance',
-  'Électricité',
-  'Rolling Door',
-  'Windows',
-  'Sheetrock',
-];
+import NoMarathonFallback from '@/components/NoMarathonFallback';
 
 function MethodologyEditor({ methodology, api, onSaved, onCancel, onDelete }) {
   const [title, setTitle] = useState(methodology.title);
@@ -104,7 +96,7 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel, onDelete }) {
         variant="ghost"
         className="w-full text-red-500 hover:text-red-600 hover:bg-red-50 h-10 rounded-xl text-sm"
         onClick={() => onDelete(methodology.id)}
-        data-testid={`delete-methodology-${methodology.formation}`}
+        data-testid={`delete-methodology-${methodology.id}`}
       >
         Supprimer cette méthodologie
       </Button>
@@ -113,25 +105,29 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel, onDelete }) {
 }
 
 export default function MethodologyPage() {
-  const { api, user, isAdminPrincipal } = useAuth();
+  const { api, user, isAdminPrincipal, selectedMarathon } = useAuth();
   const vendorName = user?.name || '';
   const [methodologies, setMethodologies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [showNew, setShowNew] = useState(false);
-  const [newFormation, setNewFormation] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [creating, setCreating] = useState(false);
 
   const fetchData = useCallback(async () => {
+    if (!selectedMarathon) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
-      const { data } = await api.get('/methodologies');
+      const { data } = await api.get('/methodologies', { params: { marathon_id: selectedMarathon.id } });
       setMethodologies(data.methodologies || []);
     } catch {
       toast.error('Erreur chargement');
     }
     setLoading(false);
-  }, [api]);
+  }, [api, selectedMarathon]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -147,21 +143,21 @@ export default function MethodologyPage() {
   };
 
   const handleCreate = async () => {
-    if (!newFormation || !newTitle) {
-      toast.error('Formation et titre requis');
+    if (!newTitle) {
+      toast.error('Titre requis');
       return;
     }
     setCreating(true);
     try {
       await api.post('/methodologies', {
-        formation: newFormation,
+        marathon_id: selectedMarathon.id,
+        formation: selectedMarathon.formation,
         title: newTitle,
         body: '',
         objections: [],
       });
       toast.success('Méthodologie créée');
       setShowNew(false);
-      setNewFormation('');
       setNewTitle('');
       fetchData();
     } catch (err) {
@@ -175,6 +171,8 @@ export default function MethodologyPage() {
       <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
+
+  if (!selectedMarathon) return <NoMarathonFallback />;
 
   return (
     <div className="p-4 md:p-6 space-y-4" data-testid="methodology-page">
@@ -199,7 +197,7 @@ export default function MethodologyPage() {
       <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm px-5">
         <Accordion type="single" collapsible>
           {methodologies.map((m) => (
-            <AccordionItem key={m.id} value={m.id} data-testid={`methodology-${m.formation}`}>
+            <AccordionItem key={m.id} value={m.id} data-testid={`methodology-${m.id}`}>
               <div className="flex items-center">
                 <AccordionTrigger className="hover:no-underline py-4 flex-1">
                   <div className="flex-1 min-w-0 text-left">
@@ -212,7 +210,7 @@ export default function MethodologyPage() {
                     variant="ghost" size="icon"
                     className="text-slate-400 hover:text-emerald-600 shrink-0 mr-2"
                     onClick={() => setEditingId(m.id)}
-                    data-testid={`edit-methodology-${m.formation}`}
+                    data-testid={`edit-methodology-${m.id}`}
                     title="Modifier"
                   >
                     <Pencil className="w-4 h-4" />
@@ -267,22 +265,9 @@ export default function MethodologyPage() {
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>Nouvelle méthodologie</DialogTitle>
-            <DialogDescription>Créez un squelette éditable pour un nouveau cours</DialogDescription>
+            <DialogDescription>Pour la maratona "{selectedMarathon?.name}" ({selectedMarathon?.formation}) — sera visible uniquement ici</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label className="text-xs font-semibold text-slate-500">Formation *</Label>
-              <Select value={newFormation} onValueChange={setNewFormation}>
-                <SelectTrigger className="input-field mt-1">
-                  <SelectValue placeholder="Choisir formation..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {FORMATION_OPTIONS.map(f => (
-                    <SelectItem key={f} value={f}>{f}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <div>
               <Label className="text-xs font-semibold text-slate-500">Titre *</Label>
               <Input value={newTitle} onChange={e => setNewTitle(e.target.value)} className="input-field mt-1" placeholder="Ex: Enstalasyon Kamera Siveyans" />
