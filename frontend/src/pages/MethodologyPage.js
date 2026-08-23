@@ -18,7 +18,7 @@ const FORMATION_OPTIONS = [
   'Sheetrock',
 ];
 
-function MethodologyEditor({ methodology, api, onSaved, onCancel }) {
+function MethodologyEditor({ methodology, api, onSaved, onCancel, onDelete }) {
   const [title, setTitle] = useState(methodology.title);
   const [objections, setObjections] = useState(() =>
     (methodology.objections || []).map((o, i) => ({ id: o.id || `o${i}`, question: o.question, answer: o.answer }))
@@ -99,6 +99,15 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel }) {
           {saving ? 'Enregistrement...' : 'Enregistrer'}
         </Button>
       </div>
+      <Button
+        type="button"
+        variant="ghost"
+        className="w-full text-red-500 hover:text-red-600 hover:bg-red-50 h-10 rounded-xl text-sm"
+        onClick={() => onDelete(methodology.id)}
+        data-testid={`delete-methodology-${methodology.formation}`}
+      >
+        Supprimer cette méthodologie
+      </Button>
     </div>
   );
 }
@@ -125,6 +134,17 @@ export default function MethodologyPage() {
   }, [api]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleDeleteMethodology = async (id) => {
+    try {
+      await api.delete(`/methodologies/${id}`);
+      toast.success('Méthodologie supprimée');
+      setEditingId(null);
+      fetchData();
+    } catch (err) {
+      toast.error(err.message || 'Erreur suppression');
+    }
+  };
 
   const handleCreate = async () => {
     if (!newFormation || !newTitle) {
@@ -206,6 +226,7 @@ export default function MethodologyPage() {
                     api={api}
                     onSaved={() => { setEditingId(null); fetchData(); }}
                     onCancel={() => setEditingId(null)}
+                    onDelete={handleDeleteMethodology}
                   />
                 ) : (
                   <div className="space-y-4">
