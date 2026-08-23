@@ -259,7 +259,9 @@ export const api = {
     }
 
     if (url === '/methodologies') {
-      const { data, error } = await supabase.from('sales_methodologies').select('*').order('formation', { ascending: true });
+      let q = supabase.from('sales_methodologies').select('*').order('formation', { ascending: true });
+      if (params.marathon_id) q = q.eq('marathon_id', params.marathon_id);
+      const { data, error } = await q;
       if (error) throw new Error(error.message);
       return res({ methodologies: data });
     }
