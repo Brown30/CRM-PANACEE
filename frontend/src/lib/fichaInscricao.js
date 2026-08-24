@@ -1,61 +1,53 @@
 import jsPDF from 'jspdf';
 
-// Placeholder layout, drawn directly with jsPDF (no background template yet).
-// Swap this out once a visual model is provided — the calling code (LeadsPage)
-// doesn't need to change, only what happens inside buildFichaInscricaoPdf.
-export function buildFichaInscricaoPdf({ fullName, formation, dateStr, vendorName }) {
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
-  const width = pdf.internal.pageSize.getWidth();
-  const height = pdf.internal.pageSize.getHeight();
+const TEMPLATE_SRC = '/fichas/recu_rabais.png';
 
-  pdf.setFillColor(16, 185, 129);
-  pdf.rect(0, 0, width, 32, 'F');
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(16);
-  pdf.text('PANACÉE ÉDUCATION', width / 2, 14, { align: 'center' });
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(11);
-  pdf.text("Fich Enskripsyon", width / 2, 23, { align: 'center' });
+// Positions as a fraction of the (square) template image, tuned against
+// RECU_RABAIS_PANACEE_ASSINADO.png. Adjust here if the template changes.
+const NAME_POS = { xPct: 0.44, yPct: 0.417 };
+const FORMATION_POS = { xPct: 0.12, yPct: 0.508 };
+const DATE_POS = { xPct: 0.69, yPct: 0.590 };
 
-  pdf.setTextColor(30, 41, 59);
-  let y = 48;
+const loadImage = (src) => new Promise((resolve, reject) => {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => resolve(img);
+  img.onerror = reject;
+  img.src = src;
+});
 
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(10);
-  pdf.text('Non konplè :', 15, y);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(14);
-  pdf.text(fullName, 15, y + 7);
+export async function buildFichaInscricaoPdf({ fullName, formation, dateStr }) {
+  const bg = await loadImage(TEMPLATE_SRC);
 
-  y += 20;
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(10);
-  pdf.text('Fòmasyon :', 15, y);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(14);
-  pdf.text(formation, 15, y + 7);
+  const canvas = document.createElement('canvas');
+  canvas.width = bg.width;
+  canvas.height = bg.height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bg, 0, 0);
 
-  y += 20;
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(10);
-  pdf.text('Dat :', 15, y);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(14);
-  pdf.text(dateStr, 15, y + 7);
+  ctx.fillStyle = '#1e3a5f';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
 
-  y += 22;
-  pdf.setFont('helvetica', 'italic');
-  pdf.setFontSize(10);
-  pdf.setTextColor(71, 85, 105);
-  const confirmText = `${fullName} konfime enskripsyon li nan fòmasyon "${formation}" nan Panacée Éducation.`;
-  pdf.text(confirmText, 15, y, { maxWidth: width - 30 });
+  const drawFilledField = ({ xPct, yPct }, text, fontSizePct, maxWidthPct) => {
+    let fontSize = Math.round(canvas.height * fontSizePct);
+    ctx.font = `600 ${fontSize}px 'Segoe UI', Arial, sans-serif`;
+    if (maxWidthPct) {
+      const maxWidth = canvas.width * maxWidthPct;
+      while (ctx.measureText(text).width > maxWidth && fontSize > 14) {
+        fontSize -= 1;
+        ctx.font = `600 ${fontSize}px 'Segoe UI', Arial, sans-serif`;
+      }
+    }
+    ctx.fillText(text, canvas.width * xPct, canvas.height * yPct);
+  };
 
-  if (vendorName) {
-    pdf.setFontSize(8);
-    pdf.setTextColor(148, 163, 184);
-    pdf.text(`Jenere pa ${vendorName}`, width / 2, height - 10, { align: 'center' });
-  }
+  drawFilledField(NAME_POS, fullName, 0.028, 0.47);
+  drawFilledField(FORMATION_POS, formation, 0.028, 0.75);
+  drawFilledField(DATE_POS, dateStr, 0.026, 0.28);
 
+  const imgData = canvas.toDataURL('image/png');
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
+  pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
   return pdf;
 }
