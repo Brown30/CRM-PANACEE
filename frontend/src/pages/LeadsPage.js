@@ -10,6 +10,7 @@ import { Plus, Search, Phone, Mail, MapPin, Calendar, Filter, X, FileText, Downl
 import { toast } from 'sonner';
 import { buildFichaInscricaoPdf } from '@/lib/fichaInscricao';
 import { slugifyFileName } from '@/lib/certificate';
+import { buildInscritosListPdf } from '@/lib/inscritosExport';
 
 export default function LeadsPage() {
   const { api, user, selectedMarathon, isAdmin } = useAuth();
@@ -26,6 +27,7 @@ export default function LeadsPage() {
   const [fichaPreviewUrl, setFichaPreviewUrl] = useState(null);
   const [fichaFileName, setFichaFileName] = useState('');
   const [generatingFicha, setGeneratingFicha] = useState(false);
+  const [exportingList, setExportingList] = useState(false);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     full_name: '', phone: '', email: '', payment_method: '',
@@ -131,6 +133,47 @@ export default function LeadsPage() {
     setGeneratingFicha(false);
   };
 
+  const handleExportInscritos = async () => {
+    if (!selectedMarathon) return;
+    setExportingList(true);
+    try {
+      const params = { marathon_id: selectedMarathon.id, status: 'Inscrit' };
+      let showVendeur = false;
+      if (!isAdmin) {
+        params.vendeur_id = user.id;
+      } else if (vendeurFilter !== 'all') {
+        params.vendeur_id = vendeurFilter;
+      } else {
+        showVendeur = true;
+      }
+      const { data } = await api.get('/leads', { params });
+      const vMap = Object.fromEntries(vendeurs.map(v => [v.id, v.name]));
+      const rows = (data.leads || []).map(l => ({
+        full_name: l.full_name,
+        address: l.address,
+        phone: l.phone,
+        payment_method: l.payment_method,
+        vendeur_name: vMap[l.vendeur_id] || ''
+      }));
+      const vendorLabel = !isAdmin
+        ? (user?.name || '')
+        : vendeurFilter !== 'all'
+          ? (vMap[vendeurFilter] || '')
+          : 'Tous les vendeurs';
+      const pdf = buildInscritosListPdf({
+        title: 'Liste des inscrits',
+        subtitle: `${selectedMarathon.name} (${selectedMarathon.formation}) — ${vendorLabel}`,
+        rows,
+        showVendeur
+      });
+      const suffix = showVendeur ? '' : `_${slugifyFileName(vendorLabel)}`;
+      pdf.save(`Inscrits_${slugifyFileName(selectedMarathon.name)}${suffix}.pdf`);
+    } catch (err) {
+      toast.error(err.message || 'Erreur export');
+    }
+    setExportingList(false);
+  };
+
   const closeFichaPreview = () => {
     if (fichaPreviewUrl) URL.revokeObjectURL(fichaPreviewUrl);
     setFichaPreviewUrl(null);
@@ -163,13 +206,25 @@ export default function LeadsPage() {
   return (
     <div className="p-4 md:p-6 space-y-4" data-testid="leads-page">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="text-xl font-bold text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
           Leads
         </h2>
-        <Button onClick={openAdd} className="btn-primary flex items-center gap-2 h-10 text-sm" data-testid="add-lead-btn">
-          <Plus className="w-4 h-4" /> Ajouter
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handleExportInscritos}
+            variant="outline"
+            className="flex items-center gap-2 h-10 text-sm rounded-xl"
+            disabled={exportingList}
+            data-testid="export-inscrits-btn"
+            title={isAdmin ? "Exporte les Inscrit(e)s selon le filtre Vendeur ci-dessous" : "Exporte vos Inscrit(e)s"}
+          >
+            <Download className="w-4 h-4" /> {exportingList ? 'Export...' : 'Exporter PDF'}
+          </Button>
+          <Button onClick={openAdd} className="btn-primary flex items-center gap-2 h-10 text-sm" data-testid="add-lead-btn">
+            <Plus className="w-4 h-4" /> Ajouter
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
