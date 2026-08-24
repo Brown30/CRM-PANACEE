@@ -110,14 +110,17 @@ export default function LeadsPage() {
 
   const handleGenerateFicha = async () => {
     if (!editLead || !selectedMarathon) return;
+    if (!formData.promise_date) {
+      toast.error('Renseignez la date promesse avant de générer la fiche');
+      return;
+    }
     setGeneratingFicha(true);
     try {
-      const dateStr = new Date().toLocaleDateString('fr-FR');
-      const pdf = buildFichaInscricaoPdf({
+      const dateStr = new Date(formData.promise_date).toLocaleDateString('fr-FR');
+      const pdf = await buildFichaInscricaoPdf({
         fullName: editLead.full_name,
         formation: selectedMarathon.formation,
-        dateStr,
-        vendorName: user?.name || ''
+        dateStr
       });
       setFichaPdf(pdf);
       setFichaFileName(`Fiche_Inscription_${slugifyFileName(editLead.full_name)}.pdf`);
