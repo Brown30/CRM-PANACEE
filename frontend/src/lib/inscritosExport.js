@@ -49,18 +49,19 @@ export function buildInscritosListPdf({ title, subtitle, rows, showVendeur }) {
     y += headerHeight;
   };
 
-  // Normalize whitespace first (some records have odd spacing/characters),
-  // then use jsPDF's own splitTextToSize so the fit check matches how the
-  // text is actually measured/rendered — a manual char-by-char width loop
-  // was under-truncating some values and letting them bleed into the next column.
+  // Normalize whitespace first (some records have odd spacing/characters).
+  // Truncate directly against getTextWidth with a safety margin — splitTextToSize
+  // was tried here first, but for a single unbroken token (no spaces to break on,
+  // e.g. a phone number with no internal spaces) it returns one "line" even when
+  // that line is wider than maxWidth, so the width was never actually checked.
   const truncate = (text, maxWidth) => {
     const clean = String(text || '').replace(/\s+/g, ' ').trim();
     if (!clean) return '';
-    const lines = pdf.splitTextToSize(clean, maxWidth);
-    if (lines.length <= 1) return lines[0] || '';
-    let first = lines[0];
-    while (first.length > 1 && pdf.getTextWidth(first + '…') > maxWidth) first = first.slice(0, -1);
-    return first + '…';
+    const safeWidth = maxWidth * 0.92;
+    if (pdf.getTextWidth(clean) <= safeWidth) return clean;
+    let t = clean;
+    while (t.length > 1 && pdf.getTextWidth(t + '…') > safeWidth) t = t.slice(0, -1);
+    return t + '…';
   };
 
   drawHeader();
