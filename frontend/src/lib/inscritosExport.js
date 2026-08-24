@@ -21,20 +21,14 @@ export function buildInscritosListPdf({ title, subtitle, rows, showVendeur }) {
   pdf.text(subtitle, margin, y);
   y += 22;
 
-  const columns = showVendeur
-    ? [
-        { key: 'full_name', label: 'Nom complet', width: 160 },
-        { key: 'address', label: 'Adresse', width: 200 },
-        { key: 'phone', label: 'Téléphone', width: 110 },
-        { key: 'payment_method', label: 'Mode de paiement', width: 130 },
-        { key: 'vendeur_name', label: 'Vendeur', width: 115 },
-      ]
-    : [
-        { key: 'full_name', label: 'Nom complet', width: 180 },
-        { key: 'address', label: 'Adresse', width: 240 },
-        { key: 'phone', label: 'Téléphone', width: 130 },
-        { key: 'payment_method', label: 'Mode de paiement', width: 150 },
-      ];
+  const columns = [
+    { key: '_idx', label: '#', width: 30 },
+    { key: 'full_name', label: 'Nom complet', width: showVendeur ? 155 : 175 },
+    { key: 'address', label: 'Adresse', width: showVendeur ? 190 : 230 },
+    { key: 'phone', label: 'Téléphone', width: showVendeur ? 110 : 130 },
+    { key: 'payment_method', label: 'Mode de paiement', width: showVendeur ? 125 : 145 },
+    ...(showVendeur ? [{ key: 'vendeur_name', label: 'Vendeur', width: 110 }] : []),
+  ];
 
   const tableWidth = columns.reduce((s, c) => s + c.width, 0);
   const startX = margin;
@@ -55,11 +49,18 @@ export function buildInscritosListPdf({ title, subtitle, rows, showVendeur }) {
     y += headerHeight;
   };
 
+  // Normalize whitespace first (some records have odd spacing/characters),
+  // then use jsPDF's own splitTextToSize so the fit check matches how the
+  // text is actually measured/rendered — a manual char-by-char width loop
+  // was under-truncating some values and letting them bleed into the next column.
   const truncate = (text, maxWidth) => {
-    let t = String(text || '');
-    if (pdf.getTextWidth(t) <= maxWidth) return t;
-    while (t.length > 1 && pdf.getTextWidth(t + '…') > maxWidth) t = t.slice(0, -1);
-    return t + '…';
+    const clean = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!clean) return '';
+    const lines = pdf.splitTextToSize(clean, maxWidth);
+    if (lines.length <= 1) return lines[0] || '';
+    let first = lines[0];
+    while (first.length > 1 && pdf.getTextWidth(first + '…') > maxWidth) first = first.slice(0, -1);
+    return first + '…';
   };
 
   drawHeader();
@@ -83,7 +84,8 @@ export function buildInscritosListPdf({ title, subtitle, rows, showVendeur }) {
     pdf.setTextColor(30, 41, 59);
     let x = startX;
     columns.forEach(col => {
-      pdf.text(truncate(row[col.key], col.width - 12), x + 6, y + rowHeight - 7);
+      const value = col.key === '_idx' ? String(i + 1) : row[col.key];
+      pdf.text(truncate(value, col.width - 12), x + 6, y + rowHeight - 7);
       if (x > startX) pdf.line(x, y, x, y + rowHeight);
       x += col.width;
     });
