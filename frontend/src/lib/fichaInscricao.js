@@ -16,14 +16,27 @@ const loadImage = (src) => new Promise((resolve, reject) => {
   img.src = src;
 });
 
+// The template is a 2613x2613 photo-style PNG; re-encoding a canvas that size
+// losslessly (canvas.toDataURL('image/png')) produced ~20-27MB PDFs. Downscaling
+// to this max dimension and exporting as JPEG keeps it sharp on screen/print
+// while landing around 250-300KB.
+const MAX_DIM = 1400;
+
 export async function buildFichaInscricaoPdf({ fullName, formation, dateStr }) {
   const bg = await loadImage(TEMPLATE_SRC);
 
   const canvas = document.createElement('canvas');
-  canvas.width = bg.width;
-  canvas.height = bg.height;
+  let width = bg.width;
+  let height = bg.height;
+  if (Math.max(width, height) > MAX_DIM) {
+    const scale = MAX_DIM / Math.max(width, height);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+  }
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext('2d');
-  ctx.drawImage(bg, 0, 0);
+  ctx.drawImage(bg, 0, 0, width, height);
 
   ctx.fillStyle = '#1e3a5f';
   ctx.textAlign = 'left';
@@ -46,8 +59,8 @@ export async function buildFichaInscricaoPdf({ fullName, formation, dateStr }) {
   drawFilledField(FORMATION_POS, formation, 0.028, 0.75);
   drawFilledField(DATE_POS, dateStr, 0.026, 0.28);
 
-  const imgData = canvas.toDataURL('image/png');
+  const imgData = canvas.toDataURL('image/jpeg', 0.9);
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
-  pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+  pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
   return pdf;
 }

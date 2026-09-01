@@ -61,20 +61,26 @@ export async function buildCertificatePdf({ fullName, formation, dateStr, verify
   ctx.font = `500 ${Math.round(canvas.height * 0.018)}px 'Montserrat'`;
   ctx.fillText(`Délivré le ${dateStr}`, canvas.width * DATE_POS.xPct, canvas.height * DATE_POS.yPct);
 
+  // JPEG-compress the decorative background/name/date (photo-like content, compresses
+  // well); the PDF was previously ~6MB because canvas.toDataURL('image/png') re-encodes
+  // losslessly and is far less efficient than the original template file's compression.
+  const imgData = canvas.toDataURL('image/jpeg', 0.92);
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width, canvas.height] });
+  pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+
+  // QR code is added as its own lossless PNG layer on top, not baked into the JPEG —
+  // its fine black/white pattern needs to stay crisp to remain scannable.
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 400, color: { dark: '#222222' } });
-  const qrImg = await loadImage(qrDataUrl);
   const qrSize = canvas.width * QR_POS.sizePct;
-  ctx.drawImage(
-    qrImg,
+  pdf.addImage(
+    qrDataUrl,
+    'PNG',
     canvas.width * QR_POS.xPct - qrSize / 2,
     canvas.height * QR_POS.yPct - qrSize / 2,
     qrSize,
     qrSize
   );
 
-  const imgData = canvas.toDataURL('image/png');
-  const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width, canvas.height] });
-  pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
   return pdf;
 }
 
