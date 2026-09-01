@@ -118,7 +118,12 @@ export default function LeadsPage() {
     }
     setGeneratingFicha(true);
     try {
-      const dateStr = new Date(formData.promise_date).toLocaleDateString('fr-FR');
+      // new Date('YYYY-MM-DD') parses as UTC midnight, which rolls back to the
+      // previous day once converted to a timezone behind UTC (like Haiti) —
+      // build the Date from local y/m/d parts instead so it stays on the
+      // date the vendor actually picked.
+      const [py, pm, pd] = formData.promise_date.split('-').map(Number);
+      const dateStr = new Date(py, pm - 1, pd).toLocaleDateString('fr-FR');
       const pdf = await buildFichaInscricaoPdf({
         fullName: editLead.full_name,
         formation: selectedMarathon.formation,
