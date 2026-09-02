@@ -266,6 +266,28 @@ export const api = {
       return res({ methodologies: data });
     }
 
+    if (url === '/attendance') {
+      const { data: leads, error: leadsErr } = await supabase.from('leads').select('id, full_name, phone, status')
+        .eq('marathon_id', params.marathon_id).in('status', ['Inscrit', 'Participant']).order('full_name', { ascending: true });
+      if (leadsErr) throw new Error(leadsErr.message);
+      const { data: att, error: attErr } = await supabase.from('attendance').select('lead_id, present')
+        .eq('marathon_id', params.marathon_id).eq('date', params.date);
+      if (attErr) throw new Error(attErr.message);
+      const attMap = Object.fromEntries((att || []).map(a => [a.lead_id, a.present]));
+      const roster = (leads || []).map(l => ({
+        lead_id: l.id, full_name: l.full_name, phone: l.phone, status: l.status,
+        present: attMap[l.id] ?? null
+      }));
+      return res({ roster });
+    }
+
+    if (url === '/attendance/dates') {
+      const { data, error } = await supabase.from('attendance').select('date').eq('marathon_id', params.marathon_id);
+      if (error) throw new Error(error.message);
+      const dates = [...new Set((data || []).map(d => d.date))].sort((a, b) => b.localeCompare(a));
+      return res({ dates });
+    }
+
     console.warn("Unmocked GET", url);
     return res({});
   },
@@ -355,12 +377,40 @@ export const api = {
       if (error) throw new Error(error.message);
       return res({ methodology: data });
     }
+
+    if (url === '/attendance/mark') {
+      const { marathon_id, lead_id, date, present } = payload;
+      const { data: existing, error: findErr } = await supabase.from('attendance').select('id')
+        .eq('marathon_id', marathon_id).eq('lead_id', lead_id).eq('date', date).maybeSingle();
+      if (findErr) throw new Error(findErr.message);
+      if (existing) {
+        const { error } = await supabase.from('attendance').update({ present, updated_at: new Date().toISOString() }).eq('id', existing.id);
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await supabase.from('attendance').insert({ id: uuidv4(), marathon_id, lead_id, date, present });
+        if (error) throw new Error(error.message);
+      }
+      // Business rule: showing up for a session promotes an enrolled lead to Participant.
+      if (present) {
+        const { data: lead } = await supabase.from('leads').select('status').eq('id', lead_id).single();
+        if (lead?.status === 'Inscrit') {
+          await supabase.from('leads').update({ status: 'Participant' }).eq('id', lead_id);
+        }
+      }
+      return res({ message: 'ok' });
+    }
   },
 
   put: async (url, payload = {}) => {
     if (url.match(/^\/users\/([^/]+)\/code$/)) {
       const id = url.split('/')[2];
       const { data, error } = await supabase.from('users').update({ code: payload.code }).eq('id', id).select().single();
+      if (error) throw new Error(error.message);
+      return res({ user: data });
+    }
+    if (url.match(/^\/users\/([^/]+)$/)) {
+      const id = url.split('/')[2];
+      const { data, error } = await supabase.from('users').update(payload).eq('id', id).select().single();
       if (error) throw new Error(error.message);
       return res({ user: data });
     }

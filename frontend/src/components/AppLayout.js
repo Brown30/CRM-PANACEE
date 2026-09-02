@@ -1,13 +1,13 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { LayoutDashboard, Users, CalendarClock, Trophy, BarChart3, UserCog, LogOut, ChevronDown, Flag, User, MoreVertical, ClipboardList, Award, PhoneCall } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarClock, Trophy, BarChart3, UserCog, LogOut, ChevronDown, Flag, User, MoreVertical, ClipboardList, Award, PhoneCall, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import InstallPrompt from '@/components/InstallPrompt';
 import NotificationBell from '@/components/NotificationBell';
 
 export default function AppLayout() {
-  const { user, logout, selectedMarathon, selectMarathon, isAdmin, isPedagogia } = useAuth();
+  const { user, logout, selectedMarathon, selectMarathon, isAdmin, isPedagogia, canManageAttendance } = useAuth();
   const navigate = useNavigate();
   const isVendeur = user?.role === 'vendeur';
 
@@ -37,12 +37,13 @@ export default function AppLayout() {
   ];
 
   const certificatesItem = { to: '/certificats', icon: Award, label: 'Certificats' };
+  const presenceItem = { to: '/presence', icon: CalendarCheck, label: 'Présence' };
 
   const allItems = isPedagogia
-    ? [certificatesItem]
+    ? [certificatesItem, ...(canManageAttendance ? [presenceItem] : [])]
     : isAdmin
-      ? [...navItems, ...adminItems, certificatesItem]
-      : navItems;
+      ? [...navItems, presenceItem, ...adminItems, certificatesItem]
+      : [...navItems, ...(canManageAttendance ? [presenceItem] : [])];
 
   const bottomNavItems = isPedagogia
     ? [certificatesItem, { to: '/profile', icon: User, label: 'Profile' }]

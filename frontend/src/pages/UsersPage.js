@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap } from 'lucide-react';
+import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap, CalendarCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function UsersPage() {
@@ -47,6 +47,16 @@ export default function UsersPage() {
       toast.success('Utilisateur supprimé');
       fetchUsers();
     } catch { toast.error('Erreur suppression'); }
+  };
+
+  const handleToggleAttendance = async (u) => {
+    try {
+      await api.put(`/users/${u.id}`, { can_manage_attendance: !u.can_manage_attendance });
+      toast.success(u.can_manage_attendance ? 'Accès Présence retiré' : 'Accès Présence accordé');
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.message || 'Erreur');
+    }
   };
 
   const openCodeEdit = (u) => {
@@ -121,15 +131,31 @@ export default function UsersPage() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-slate-800 text-sm">{u.name}</p>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getRoleBadge(u.role)}`}>
                   {getRoleLabel(u.role)}
                 </span>
                 <span className="text-xs text-slate-400">Code: {u.code}</span>
+                {u.can_manage_attendance && (
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                    Présence
+                  </span>
+                )}
               </div>
             </div>
             {isAdminPrincipal && (
               <div className="flex items-center gap-1 shrink-0">
+                {(u.role === 'vendeur' || u.role === 'pedagogia') && (
+                  <Button
+                    variant="ghost" size="icon"
+                    className={`h-8 w-8 ${u.can_manage_attendance ? 'text-amber-500 hover:text-amber-600' : 'text-slate-400 hover:text-amber-500'}`}
+                    onClick={() => handleToggleAttendance(u)}
+                    data-testid={`toggle-attendance-${u.id}`}
+                    title={u.can_manage_attendance ? 'Retirer accès Présence' : 'Accorder accès Présence'}
+                  >
+                    <CalendarCheck className="w-4 h-4" />
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-500 h-8 w-8" onClick={() => openCodeEdit(u)} data-testid={`edit-code-${u.id}`} title="Modifier le code">
                   <KeyRound className="w-4 h-4" />
                 </Button>
