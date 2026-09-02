@@ -14,6 +14,7 @@ import ReportsPage from "@/pages/ReportsPage";
 import UsersPage from "@/pages/UsersPage";
 import ObjectivesPage from "@/pages/ObjectivesPage";
 import MethodologyPage from "@/pages/MethodologyPage";
+import AttendancePage from "@/pages/AttendancePage";
 import ProfilePage from "@/pages/ProfilePage";
 import CertificatsPage from "@/pages/CertificatsPage";
 import CertificatCoursePage from "@/pages/CertificatCoursePage";
@@ -61,6 +62,7 @@ function App() {
             <Route path="utilisateurs" element={<UsersPage />} />
             <Route path="objectifs" element={<ObjectivesPage />} />
             <Route path="methodologie" element={<MethodologyPage />} />
+            <Route path="presence" element={<AttendancePage />} />
             <Route path="certificats" element={<CertificatsPage />} />
             <Route path="certificats/:marathonId" element={<CertificatCoursePage />} />
             <Route path="profile" element={<ProfilePage />} />
