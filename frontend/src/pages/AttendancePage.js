@@ -1,19 +1,41 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, CalendarCheck, Phone, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import NoMarathonFallback from '@/components/NoMarathonFallback';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
+const dateStorageKey = (marathonId) => `panacee_attendance_date_${marathonId}`;
 
 export default function AttendancePage() {
   const { api, selectedMarathon, canManageAttendance } = useAuth();
-  const [date, setDate] = useState(todayStr());
+  // Remember the last date picked per marathon — otherwise leaving and coming back
+  // to this page silently resets to today, which looks like the day's attendance
+  // (and its X/Y count) vanished when it was really just showing a different date.
+  const [date, setDate] = useState(() => {
+    if (!selectedMarathon) return todayStr();
+    return localStorage.getItem(dateStorageKey(selectedMarathon.id)) || todayStr();
+  });
   const [roster, setRoster] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [savingId, setSavingId] = useState(null);
+
+  useEffect(() => {
+    if (selectedMarathon) {
+      const saved = localStorage.getItem(dateStorageKey(selectedMarathon.id));
+      setDate(saved || todayStr());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMarathon?.id]);
+
+  const changeDate = (newDate) => {
+    setDate(newDate);
+    if (selectedMarathon) localStorage.setItem(dateStorageKey(selectedMarathon.id), newDate);
+  };
 
   const loadRoster = useCallback(async () => {
     if (!selectedMarathon) return;
@@ -59,7 +81,9 @@ export default function AttendancePage() {
     setSavingId(null);
   };
 
-  const filtered = roster.filter(r => r.full_name?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filtered = roster
+    .filter(r => r.full_name?.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(r => statusFilter === 'all' || r.status === statusFilter);
   const presentCount = roster.filter(r => r.present === true).length;
 
   if (loading) return (
@@ -85,7 +109,7 @@ export default function AttendancePage() {
         <Input
           type="date"
           value={date}
-          onChange={e => setDate(e.target.value)}
+          onChange={e => changeDate(e.target.value)}
           className="w-[160px] h-10 rounded-xl"
           data-testid="attendance-date"
         />
@@ -93,15 +117,27 @@ export default function AttendancePage() {
 
       <p className="text-sm text-slate-500">{selectedMarathon.name} — {presentCount}/{roster.length} présent(s)</p>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input
-          placeholder="Rechercher un nom..."
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          className="pl-10 h-10 rounded-xl"
-          data-testid="attendance-search"
-        />
+      <div className="flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input
+            placeholder="Rechercher un nom..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pl-10 h-10 rounded-xl"
+            data-testid="attendance-search"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[160px] h-10 rounded-xl" data-testid="attendance-status-filter">
+            <SelectValue placeholder="Statut" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous</SelectItem>
+            <SelectItem value="Inscrit">Inscrit</SelectItem>
+            <SelectItem value="Participant">Participant</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">
