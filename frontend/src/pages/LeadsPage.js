@@ -142,7 +142,7 @@ export default function LeadsPage() {
     if (!selectedMarathon) return;
     setExportingList(true);
     try {
-      const params = { marathon_id: selectedMarathon.id, status: 'Inscrit' };
+      const params = { marathon_id: selectedMarathon.id };
       let showVendeur = false;
       if (!isAdmin) {
         params.vendeur_id = user.id;
@@ -153,13 +153,17 @@ export default function LeadsPage() {
       }
       const { data } = await api.get('/leads', { params });
       const vMap = Object.fromEntries(vendeurs.map(v => [v.id, v.name]));
-      const rows = (data.leads || []).map(l => ({
-        full_name: l.full_name,
-        address: l.address,
-        phone: l.phone,
-        payment_method: l.payment_method,
-        vendeur_name: vMap[l.vendeur_id] || ''
-      }));
+      // "Inscrit" is the whole enrolled group — a lead that became a "Participant"
+      // (attended) is still part of it, not a separate bucket.
+      const rows = (data.leads || [])
+        .filter(l => l.status === 'Inscrit' || l.status === 'Participant')
+        .map(l => ({
+          full_name: l.full_name,
+          address: l.address,
+          phone: l.phone,
+          payment_method: l.payment_method,
+          vendeur_name: vMap[l.vendeur_id] || ''
+        }));
       const vendorLabel = !isAdmin
         ? (user?.name || '')
         : vendeurFilter !== 'all'
