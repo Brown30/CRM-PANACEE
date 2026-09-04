@@ -288,6 +288,91 @@ export const api = {
       return res({ dates });
     }
 
+    if (url === '/payments') {
+      let leadsQ = supabase.from('leads').select('id, full_name, vendeur_id')
+        .eq('marathon_id', params.marathon_id).in('status', ['Inscrit', 'Participant']).order('full_name', { ascending: true });
+      if (params.vendeur_id) leadsQ = leadsQ.eq('vendeur_id', params.vendeur_id);
+      const { data: leads, error: leadsErr } = await leadsQ;
+      if (leadsErr) throw new Error(leadsErr.message);
+
+      const leadIds = (leads || []).map(l => l.id);
+      let payments = [];
+      if (leadIds.length > 0) {
+        const { data: pay, error: payErr } = await supabase.from('payments').select('*')
+          .in('lead_id', leadIds).order('created_at', { ascending: true });
+        if (payErr) throw new Error(payErr.message);
+        payments = pay || [];
+      }
+      const byLead = {};
+      for (const p of payments) {
+        (byLead[p.lead_id] = byLead[p.lead_id] || []).push(p);
+      }
+      const rows = (leads || []).map(l => {
+        const entries = byLead[l.id] || [];
+        const participation_paid = entries.reduce((s, e) => s + Number(e.amount), 0);
+        return {
+          lead_id: l.id, full_name: l.full_name, vendeur_id: l.vendeur_id,
+          participation_paid, payments: entries
+        };
+      });
+      return res({ rows });
+    }
+
+    if (url === '/commissions') {
+      const { data: marathon, error: mErr } = await supabase.from('marathons').select('participation_fee').eq('id', params.marathon_id).single();
+      if (mErr) throw new Error(mErr.message);
+      const limit = Number(marathon?.participation_fee || 0);
+
+      let leadsQ = supabase.from('leads').select('id, vendeur_id')
+        .eq('marathon_id', params.marathon_id).in('status', ['Inscrit', 'Participant']);
+      if (params.vendeur_id) leadsQ = leadsQ.eq('vendeur_id', params.vendeur_id);
+      const { data: leads, error: lErr } = await leadsQ;
+      if (lErr) throw new Error(lErr.message);
+
+      const leadIds = (leads || []).map(l => l.id);
+      let payments = [];
+      if (leadIds.length > 0) {
+        const { data: pay, error: pErr } = await supabase.from('payments').select('lead_id, amount').in('lead_id', leadIds);
+        if (pErr) throw new Error(pErr.message);
+        payments = pay || [];
+      }
+      const paidByLead = {};
+      for (const p of payments) paidByLead[p.lead_id] = (paidByLead[p.lead_id] || 0) + Number(p.amount);
+
+      const { data: vendeurs } = await supabase.from('users').select('id, name').eq('role', 'vendeur');
+      const vMap = Object.fromEntries((vendeurs || []).map(v => [v.id, v.name]));
+
+      // Commission — both the inscription and participation portions — only counts a
+      // lead once their participation fee is paid in full; leads still short of that
+      // don't contribute to the vendor's earned total, only to the "potential" figure.
+      const byVendor = {};
+      for (const l of (leads || [])) {
+        if (!byVendor[l.vendeur_id]) {
+          byVendor[l.vendeur_id] = { vendeur_id: l.vendeur_id, vendeur_name: vMap[l.vendeur_id] || 'N/A', fullCount: 0, pendingCount: 0 };
+        }
+        const paid = paidByLead[l.id] || 0;
+        const fullyPaid = limit > 0 && paid >= limit;
+        if (fullyPaid) byVendor[l.vendeur_id].fullCount++;
+        else byVendor[l.vendeur_id].pendingCount++;
+      }
+
+      const INSCRIPTION_FEE = 1000, INSCRIPTION_RATE = 0.15, PARTICIPATION_RATE = 0.05;
+      const vendors = Object.values(byVendor).map(v => {
+        const inscription_commission = v.fullCount * INSCRIPTION_FEE * INSCRIPTION_RATE;
+        const participation_commission = v.fullCount * limit * PARTICIPATION_RATE;
+        const potential_commission = v.pendingCount * (INSCRIPTION_FEE * INSCRIPTION_RATE + limit * PARTICIPATION_RATE);
+        return {
+          vendeur_id: v.vendeur_id, vendeur_name: v.vendeur_name,
+          full_count: v.fullCount, pending_count: v.pendingCount,
+          inscription_commission, participation_commission,
+          total_commission: inscription_commission + participation_commission,
+          potential_commission
+        };
+      }).sort((a, b) => b.total_commission - a.total_commission);
+
+      return res({ vendors, participation_fee: limit });
+    }
+
     console.warn("Unmocked GET", url);
     return res({});
   },
@@ -410,6 +495,32 @@ export const api = {
       }
       return res({ message: 'ok' });
     }
+
+    if (url === '/payments') {
+      const { lead_id, marathon_id, amount, created_by, created_by_name } = payload;
+      const requested = Number(amount);
+      if (!requested || requested <= 0) throw new Error('Montant invalide');
+
+      const { data: marathon, error: mErr } = await supabase.from('marathons').select('participation_fee').eq('id', marathon_id).single();
+      if (mErr) throw new Error(mErr.message);
+      const limit = Number(marathon?.participation_fee || 0);
+
+      const { data: existing, error: exErr } = await supabase.from('payments').select('amount').eq('lead_id', lead_id);
+      if (exErr) throw new Error(exErr.message);
+      const currentTotal = (existing || []).reduce((s, e) => s + Number(e.amount), 0);
+
+      if (limit > 0) {
+        const remaining = limit - currentTotal;
+        if (remaining <= 0) throw new Error('Le montant total de la participation a déjà atteint la limite');
+      }
+      const amt = limit > 0 ? Math.min(requested, limit - currentTotal) : requested;
+
+      const { data, error } = await supabase.from('payments').insert({
+        id: uuidv4(), lead_id, marathon_id, amount: amt, created_by, created_by_name
+      }).select().single();
+      if (error) throw new Error(error.message);
+      return res({ payment: data });
+    }
   },
 
   put: async (url, payload = {}) => {
@@ -481,6 +592,11 @@ export const api = {
       const id = url.split('/')[2];
       await supabase.from('sales_methodologies').delete().eq('id', id);
       return res({ message: 'Méthodologie supprimée' });
+    }
+    if (url.match(/^\/payments\/([^/]+)$/)) {
+      const id = url.split('/')[2];
+      await supabase.from('payments').delete().eq('id', id);
+      return res({ message: 'Paiement supprimé' });
     }
   }
 };

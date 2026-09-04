@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { LayoutDashboard, Users, CalendarClock, Trophy, BarChart3, UserCog, LogOut, ChevronDown, Flag, User, MoreVertical, ClipboardList, Award, PhoneCall, CalendarCheck } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarClock, Trophy, BarChart3, UserCog, LogOut, ChevronDown, Flag, User, MoreVertical, ClipboardList, Award, PhoneCall, CalendarCheck, Wallet, Percent } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import InstallPrompt from '@/components/InstallPrompt';
@@ -38,12 +38,14 @@ export default function AppLayout() {
 
   const certificatesItem = { to: '/certificats', icon: Award, label: 'Certificats' };
   const presenceItem = { to: '/presence', icon: CalendarCheck, label: 'Présence' };
+  const paymentsItem = { to: '/paiements', icon: Wallet, label: 'Paiements' };
+  const commissionsItem = { to: '/commissions', icon: Percent, label: 'Commissions' };
 
   const allItems = isPedagogia
     ? [certificatesItem, ...(canManageAttendance ? [presenceItem] : [])]
     : isAdmin
-      ? [...navItems, presenceItem, ...adminItems, certificatesItem]
-      : [...navItems, ...(canManageAttendance ? [presenceItem] : [])];
+      ? [...navItems, presenceItem, paymentsItem, commissionsItem, ...adminItems, certificatesItem]
+      : [...navItems, ...(canManageAttendance ? [presenceItem] : []), paymentsItem, commissionsItem];
 
   const bottomNavItems = isPedagogia
     ? [certificatesItem, { to: '/profile', icon: User, label: 'Profile' }]

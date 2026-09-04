@@ -58,12 +58,13 @@ export function AuthProvider({ children }) {
   const isAdminPrincipal = user?.role === 'admin_principal';
   const isPedagogia = user?.role === 'pedagogia';
   const canManageAttendance = isAdmin || !!user?.can_manage_attendance;
+  const canManagePayments = isAdmin || !!user?.can_manage_payments;
 
   return (
     <AuthContext.Provider value={{
       user, token, loading, login, logout,
       selectedMarathon, selectMarathon,
-      api: axiosInstance, isAdmin, isAdminPrincipal, isPedagogia, canManageAttendance
+      api: axiosInstance, isAdmin, isAdminPrincipal, isPedagogia, canManageAttendance, canManagePayments
     }}>
       {children}
     </AuthContext.Provider>

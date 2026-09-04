@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap, CalendarCheck } from 'lucide-react';
+import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap, CalendarCheck, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function UsersPage() {
@@ -53,6 +53,16 @@ export default function UsersPage() {
     try {
       await api.put(`/users/${u.id}`, { can_manage_attendance: !u.can_manage_attendance });
       toast.success(u.can_manage_attendance ? 'Accès Présence retiré' : 'Accès Présence accordé');
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.message || 'Erreur');
+    }
+  };
+
+  const handleTogglePayments = async (u) => {
+    try {
+      await api.put(`/users/${u.id}`, { can_manage_payments: !u.can_manage_payments });
+      toast.success(u.can_manage_payments ? 'Accès Paiements retiré' : 'Accès Paiements accordé');
       fetchUsers();
     } catch (err) {
       toast.error(err.message || 'Erreur');
@@ -141,6 +151,11 @@ export default function UsersPage() {
                     Présence
                   </span>
                 )}
+                {u.can_manage_payments && (
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                    Paiements
+                  </span>
+                )}
               </div>
             </div>
             {isAdminPrincipal && (
@@ -154,6 +169,17 @@ export default function UsersPage() {
                     title={u.can_manage_attendance ? 'Retirer accès Présence' : 'Accorder accès Présence'}
                   >
                     <CalendarCheck className="w-4 h-4" />
+                  </Button>
+                )}
+                {(u.role === 'vendeur' || u.role === 'pedagogia') && (
+                  <Button
+                    variant="ghost" size="icon"
+                    className={`h-8 w-8 ${u.can_manage_payments ? 'text-emerald-500 hover:text-emerald-600' : 'text-slate-400 hover:text-emerald-500'}`}
+                    onClick={() => handleTogglePayments(u)}
+                    data-testid={`toggle-payments-${u.id}`}
+                    title={u.can_manage_payments ? 'Retirer accès Paiements' : 'Accorder accès Paiements'}
+                  >
+                    <Wallet className="w-4 h-4" />
                   </Button>
                 )}
                 <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-500 h-8 w-8" onClick={() => openCodeEdit(u)} data-testid={`edit-code-${u.id}`} title="Modifier le code">
