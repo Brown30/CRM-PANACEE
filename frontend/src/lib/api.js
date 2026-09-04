@@ -11,6 +11,11 @@ const getRole = async (userId) => {
   return data?.role;
 };
 
+// "Participant" is a subset of "Inscrit" (someone who attended was necessarily
+// enrolled first), not a separate bucket — so anywhere we report the total
+// enrolled count, both statuses have to count as "inscrit".
+const isEnrolled = (l) => l.status === 'Inscrit' || l.status === 'Participant';
+
 // Helper to mimic axios response
 const res = (data) => ({ data });
 
@@ -118,7 +123,7 @@ export const api = {
       
       const { data: leads } = await q;
       const total_leads = leads.length;
-      const inscrits = leads.filter(l => l.status === 'Inscrit').length;
+      const inscrits = leads.filter(l => isEnrolled(l)).length;
       const tres_interesses = leads.filter(l => l.status === 'Très intéressé').length;
       
       const { data: mar } = await supabase.from('marathons').select('objectif_par_vendeur').eq('id', params.marathon_id).single();
@@ -147,7 +152,7 @@ export const api = {
       
       const { data: leads } = await q;
       const total_leads = leads.length;
-      const inscrits = leads.filter(l => l.status === 'Inscrit').length;
+      const inscrits = leads.filter(l => isEnrolled(l)).length;
       const tres_interesses = leads.filter(l => l.status === 'Très intéressé').length;
       
       const { data: mar } = await supabase.from('marathons').select('*').eq('id', params.marathon_id).single();
@@ -156,7 +161,7 @@ export const api = {
       const { data: vendeurs } = await supabase.from('users').select('*').eq('role', 'vendeur');
       const vendeur_stats = vendeurs.map(v => {
         const vLeads = leads.filter(l => l.vendeur_id === v.id);
-        const vInscrits = vLeads.filter(l => l.status === 'Inscrit').length;
+        const vInscrits = vLeads.filter(l => isEnrolled(l)).length;
         const vTresInteresses = vLeads.filter(l => l.status === 'Très intéressé').length;
         const vTotal = vLeads.length;
         const vObj = (mar?.objectif_par_vendeur || {})[v.id] || 0;
@@ -186,7 +191,7 @@ export const api = {
       const { data: leads } = await supabase.from('leads').select('vendeur_id, status').eq('marathon_id', params.marathon_id);
       let ranking = vendeurs.map(v => {
         const vl = leads.filter(l => l.vendeur_id === v.id);
-        const ins = vl.filter(l => l.status === 'Inscrit').length;
+        const ins = vl.filter(l => isEnrolled(l)).length;
         const tot = vl.length;
         return {
           vendeur_id: v.id,
@@ -210,7 +215,7 @@ export const api = {
         const d = l.date || 'unknown';
         if(!dailyMap[d]) dailyMap[d] = { date: d, total: 0, inscrits: 0, tres_interesses: 0 };
         dailyMap[d].total++;
-        if(l.status === 'Inscrit') dailyMap[d].inscrits++;
+        if(isEnrolled(l)) dailyMap[d].inscrits++;
         else if(l.status === 'Très intéressé') dailyMap[d].tres_interesses++;
       });
       const daily = Object.values(dailyMap).sort((a,b) => a.date > b.date ? 1 : -1);
@@ -222,7 +227,7 @@ export const api = {
         const vid = l.vendeur_id;
         if(!par_vendeur_map[vid]) par_vendeur_map[vid] = { vendeur_id: vid, vendeur_name: vendeurMap[vid] || 'Inconnu', total: 0, inscrits: 0, tres_interesses: 0 };
         par_vendeur_map[vid].total++;
-        if(l.status === 'Inscrit') par_vendeur_map[vid].inscrits++;
+        if(isEnrolled(l)) par_vendeur_map[vid].inscrits++;
         else if(l.status === 'Très intéressé') par_vendeur_map[vid].tres_interesses++;
       });
       const par_vendeur = Object.values(par_vendeur_map);
@@ -230,7 +235,7 @@ export const api = {
       return res({
         daily, par_vendeur,
         total_leads: leads.length,
-        total_inscrits: leads.filter(l => l.status === 'Inscrit').length,
+        total_inscrits: leads.filter(l => isEnrolled(l)).length,
         total_tres_interesses: leads.filter(l => l.status === 'Très intéressé').length
       });
     }
