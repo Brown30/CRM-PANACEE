@@ -391,10 +391,21 @@ export const api = {
         if (error) throw new Error(error.message);
       }
       // Business rule: showing up for a session promotes an enrolled lead to Participant.
+      // Unmarking reverts them back to Inscrit, but only if this was their last remaining
+      // present day for this marathon — someone who attended other days stays a Participant.
       if (present) {
         const { data: lead } = await supabase.from('leads').select('status').eq('id', lead_id).single();
         if (lead?.status === 'Inscrit') {
           await supabase.from('leads').update({ status: 'Participant' }).eq('id', lead_id);
+        }
+      } else {
+        const { data: stillPresent } = await supabase.from('attendance').select('id')
+          .eq('marathon_id', marathon_id).eq('lead_id', lead_id).eq('present', true).limit(1);
+        if (!stillPresent || stillPresent.length === 0) {
+          const { data: lead } = await supabase.from('leads').select('status').eq('id', lead_id).single();
+          if (lead?.status === 'Participant') {
+            await supabase.from('leads').update({ status: 'Inscrit' }).eq('id', lead_id);
+          }
         }
       }
       return res({ message: 'ok' });

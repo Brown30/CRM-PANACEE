@@ -15,15 +15,20 @@ export default function AttendancePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [savingId, setSavingId] = useState(null);
 
+  const loadRoster = useCallback(async () => {
+    if (!selectedMarathon) return;
+    const { data } = await api.get('/attendance', { params: { marathon_id: selectedMarathon.id, date } });
+    setRoster(data.roster || []);
+  }, [api, selectedMarathon, date]);
+
   const fetchRoster = useCallback(async () => {
     if (!selectedMarathon) { setLoading(false); return; }
     setLoading(true);
     try {
-      const { data } = await api.get('/attendance', { params: { marathon_id: selectedMarathon.id, date } });
-      setRoster(data.roster || []);
+      await loadRoster();
     } catch { toast.error('Erreur chargement'); }
     setLoading(false);
-  }, [api, selectedMarathon, date]);
+  }, [selectedMarathon, loadRoster]);
 
   useEffect(() => { fetchRoster(); }, [fetchRoster]);
 
@@ -42,6 +47,11 @@ export default function AttendancePage() {
         date,
         present: newPresent
       });
+      // Whether unmarking reverts the lead's status back to Inscrit depends on whether
+      // they're still present on any other day — that's only known server-side, so
+      // re-sync from the server instead of guessing it in the optimistic update above.
+      // (loadRoster, not fetchRoster — this shouldn't flip the full-page loading spinner.)
+      await loadRoster();
     } catch (err) {
       toast.error(err.message || 'Erreur enregistrement');
       setRoster(prev => prev.map(r => r.lead_id === row.lead_id ? { ...r, present: previous, status: row.status } : r));
