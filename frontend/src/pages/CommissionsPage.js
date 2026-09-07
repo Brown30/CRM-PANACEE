@@ -8,6 +8,7 @@ import { formatAmount } from '@/lib/finance';
 export default function CommissionsPage() {
   const { api, user, selectedMarathon, isAdmin } = useAuth();
   const [vendors, setVendors] = useState([]);
+  const [limit, setLimit] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -18,6 +19,9 @@ export default function CommissionsPage() {
       if (!isAdmin) params.vendeur_id = user.id;
       const { data } = await api.get('/commissions', { params });
       setVendors(data.vendors || []);
+      // The cached selectedMarathon can be stale if the fee was just set
+      // elsewhere — use what the API computed against instead.
+      setLimit(Number(data.participation_fee || 0));
     } catch { toast.error('Erreur chargement'); }
     setLoading(false);
   }, [api, selectedMarathon, user, isAdmin]);
@@ -32,7 +36,6 @@ export default function CommissionsPage() {
 
   if (!selectedMarathon) return <NoMarathonFallback />;
 
-  const limit = Number(selectedMarathon.participation_fee || 0);
   const mine = !isAdmin ? vendors[0] : null;
 
   return (

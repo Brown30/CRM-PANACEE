@@ -29,7 +29,7 @@ const parseImportText = (text) => {
 };
 
 export default function MarathonPage() {
-  const { api, user, isAdmin, isAdminPrincipal } = useAuth();
+  const { api, user, isAdmin, isAdminPrincipal, selectedMarathon, selectMarathon } = useAuth();
   const [marathons, setMarathons] = useState([]);
   const [vendeurs, setVendeurs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +74,11 @@ export default function MarathonPage() {
     }
     try {
       if (editMarathon) {
-        await api.put(`/marathons/${editMarathon.id}`, formData);
+        const { data } = await api.put(`/marathons/${editMarathon.id}`, formData);
+        // The active marathon is cached in AuthContext/localStorage (so other pages
+        // don't refetch it constantly) — if we just edited that one, refresh the
+        // cache too, or pages like Paiements keep reading the stale pre-edit fee.
+        if (selectedMarathon?.id === editMarathon.id) selectMarathon(data.marathon);
         toast.success('Marathon modifiée');
       } else {
         await api.post('/marathons', formData);

@@ -18,8 +18,7 @@ export default function PaymentsPage() {
   const [expandedId, setExpandedId] = useState(null);
   const [amountDrafts, setAmountDrafts] = useState({});
   const [savingId, setSavingId] = useState(null);
-
-  const limit = Number(selectedMarathon?.participation_fee || 0);
+  const [limit, setLimit] = useState(Number(selectedMarathon?.participation_fee || 0));
 
   const fetchData = useCallback(async () => {
     if (!selectedMarathon) { setLoading(false); return; }
@@ -28,12 +27,17 @@ export default function PaymentsPage() {
       const params = { marathon_id: selectedMarathon.id };
       if (!isAdmin) params.vendeur_id = user.id;
       else if (vendeurFilter !== 'all') params.vendeur_id = vendeurFilter;
-      const [payRes, vRes] = await Promise.all([
+      // The active marathon is cached client-side (AuthContext/localStorage), so if
+      // an admin just set the participation fee elsewhere, that cache can still be
+      // stale here — re-fetch the marathon itself instead of trusting the cache.
+      const [payRes, vRes, marRes] = await Promise.all([
         api.get('/payments', { params }),
-        isAdmin ? api.get('/users/vendeurs') : Promise.resolve({ data: { vendeurs: [] } })
+        isAdmin ? api.get('/users/vendeurs') : Promise.resolve({ data: { vendeurs: [] } }),
+        api.get(`/marathons/${selectedMarathon.id}`)
       ]);
       setRows(payRes.data.rows || []);
       setVendeurs(vRes.data.vendeurs || []);
+      setLimit(Number(marRes.data.marathon?.participation_fee || 0));
     } catch { toast.error('Erreur chargement'); }
     setLoading(false);
   }, [api, selectedMarathon, user, isAdmin, vendeurFilter]);
