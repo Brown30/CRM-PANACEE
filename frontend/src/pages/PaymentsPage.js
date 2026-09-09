@@ -20,19 +20,24 @@ export default function PaymentsPage() {
   const [savingId, setSavingId] = useState(null);
   const [limit, setLimit] = useState(Number(selectedMarathon?.participation_fee || 0));
 
+  // Someone trusted to manage payments needs to see and log payments for every
+  // vendor's students, not just their own leads — the same as an admin here,
+  // even though their role elsewhere in the app (leads, ranking...) stays vendeur.
+  const canSeeAllVendors = isAdmin || canManagePayments;
+
   const fetchData = useCallback(async () => {
     if (!selectedMarathon) { setLoading(false); return; }
     setLoading(true);
     try {
       const params = { marathon_id: selectedMarathon.id };
-      if (!isAdmin) params.vendeur_id = user.id;
+      if (!canSeeAllVendors) params.vendeur_id = user.id;
       else if (vendeurFilter !== 'all') params.vendeur_id = vendeurFilter;
       // The active marathon is cached client-side (AuthContext/localStorage), so if
       // an admin just set the participation fee elsewhere, that cache can still be
       // stale here — re-fetch the marathon itself instead of trusting the cache.
       const [payRes, vRes, marRes] = await Promise.all([
         api.get('/payments', { params }),
-        isAdmin ? api.get('/users/vendeurs') : Promise.resolve({ data: { vendeurs: [] } }),
+        canSeeAllVendors ? api.get('/users/vendeurs') : Promise.resolve({ data: { vendeurs: [] } }),
         api.get(`/marathons/${selectedMarathon.id}`)
       ]);
       setRows(payRes.data.rows || []);
@@ -40,7 +45,7 @@ export default function PaymentsPage() {
       setLimit(Number(marRes.data.marathon?.participation_fee || 0));
     } catch { toast.error('Erreur chargement'); }
     setLoading(false);
-  }, [api, selectedMarathon, user, isAdmin, vendeurFilter]);
+  }, [api, selectedMarathon, user, canSeeAllVendors, vendeurFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -116,7 +121,7 @@ export default function PaymentsPage() {
             data-testid="payments-search"
           />
         </div>
-        {isAdmin && (
+        {canSeeAllVendors && (
           <Select value={vendeurFilter} onValueChange={setVendeurFilter}>
             <SelectTrigger className="w-[200px] h-10 rounded-xl" data-testid="payments-vendeur-filter">
               <SelectValue placeholder="Vendeur" />
@@ -138,7 +143,7 @@ export default function PaymentsPage() {
               <div className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-800 truncate">{row.full_name}</p>
-                  {isAdmin && vendeurFilter === 'all' && (
+                  {canSeeAllVendors && vendeurFilter === 'all' && (
                     <p className="text-xs text-slate-400">{vMap[row.vendeur_id] || 'N/A'}</p>
                   )}
                   <div className="flex items-center gap-3 mt-1 flex-wrap">
