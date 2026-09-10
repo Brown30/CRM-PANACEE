@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { PhoneCall, HelpCircle, Pencil, Plus, X } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PhoneCall, HelpCircle, Pencil, Plus, X, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import RichTextEditor from '@/components/RichTextEditor';
 import NoMarathonFallback from '@/components/NoMarathonFallback';
@@ -113,6 +114,10 @@ export default function MethodologyPage() {
   const [showNew, setShowNew] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [creating, setCreating] = useState(false);
+  const [showPush, setShowPush] = useState(false);
+  const [sameFormationMarathons, setSameFormationMarathons] = useState([]);
+  const [pushTargetId, setPushTargetId] = useState('');
+  const [pushing, setPushing] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!selectedMarathon) {
@@ -166,6 +171,34 @@ export default function MethodologyPage() {
     setCreating(false);
   };
 
+  const openPush = async () => {
+    setPushTargetId('');
+    setShowPush(true);
+    try {
+      const { data } = await api.get('/marathons');
+      const candidates = (data.marathons || []).filter(m => m.formation === selectedMarathon.formation && m.id !== selectedMarathon.id);
+      setSameFormationMarathons(candidates);
+    } catch {
+      toast.error('Erreur chargement des marathons');
+    }
+  };
+
+  const handlePush = async () => {
+    if (!pushTargetId) { toast.error('Choisissez une marathon cible'); return; }
+    setPushing(true);
+    try {
+      const { data } = await api.post('/methodologies/push', {
+        source_marathon_id: selectedMarathon.id,
+        target_marathon_id: pushTargetId
+      });
+      toast.success(`${data.copied} méthodologie(s) copiée(s)`);
+      setShowPush(false);
+    } catch (err) {
+      toast.error(err.message || 'Erreur copie');
+    }
+    setPushing(false);
+  };
+
   if (loading) return (
     <div className="flex justify-center py-20">
       <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
@@ -181,9 +214,16 @@ export default function MethodologyPage() {
           <PhoneCall className="w-5 h-5 text-emerald-500" /> Méthodologie de Vente
         </h2>
         {isAdminPrincipal && (
-          <Button onClick={() => setShowNew(true)} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="add-methodology-btn">
-            <Plus className="w-4 h-4" /> Nouvelle méthodologie
-          </Button>
+          <div className="flex items-center gap-2">
+            {methodologies.length > 0 && (
+              <Button onClick={openPush} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="push-methodology-btn">
+                <Copy className="w-4 h-4" /> Copier vers une autre maratona
+              </Button>
+            )}
+            <Button onClick={() => setShowNew(true)} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="add-methodology-btn">
+              <Plus className="w-4 h-4" /> Nouvelle méthodologie
+            </Button>
+          </div>
         )}
       </div>
 
@@ -276,6 +316,45 @@ export default function MethodologyPage() {
               <Button type="button" variant="outline" className="flex-1 h-11 rounded-xl" onClick={() => setShowNew(false)}>Annuler</Button>
               <Button type="button" className="btn-primary flex-1" onClick={handleCreate} disabled={creating}>
                 {creating ? 'Création...' : 'Créer'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Push Methodology Dialog */}
+      <Dialog open={showPush} onOpenChange={setShowPush}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>Copier la méthodologie</DialogTitle>
+            <DialogDescription>
+              Copie toutes les méthodologies de "{selectedMarathon?.name}" vers une autre maratona du même cours ({selectedMarathon?.formation}). Les copies seront indépendantes et modifiables séparément.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs font-semibold text-slate-500">Maratona cible *</Label>
+              <Select value={pushTargetId} onValueChange={setPushTargetId}>
+                <SelectTrigger className="input-field mt-1" data-testid="push-methodology-target">
+                  <SelectValue placeholder="Choisir maratona..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {sameFormationMarathons.map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {sameFormationMarathons.length === 0 && (
+                <p className="text-xs text-slate-400 mt-1">Aucune autre marathon active du même cours pour le moment</p>
+              )}
+            </div>
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Si la marathon cible a déjà des méthodologies, celles-ci seront conservées — les copies s'ajoutent, elles ne les remplacent pas.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" className="flex-1 h-11 rounded-xl" onClick={() => setShowPush(false)}>Annuler</Button>
+              <Button type="button" className="btn-primary flex-1" onClick={handlePush} disabled={pushing || !pushTargetId}>
+                {pushing ? 'Copie...' : 'Copier'}
               </Button>
             </div>
           </div>
