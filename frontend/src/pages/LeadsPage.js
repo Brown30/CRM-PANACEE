@@ -433,10 +433,11 @@ export default function LeadsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {vendeurs
-                      // A vendeur excluded from this marathon can't be picked for a new
-                      // assignment, but stays visible if a lead is already theirs so
-                      // editing that lead doesn't show a blank/broken selection.
-                      .filter(v => !(selectedMarathon?.excluded_vendeurs || []).includes(v.id) || v.id === formData.vendeur_id)
+                      // A vendeur excluded from this marathon, or deactivated (no longer
+                      // with the company), can't be picked for a new assignment — but
+                      // stays visible if a lead is already theirs so editing that lead
+                      // doesn't show a blank/broken selection.
+                      .filter(v => v.id === formData.vendeur_id || (v.active !== false && !(selectedMarathon?.excluded_vendeurs || []).includes(v.id)))
                       .map(v => (
                         <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
                       ))}

@@ -26,7 +26,7 @@ export default function LoginPage() {
       toast.success('Connexion réussie');
       navigate('/select-marathon');
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Code invalide');
+      toast.error(err.response?.data?.detail || err.message || 'Code invalide');
     }
     setIsLoading(false);
   };

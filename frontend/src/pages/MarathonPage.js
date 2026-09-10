@@ -277,6 +277,10 @@ export default function MarathonPage() {
 
   const closedCount = marathons.filter(m => !m.active).length;
   const visibleMarathons = showClosed ? marathons : marathons.filter(m => m.active);
+  // A deactivated vendeur (no longer with the company) shouldn't be offered for
+  // new objectifs, exclusions, or lead allocations — but stays findable by id for
+  // displaying historical badges/labels (m.excluded_vendeurs, objectif_par_vendeur).
+  const activeVendeurs = vendeurs.filter(v => v.active !== false);
 
   return (
     <div className="p-4 md:p-6 space-y-4" data-testid="marathon-page">
@@ -432,7 +436,7 @@ export default function MarathonPage() {
             <div>
               <Label className="text-xs font-semibold text-slate-500 mb-2 block">Objectif par vendeur</Label>
               <div className="space-y-2">
-                {vendeurs.map(v => (
+                {activeVendeurs.map(v => (
                   <div key={v.id} className="flex items-center gap-3">
                     <span className="text-sm text-slate-600 w-28 truncate">{v.name}</span>
                     <Input
@@ -451,7 +455,7 @@ export default function MarathonPage() {
               <Label className="text-xs font-semibold text-slate-500 mb-2 block">Vendeurs exclus</Label>
               <p className="text-xs text-slate-400 mb-2">Un vendeur exclu n'apparaît plus dans la liste au moment d'assigner un lead sur cette marathon</p>
               <div className="space-y-2">
-                {vendeurs.map(v => (
+                {activeVendeurs.map(v => (
                   <label key={v.id} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
                     <input
                       type="checkbox"
@@ -517,7 +521,7 @@ export default function MarathonPage() {
             <div>
               <Label className="text-xs font-semibold text-slate-500 mb-2 block">Quantidade por vendedor</Label>
               <div className="space-y-2">
-                {vendeurs.map(v => (
+                {activeVendeurs.map(v => (
                   <div key={v.id} className="flex items-center gap-3">
                     <span className="text-sm text-slate-600 w-28 truncate">{v.name}</span>
                     <Input
@@ -592,7 +596,7 @@ export default function MarathonPage() {
             <div>
               <Label className="text-xs font-semibold text-slate-500 mb-2 block">Quantidade por vendedor</Label>
               <div className="space-y-2">
-                {vendeurs.map(v => (
+                {activeVendeurs.map(v => (
                   <div key={v.id} className="flex items-center gap-3">
                     <span className="text-sm text-slate-600 w-28 truncate">{v.name}</span>
                     <Input

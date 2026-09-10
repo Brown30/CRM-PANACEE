@@ -28,6 +28,7 @@ export const api = {
       if (!uId) throw new Error('Not logged in');
       const { data } = await supabase.from('users').select('*').eq('id', uId).single();
       if (!data) throw new Error('User not found');
+      if (data.active === false) throw new Error('Compte désactivé');
       return res({ user: data });
     }
     
@@ -386,6 +387,7 @@ export const api = {
     if (url === '/auth/login') {
       const { data } = await supabase.from('users').select('*').eq('code', payload.code).single();
       if (!data) throw new Error("Code invalide");
+      if (data.active === false) throw new Error("Compte désactivé");
       return res({ token: 'fake-jwt', user: data });
     }
     if (url === '/users') {
