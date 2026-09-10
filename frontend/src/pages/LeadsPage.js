@@ -432,9 +432,14 @@ export default function LeadsPage() {
                     <SelectValue placeholder="Choisir vendeur..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {vendeurs.map(v => (
-                      <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                    ))}
+                    {vendeurs
+                      // A vendeur excluded from this marathon can't be picked for a new
+                      // assignment, but stays visible if a lead is already theirs so
+                      // editing that lead doesn't show a blank/broken selection.
+                      .filter(v => !(selectedMarathon?.excluded_vendeurs || []).includes(v.id) || v.id === formData.vendeur_id)
+                      .map(v => (
+                        <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
