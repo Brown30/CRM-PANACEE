@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap, CalendarCheck, Wallet } from 'lucide-react';
+import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap, CalendarCheck, Wallet, Ban, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function UsersPage() {
@@ -63,6 +63,19 @@ export default function UsersPage() {
     try {
       await api.put(`/users/${u.id}`, { can_manage_payments: !u.can_manage_payments });
       toast.success(u.can_manage_payments ? 'Accès Paiements retiré' : 'Accès Paiements accordé');
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.message || 'Erreur');
+    }
+  };
+
+  // Deactivating (rather than deleting) someone who left keeps their historical
+  // leads, payments and commissions correctly attributed to them — it just blocks
+  // login and hides them from dropdowns used to assign new work.
+  const handleToggleActive = async (u) => {
+    try {
+      await api.put(`/users/${u.id}`, { active: u.active === false });
+      toast.success(u.active === false ? 'Utilisateur réactivé' : 'Utilisateur désactivé');
       fetchUsers();
     } catch (err) {
       toast.error(err.message || 'Erreur');
@@ -135,7 +148,7 @@ export default function UsersPage() {
 
       <div className="space-y-2">
         {users.map(u => (
-          <div key={u.id} className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4 flex items-center gap-4" data-testid={`user-item-${u.id}`}>
+          <div key={u.id} className={`bg-white rounded-2xl border shadow-sm p-4 flex items-center gap-4 transition-all ${u.active === false ? 'border-slate-200/40 opacity-60' : 'border-slate-200/60'}`} data-testid={`user-item-${u.id}`}>
             <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center shrink-0">
               {getRoleIcon(u.role)}
             </div>
@@ -145,6 +158,9 @@ export default function UsersPage() {
                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getRoleBadge(u.role)}`}>
                   {getRoleLabel(u.role)}
                 </span>
+                {u.active === false && (
+                  <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Inactif</span>
+                )}
                 <span className="text-xs text-slate-400">Code: {u.code}</span>
                 {u.can_manage_attendance && (
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
@@ -186,7 +202,18 @@ export default function UsersPage() {
                   <KeyRound className="w-4 h-4" />
                 </Button>
                 {u.role !== 'admin_principal' && (
-                  <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 h-8 w-8" onClick={() => handleDelete(u.id)} data-testid={`delete-user-${u.id}`}>
+                  u.active === false ? (
+                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-600 h-8 w-8" onClick={() => handleToggleActive(u)} data-testid={`reactivate-user-${u.id}`} title="Réactiver">
+                      <RotateCcw className="w-4 h-4" />
+                    </Button>
+                  ) : (
+                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-amber-500 h-8 w-8" onClick={() => handleToggleActive(u)} data-testid={`deactivate-user-${u.id}`} title="Désactiver (l'utilisateur ne pourra plus se connecter)">
+                      <Ban className="w-4 h-4" />
+                    </Button>
+                  )
+                )}
+                {u.role !== 'admin_principal' && (
+                  <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 h-8 w-8" onClick={() => handleDelete(u.id)} data-testid={`delete-user-${u.id}`} title="Supprimer définitivement">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 )}
