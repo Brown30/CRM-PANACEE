@@ -470,6 +470,37 @@ export const api = {
       return res({ methodology: data });
     }
 
+    if (url === '/methodologies/push') {
+      const { source_marathon_id, target_marathon_id } = payload;
+      const { data: sourceMar, error: sErr } = await supabase.from('marathons').select('formation').eq('id', source_marathon_id).single();
+      if (sErr) throw new Error(sErr.message);
+      const { data: targetMar, error: tErr } = await supabase.from('marathons').select('formation').eq('id', target_marathon_id).single();
+      if (tErr) throw new Error(tErr.message);
+      // Methodology content is written per formation (course) — pushing it to a
+      // marathon of a different course wouldn't make sense, so this is enforced
+      // here too rather than trusted to the dropdown only showing valid targets.
+      if (sourceMar.formation !== targetMar.formation) throw new Error('Les marathons doivent être du même cours');
+
+      const { data: methods, error: mErr } = await supabase.from('sales_methodologies').select('*').eq('marathon_id', source_marathon_id);
+      if (mErr) throw new Error(mErr.message);
+      if (!methods || methods.length === 0) return res({ copied: 0 });
+
+      // Insert fresh copies rather than moving/linking the rows, so the target
+      // marathon's methodologies are immediately and independently editable —
+      // editing one afterwards never touches the source marathon's content.
+      const copies = methods.map(m => ({
+        id: uuidv4(),
+        marathon_id: target_marathon_id,
+        formation: targetMar.formation,
+        title: m.title,
+        body: m.body,
+        objections: m.objections
+      }));
+      const { error: insErr } = await supabase.from('sales_methodologies').insert(copies);
+      if (insErr) throw new Error(insErr.message);
+      return res({ copied: copies.length });
+    }
+
     if (url === '/attendance/mark') {
       const { marathon_id, lead_id, date, present } = payload;
       const { data: existing, error: findErr } = await supabase.from('attendance').select('id')
