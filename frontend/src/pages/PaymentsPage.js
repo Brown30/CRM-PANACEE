@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Wallet, Plus, Trash2, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
+import { Search, Wallet, Plus, Trash2, ChevronDown, ChevronUp, CheckCircle2, Users, CircleDashed, CircleDotDashed } from 'lucide-react';
 import { toast } from 'sonner';
 import NoMarathonFallback from '@/components/NoMarathonFallback';
 import { INSCRIPTION_FEE, formatAmount } from '@/lib/finance';
@@ -15,6 +15,7 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [vendeurFilter, setVendeurFilter] = useState('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
   const [amountDrafts, setAmountDrafts] = useState({});
   const [savingId, setSavingId] = useState(null);
@@ -81,7 +82,24 @@ export default function PaymentsPage() {
     } catch { toast.error('Erreur suppression'); }
   };
 
-  const filtered = rows.filter(r => r.full_name?.toLowerCase().includes(searchTerm.toLowerCase()));
+  // "complete" only means anything once a participation fee is configured for
+  // the marathon — without a limit to compare against, a partial payment can't
+  // be told apart from a full one, so it falls back to "some" either way.
+  const getPaymentStatus = (row) => {
+    if (row.participation_paid <= 0) return 'none';
+    if (limit > 0 && row.participation_paid >= limit) return 'complete';
+    return 'partial';
+  };
+
+  const scoped = rows.filter(r => r.full_name?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filtered = paymentStatusFilter === 'all'
+    ? scoped
+    : scoped.filter(r => getPaymentStatus(r) === paymentStatusFilter);
+
+  const reportCounts = rows.reduce((acc, r) => {
+    acc[getPaymentStatus(r)]++;
+    return acc;
+  }, { complete: 0, partial: 0, none: 0 });
 
   if (loading) return (
     <div className="flex justify-center py-20">
@@ -110,6 +128,38 @@ export default function PaymentsPage() {
         </div>
       )}
 
+      {/* Report: how many enrolled, how many fully paid / partial / not paid at all */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="payments-report">
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-3">
+          <div className="flex items-center gap-1.5 text-slate-400">
+            <Users className="w-3.5 h-3.5" />
+            <p className="text-xs">Participants</p>
+          </div>
+          <p className="text-xl font-bold text-slate-900 mt-1">{rows.length}</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-3">
+          <div className="flex items-center gap-1.5 text-emerald-500">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <p className="text-xs">Payé intégralement</p>
+          </div>
+          <p className="text-xl font-bold text-emerald-600 mt-1">{reportCounts.complete}</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-3">
+          <div className="flex items-center gap-1.5 text-amber-500">
+            <CircleDotDashed className="w-3.5 h-3.5" />
+            <p className="text-xs">Payé partiellement</p>
+          </div>
+          <p className="text-xl font-bold text-amber-600 mt-1">{reportCounts.partial}</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-3">
+          <div className="flex items-center gap-1.5 text-red-400">
+            <CircleDashed className="w-3.5 h-3.5" />
+            <p className="text-xs">Rien payé</p>
+          </div>
+          <p className="text-xl font-bold text-red-500 mt-1">{reportCounts.none}</p>
+        </div>
+      </div>
+
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -121,6 +171,17 @@ export default function PaymentsPage() {
             data-testid="payments-search"
           />
         </div>
+        <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+          <SelectTrigger className="w-[190px] h-10 rounded-xl" data-testid="payments-status-filter">
+            <SelectValue placeholder="Statut paiement" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les statuts</SelectItem>
+            <SelectItem value="complete">Payé intégralement</SelectItem>
+            <SelectItem value="partial">Payé partiellement</SelectItem>
+            <SelectItem value="none">Rien payé</SelectItem>
+          </SelectContent>
+        </Select>
         {canSeeAllVendors && (
           <Select value={vendeurFilter} onValueChange={setVendeurFilter}>
             <SelectTrigger className="w-[200px] h-10 rounded-xl" data-testid="payments-vendeur-filter">
