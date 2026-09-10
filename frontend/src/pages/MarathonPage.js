@@ -37,7 +37,7 @@ export default function MarathonPage() {
   const [editMarathon, setEditMarathon] = useState(null);
   const [formData, setFormData] = useState({
     name: '', formation: '', start_date: '', end_date: '',
-    objectif_total: 0, objectif_par_vendeur: {}, participation_fee: 0
+    objectif_total: 0, objectif_par_vendeur: {}, participation_fee: 0, excluded_vendeurs: []
   });
 
   const [redistributeSource, setRedistributeSource] = useState(null);
@@ -102,7 +102,8 @@ export default function MarathonPage() {
       end_date: marathon.end_date || '',
       objectif_total: marathon.objectif_total || 0,
       objectif_par_vendeur: marathon.objectif_par_vendeur || {},
-      participation_fee: marathon.participation_fee || 0
+      participation_fee: marathon.participation_fee || 0,
+      excluded_vendeurs: marathon.excluded_vendeurs || []
     });
     setShowForm(true);
   };
@@ -259,6 +260,15 @@ export default function MarathonPage() {
     }));
   };
 
+  const toggleExcludedVendeur = (vendeurId) => {
+    setFormData(prev => ({
+      ...prev,
+      excluded_vendeurs: prev.excluded_vendeurs.includes(vendeurId)
+        ? prev.excluded_vendeurs.filter(id => id !== vendeurId)
+        : [...prev.excluded_vendeurs, vendeurId]
+    }));
+  };
+
   if (loading) return (
     <div className="flex justify-center py-20">
       <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
@@ -279,7 +289,7 @@ export default function MarathonPage() {
             <Button onClick={openImport} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="import-leads-btn">
               <Upload className="w-4 h-4" /> Importer leads
             </Button>
-            <Button onClick={() => { setEditMarathon(null); setFormData({ name: '', formation: '', start_date: '', end_date: '', objectif_total: 0, objectif_par_vendeur: {}, participation_fee: 0 }); setShowForm(true); }} className="btn-primary flex items-center gap-2 h-10 text-sm" data-testid="add-marathon-btn">
+            <Button onClick={() => { setEditMarathon(null); setFormData({ name: '', formation: '', start_date: '', end_date: '', objectif_total: 0, objectif_par_vendeur: {}, participation_fee: 0, excluded_vendeurs: [] }); setShowForm(true); }} className="btn-primary flex items-center gap-2 h-10 text-sm" data-testid="add-marathon-btn">
               <Plus className="w-4 h-4" /> Créer
             </Button>
           </div>
@@ -323,6 +333,18 @@ export default function MarathonPage() {
                       return v ? (
                         <span key={vid} className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full">
                           <Users className="w-3 h-3 inline mr-1" />{v.name}: {obj}
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+                {m.excluded_vendeurs && m.excluded_vendeurs.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {m.excluded_vendeurs.map(vid => {
+                      const v = vendeurs.find(v => v.id === vid);
+                      return v ? (
+                        <span key={vid} className="text-xs bg-red-50 text-red-600 px-2 py-1 rounded-full">
+                          Exclu: {v.name}
                         </span>
                       ) : null;
                     })}
@@ -422,6 +444,24 @@ export default function MarathonPage() {
                       data-testid={`marathon-vendeur-obj-${v.id}`}
                     />
                   </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-slate-500 mb-2 block">Vendeurs exclus</Label>
+              <p className="text-xs text-slate-400 mb-2">Un vendeur exclu n'apparaît plus dans la liste au moment d'assigner un lead sur cette marathon</p>
+              <div className="space-y-2">
+                {vendeurs.map(v => (
+                  <label key={v.id} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.excluded_vendeurs.includes(v.id)}
+                      onChange={() => toggleExcludedVendeur(v.id)}
+                      className="w-4 h-4"
+                      data-testid={`marathon-exclude-vendeur-${v.id}`}
+                    />
+                    {v.name}
+                  </label>
                 ))}
               </div>
             </div>
