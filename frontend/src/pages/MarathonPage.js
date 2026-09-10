@@ -52,6 +52,7 @@ export default function MarathonPage() {
   const [importText, setImportText] = useState('');
   const [importAllocations, setImportAllocations] = useState({});
   const [importLoading, setImportLoading] = useState(false);
+  const [showClosed, setShowClosed] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -109,7 +110,7 @@ export default function MarathonPage() {
   const handleDelete = async (id) => {
     try {
       await api.delete(`/marathons/${id}`);
-      toast.success('Marathon désactivée');
+      toast.success('Marathon fermée');
       fetchData();
     } catch { toast.error('Erreur suppression'); }
   };
@@ -117,7 +118,7 @@ export default function MarathonPage() {
   const handleReactivate = async (id) => {
     try {
       await api.put(`/marathons/${id}`, { active: true });
-      toast.success('Marathon réactivée');
+      toast.success('Marathon réouverte');
       fetchData();
     } catch { toast.error('Erreur réactivation'); }
   };
@@ -264,6 +265,9 @@ export default function MarathonPage() {
     </div>
   );
 
+  const closedCount = marathons.filter(m => !m.active).length;
+  const visibleMarathons = showClosed ? marathons : marathons.filter(m => m.active);
+
   return (
     <div className="p-4 md:p-6 space-y-4" data-testid="marathon-page">
       <div className="flex items-center justify-between">
@@ -282,14 +286,27 @@ export default function MarathonPage() {
         )}
       </div>
 
+      {closedCount > 0 && (
+        <label className="flex items-center gap-2 text-sm text-slate-500 cursor-pointer w-fit">
+          <input
+            type="checkbox"
+            checked={showClosed}
+            onChange={e => setShowClosed(e.target.checked)}
+            className="w-4 h-4"
+            data-testid="show-closed-marathons"
+          />
+          Afficher les {closedCount} marathon{closedCount > 1 ? 's' : ''} fermée{closedCount > 1 ? 's' : ''}
+        </label>
+      )}
+
       <div className="space-y-3">
-        {marathons.map((m) => (
+        {visibleMarathons.map((m) => (
           <div key={m.id} className={`bg-white rounded-2xl border shadow-sm p-5 transition-all ${m.active ? 'border-slate-200/60' : 'border-slate-200/40 opacity-60'}`} data-testid={`marathon-item-${m.id}`}>
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-slate-800" style={{ fontFamily: "'Outfit', sans-serif" }}>{m.name}</h3>
-                  {!m.active && <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Inactive</span>}
+                  {!m.active && <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Fermée</span>}
                 </div>
                 <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-500">
                   <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-emerald-500" />{m.formation}</span>
@@ -321,11 +338,11 @@ export default function MarathonPage() {
                     <Shuffle className="w-4 h-4" />
                   </Button>
                   {m.active ? (
-                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500" onClick={() => handleDelete(m.id)} data-testid={`delete-marathon-${m.id}`} title="Desativar">
+                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500" onClick={() => handleDelete(m.id)} data-testid={`delete-marathon-${m.id}`} title="Fermer cette marathon">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   ) : (
-                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-600" onClick={() => handleReactivate(m.id)} data-testid={`reactivate-marathon-${m.id}`} title="Reativar">
+                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-600" onClick={() => handleReactivate(m.id)} data-testid={`reactivate-marathon-${m.id}`} title="Réouvrir cette marathon">
                       <RotateCcw className="w-4 h-4" />
                     </Button>
                   )}
@@ -334,10 +351,12 @@ export default function MarathonPage() {
             </div>
           </div>
         ))}
-        {marathons.length === 0 && (
+        {visibleMarathons.length === 0 && (
           <div className="text-center py-16 text-slate-400">
             <Trophy className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-            <p className="font-medium">Aucune marathon</p>
+            <p className="font-medium">
+              {closedCount > 0 && !showClosed ? 'Aucune marathon active' : 'Aucune marathon'}
+            </p>
           </div>
         )}
       </div>
