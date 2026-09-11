@@ -295,8 +295,11 @@ export const api = {
     }
 
     if (url === '/payments') {
+      // Only people actually marked present in Présence (status Participant) are
+      // tracked here — someone still just "Inscrit" hasn't shown up yet, so there's
+      // nothing to bill or count for them until attendance promotes them.
       let leadsQ = supabase.from('leads').select('id, full_name, vendeur_id')
-        .eq('marathon_id', params.marathon_id).in('status', ['Inscrit', 'Participant']).order('full_name', { ascending: true });
+        .eq('marathon_id', params.marathon_id).eq('status', 'Participant').order('full_name', { ascending: true });
       if (params.vendeur_id) leadsQ = leadsQ.eq('vendeur_id', params.vendeur_id);
       const { data: leads, error: leadsErr } = await leadsQ;
       if (leadsErr) throw new Error(leadsErr.message);
@@ -329,8 +332,11 @@ export const api = {
       if (mErr) throw new Error(mErr.message);
       const limit = Number(marathon?.participation_fee || 0);
 
+      // Same rule as /payments: only Participant leads (marked present at least
+      // once) are candidates for commission — Inscrit-only leads count for neither
+      // the earned total nor the "potential" figure until they actually show up.
       let leadsQ = supabase.from('leads').select('id, vendeur_id')
-        .eq('marathon_id', params.marathon_id).in('status', ['Inscrit', 'Participant']);
+        .eq('marathon_id', params.marathon_id).eq('status', 'Participant');
       if (params.vendeur_id) leadsQ = leadsQ.eq('vendeur_id', params.vendeur_id);
       const { data: leads, error: lErr } = await leadsQ;
       if (lErr) throw new Error(lErr.message);
