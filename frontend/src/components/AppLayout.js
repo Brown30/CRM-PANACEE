@@ -7,7 +7,7 @@ import InstallPrompt from '@/components/InstallPrompt';
 import NotificationBell from '@/components/NotificationBell';
 
 export default function AppLayout() {
-  const { user, logout, selectedMarathon, selectMarathon, isAdmin, isPedagogia, canManageAttendance } = useAuth();
+  const { user, logout, selectedMarathon, selectMarathon, isAdmin, isPedagogia, canManageAttendance, canManagePayments } = useAuth();
   const navigate = useNavigate();
   const isVendeur = user?.role === 'vendeur';
 
@@ -39,13 +39,17 @@ export default function AppLayout() {
   const certificatesItem = { to: '/certificats', icon: Award, label: 'Certificats' };
   const presenceItem = { to: '/presence', icon: CalendarCheck, label: 'Présence' };
   const paymentsItem = { to: '/paiements', icon: Wallet, label: 'Paiements' };
-  const commissionsItem = { to: '/commissions', icon: Percent, label: 'Commissions' };
+  // "Paiement & Commission" replaced the old vendeur-facing Paiements view with a
+  // self-contained report (own marathon picker, works on closed marathons too) —
+  // the Paiements page itself is now only useful to whoever can actually log a
+  // payment, so it drops out of the nav for a plain vendeur without that access.
+  const commissionsItem = { to: '/commissions', icon: Percent, label: 'Paiement & Commission' };
 
   const allItems = isPedagogia
     ? [certificatesItem, ...(canManageAttendance ? [presenceItem] : [])]
     : isAdmin
       ? [...navItems, presenceItem, paymentsItem, commissionsItem, ...adminItems, certificatesItem]
-      : [...navItems, ...(canManageAttendance ? [presenceItem] : []), paymentsItem, commissionsItem];
+      : [...navItems, ...(canManageAttendance ? [presenceItem] : []), ...(canManagePayments ? [paymentsItem] : []), commissionsItem];
 
   const bottomNavItems = isPedagogia
     ? [certificatesItem, { to: '/profile', icon: User, label: 'Profile' }]

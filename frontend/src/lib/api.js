@@ -294,6 +294,43 @@ export const api = {
       return res({ dates });
     }
 
+    if (url === '/payments/summary') {
+      // Powers the "Paiement & Commission" report: how many enrolled, how many
+      // actually showed up (Participant), and — of those — the payment table plus
+      // per-lead amounts, all in one call instead of stitching several together.
+      let leadsQ = supabase.from('leads').select('id, full_name, vendeur_id, status')
+        .eq('marathon_id', params.marathon_id).in('status', ['Inscrit', 'Participant']);
+      if (params.vendeur_id) leadsQ = leadsQ.eq('vendeur_id', params.vendeur_id);
+      const { data: leads, error: leadsErr } = await leadsQ;
+      if (leadsErr) throw new Error(leadsErr.message);
+
+      const total_inscrits = (leads || []).length;
+      const participantLeads = (leads || []).filter(l => l.status === 'Participant');
+
+      const { data: vendeurs } = await supabase.from('users').select('id, name').eq('role', 'vendeur');
+      const vMap = Object.fromEntries((vendeurs || []).map(v => [v.id, v.name]));
+
+      const leadIds = participantLeads.map(l => l.id);
+      let payments = [];
+      if (leadIds.length > 0) {
+        const { data: pay, error: payErr } = await supabase.from('payments').select('lead_id, amount').in('lead_id', leadIds);
+        if (payErr) throw new Error(payErr.message);
+        payments = pay || [];
+      }
+      const paidByLead = {};
+      for (const p of payments) paidByLead[p.lead_id] = (paidByLead[p.lead_id] || 0) + Number(p.amount);
+
+      const rows = participantLeads
+        .map(l => ({
+          lead_id: l.id, full_name: l.full_name, vendeur_id: l.vendeur_id,
+          vendeur_name: vMap[l.vendeur_id] || 'N/A',
+          participation_paid: paidByLead[l.id] || 0
+        }))
+        .sort((a, b) => a.full_name.localeCompare(b.full_name));
+
+      return res({ total_inscrits, total_participants: participantLeads.length, rows });
+    }
+
     if (url === '/payments') {
       // Only people actually marked present in Présence (status Participant) are
       // tracked here — someone still just "Inscrit" hasn't shown up yet, so there's
