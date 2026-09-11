@@ -6,7 +6,7 @@ import { Trophy, Calendar, Target, ChevronRight, LogOut, Plus } from 'lucide-rea
 import { toast } from 'sonner';
 
 export default function MarathonSelectPage() {
-  const { api, user, selectMarathon, selectedMarathon, logout, isAdmin } = useAuth();
+  const { api, user, selectMarathon, selectedMarathon, logout } = useAuth();
   const [marathons, setMarathons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showClosed, setShowClosed] = useState(false);
@@ -14,14 +14,14 @@ export default function MarathonSelectPage() {
 
   const fetchMarathons = useCallback(async () => {
     try {
-      // Vendeurs only ever need active marathons, but an admin sometimes has to
-      // step back into a closed one (e.g. to push its methodology into a new
-      // marathon of the same course) — /marathons/all lets that stay reachable.
-      const { data } = await api.get(isAdmin ? '/marathons/all' : '/marathons');
+      // A marathon closes to declutter everyone's picker, not to cut anyone off —
+      // payments can still be collected after closing, so a vendeur needs to be
+      // able to step back in and check their own commission/payment data there too.
+      const { data } = await api.get('/marathons/all');
       setMarathons(data.marathons);
     } catch { toast.error('Erreur de chargement'); }
     setLoading(false);
-  }, [api, isAdmin]);
+  }, [api]);
 
   useEffect(() => {
     if (selectedMarathon) { navigate('/'); return; }
@@ -33,7 +33,7 @@ export default function MarathonSelectPage() {
     navigate('/');
   };
 
-  const closedCount = isAdmin ? marathons.filter(m => !m.active).length : 0;
+  const closedCount = marathons.filter(m => !m.active).length;
   const visibleMarathons = showClosed ? marathons : marathons.filter(m => m.active);
 
   return (
