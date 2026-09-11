@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Trophy, Calendar, Target, ChevronRight, LogOut, Plus } from 'lucide-react';
+import { Trophy, Calendar, Target, ChevronRight, LogOut, Plus, Percent } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function MarathonSelectPage() {
@@ -51,6 +51,24 @@ export default function MarathonSelectPage() {
             <LogOut className="w-5 h-5" />
           </Button>
         </div>
+
+        {/* Paiement & Commission has its own marathon picker (works even on a closed
+            marathon still settling payments), so it doesn't require picking a
+            working marathon here first. */}
+        <button
+          onClick={() => navigate('/commissions')}
+          data-testid="goto-commissions-btn"
+          className="w-full bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-left hover:bg-emerald-100 transition-colors mb-6 flex items-center gap-3"
+        >
+          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0">
+            <Percent className="w-5 h-5 text-emerald-600" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-emerald-800 text-sm" style={{ fontFamily: "'Outfit', sans-serif" }}>Paiement & Commission</p>
+            <p className="text-xs text-emerald-600">Voir qui a payé et ta commission, même pour une marathon fermée</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-emerald-400" />
+        </button>
 
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-slate-800 mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>
