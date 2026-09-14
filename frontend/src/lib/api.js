@@ -422,6 +422,54 @@ export const api = {
       return res({ vendors, participation_fee: limit });
     }
 
+    if (url === '/finance/overview') {
+      const { data: marathon, error: mErr } = await supabase.from('marathons').select('*').eq('id', params.marathon_id).single();
+      if (mErr) throw new Error(mErr.message);
+      const limit = Number(marathon?.participation_fee || 0);
+
+      const { data: leads, error: lErr } = await supabase.from('leads').select('id, status')
+        .eq('marathon_id', params.marathon_id).in('status', ['Inscrit', 'Participant']);
+      if (lErr) throw new Error(lErr.message);
+
+      const total_inscrits = (leads || []).length;
+      const participantLeads = (leads || []).filter(l => l.status === 'Participant');
+      const total_participants = participantLeads.length;
+
+      const leadIds = participantLeads.map(l => l.id);
+      let payments = [];
+      if (leadIds.length > 0) {
+        const { data: pay, error: pErr } = await supabase.from('payments').select('lead_id, amount').in('lead_id', leadIds);
+        if (pErr) throw new Error(pErr.message);
+        payments = pay || [];
+      }
+      const paidByLead = {};
+      for (const p of payments) paidByLead[p.lead_id] = (paidByLead[p.lead_id] || 0) + Number(p.amount);
+
+      const INSCRIPTION_FEE = 1000;
+      const inscription_revenue = total_inscrits * INSCRIPTION_FEE;
+      // Revenue counts every HTG actually collected, including partial
+      // participation payments — this is real cash in hand, unlike commission
+      // (which only counts a lead once their participation is paid in full).
+      const participation_revenue = Object.values(paidByLead).reduce((s, v) => s + v, 0);
+
+      let complete = 0, partial = 0, none = 0;
+      for (const l of participantLeads) {
+        const paid = paidByLead[l.id] || 0;
+        if (paid <= 0) none++;
+        else if (limit > 0 && paid >= limit) complete++;
+        else partial++;
+      }
+
+      return res({
+        marathon,
+        total_inscrits, total_participants,
+        inscription_revenue, participation_revenue,
+        total_revenue: inscription_revenue + participation_revenue,
+        payment_status: { complete, partial, none },
+        participation_fee: limit
+      });
+    }
+
     console.warn("Unmocked GET", url);
     return res({});
   },

@@ -59,12 +59,16 @@ export function AuthProvider({ children }) {
   const isPedagogia = user?.role === 'pedagogia';
   const canManageAttendance = isAdmin || !!user?.can_manage_attendance;
   const canManagePayments = isAdmin || !!user?.can_manage_payments;
+  // Finance access is a standalone grant, not implied by admin_secondary/vendeur/
+  // pedagogia roles — only admin_principal has it by default, everyone else needs
+  // it turned on explicitly.
+  const canAccessFinance = isAdminPrincipal || !!user?.can_access_finance;
 
   return (
     <AuthContext.Provider value={{
       user, token, loading, login, logout,
       selectedMarathon, selectMarathon,
-      api: axiosInstance, isAdmin, isAdminPrincipal, isPedagogia, canManageAttendance, canManagePayments
+      api: axiosInstance, isAdmin, isAdminPrincipal, isPedagogia, canManageAttendance, canManagePayments, canAccessFinance
     }}>
       {children}
     </AuthContext.Provider>
