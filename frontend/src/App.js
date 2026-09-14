@@ -21,7 +21,11 @@ import ProfilePage from "@/pages/ProfilePage";
 import CertificatsPage from "@/pages/CertificatsPage";
 import CertificatCoursePage from "@/pages/CertificatCoursePage";
 import VerifyCertificatePage from "@/pages/VerifyCertificatePage";
+import ChooseModulePage from "@/pages/ChooseModulePage";
+import FinanceCoursesPage from "@/pages/FinanceCoursesPage";
+import FinanceCourseDetailPage from "@/pages/FinanceCourseDetailPage";
 import AppLayout from "@/components/AppLayout";
+import FinanceLayout from "@/components/FinanceLayout";
 
 function ProtectedRoute({ children }) {
   const { user, loading, selectedMarathon } = useAuth();
@@ -41,6 +45,14 @@ function MarathonRoute({ children }) {
   return children;
 }
 
+function FinanceRoute({ children }) {
+  const { user, loading, canAccessFinance } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" />;
+  if (!canAccessFinance) return <Navigate to="/select-marathon" />;
+  return children;
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -52,6 +64,15 @@ function App() {
           <Route path="/select-marathon" element={
             <MarathonRoute><MarathonSelectPage /></MarathonRoute>
           } />
+          <Route path="/choose-module" element={
+            <MarathonRoute><ChooseModulePage /></MarathonRoute>
+          } />
+          <Route path="/finance" element={
+            <FinanceRoute><FinanceLayout /></FinanceRoute>
+          }>
+            <Route index element={<FinanceCoursesPage />} />
+            <Route path=":marathonId" element={<FinanceCourseDetailPage />} />
+          </Route>
           <Route path="/" element={
             <ProtectedRoute><AppLayout /></ProtectedRoute>
           }>

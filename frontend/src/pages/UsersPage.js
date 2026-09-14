@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap, CalendarCheck, Wallet, Ban, RotateCcw } from 'lucide-react';
+import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap, CalendarCheck, Wallet, Ban, RotateCcw, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function UsersPage() {
@@ -63,6 +63,16 @@ export default function UsersPage() {
     try {
       await api.put(`/users/${u.id}`, { can_manage_payments: !u.can_manage_payments });
       toast.success(u.can_manage_payments ? 'Accès Paiements retiré' : 'Accès Paiements accordé');
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.message || 'Erreur');
+    }
+  };
+
+  const handleToggleFinance = async (u) => {
+    try {
+      await api.put(`/users/${u.id}`, { can_access_finance: !u.can_access_finance });
+      toast.success(u.can_access_finance ? 'Accès Module Financier retiré' : 'Accès Module Financier accordé');
       fetchUsers();
     } catch (err) {
       toast.error(err.message || 'Erreur');
@@ -172,6 +182,11 @@ export default function UsersPage() {
                     Paiements
                   </span>
                 )}
+                {u.can_access_finance && (
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                    Financier
+                  </span>
+                )}
               </div>
             </div>
             {isAdminPrincipal && (
@@ -196,6 +211,17 @@ export default function UsersPage() {
                     title={u.can_manage_payments ? 'Retirer accès Paiements' : 'Accorder accès Paiements'}
                   >
                     <Wallet className="w-4 h-4" />
+                  </Button>
+                )}
+                {u.role !== 'admin_principal' && (
+                  <Button
+                    variant="ghost" size="icon"
+                    className={`h-8 w-8 ${u.can_access_finance ? 'text-blue-500 hover:text-blue-600' : 'text-slate-400 hover:text-blue-500'}`}
+                    onClick={() => handleToggleFinance(u)}
+                    data-testid={`toggle-finance-${u.id}`}
+                    title={u.can_access_finance ? 'Retirer accès Module Financier' : 'Accorder accès Module Financier'}
+                  >
+                    <DollarSign className="w-4 h-4" />
                   </Button>
                 )}
                 <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-500 h-8 w-8" onClick={() => openCodeEdit(u)} data-testid={`edit-code-${u.id}`} title="Modifier le code">

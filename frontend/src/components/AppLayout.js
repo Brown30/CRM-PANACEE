@@ -7,7 +7,7 @@ import InstallPrompt from '@/components/InstallPrompt';
 import NotificationBell from '@/components/NotificationBell';
 
 export default function AppLayout() {
-  const { user, logout, selectedMarathon, selectMarathon, isAdmin, isPedagogia, canManageAttendance, canManagePayments } = useAuth();
+  const { user, logout, selectedMarathon, selectMarathon, isAdmin, isPedagogia, canManageAttendance, canManagePayments, canAccessFinance } = useAuth();
   const navigate = useNavigate();
   const isVendeur = user?.role === 'vendeur';
 
@@ -89,6 +89,13 @@ export default function AppLayout() {
           </button>
         )}
 
+        {canAccessFinance && (
+          <button onClick={() => navigate('/choose-module')} className="mx-4 mt-2 p-3 bg-blue-50 rounded-xl text-left hover:bg-blue-100 transition-colors flex items-center gap-2" data-testid="goto-finance-desktop">
+            <Wallet className="w-4 h-4 text-blue-600 shrink-0" />
+            <p className="text-sm font-medium text-blue-700">Module Financier</p>
+          </button>
+        )}
+
         {/* Nav */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {allItems.map(item => (
@@ -138,6 +145,11 @@ export default function AppLayout() {
             {!isPedagogia && (
               <button onClick={handleChangeMarathon} className="text-xs bg-emerald-50 text-emerald-700 font-medium px-3 py-1.5 rounded-full max-w-[140px] truncate" data-testid="change-marathon-mobile">
                 {selectedMarathon?.name}
+              </button>
+            )}
+            {canAccessFinance && (
+              <button onClick={() => navigate('/choose-module')} className="text-xs bg-blue-50 text-blue-700 font-medium px-2.5 py-1.5 rounded-full shrink-0" data-testid="goto-finance-mobile">
+                <Wallet className="w-3.5 h-3.5" />
               </button>
             )}
             {isVendeur && <NotificationBell mode="vendeur" />}

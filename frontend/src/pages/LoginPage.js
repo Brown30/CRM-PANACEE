@@ -9,11 +9,11 @@ import { toast } from 'sonner';
 export default function LoginPage() {
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, user } = useAuth();
+  const { login, user, canAccessFinance } = useAuth();
   const navigate = useNavigate();
 
   if (user) {
-    navigate('/select-marathon');
+    navigate(canAccessFinance ? '/choose-module' : '/select-marathon');
     return null;
   }
 
@@ -22,9 +22,12 @@ export default function LoginPage() {
     if (!code.trim()) { toast.error('Veuillez entrer votre code'); return; }
     setIsLoading(true);
     try {
-      await login(code.trim());
+      const loggedInUser = await login(code.trim());
       toast.success('Connexion réussie');
-      navigate('/select-marathon');
+      // Finance access is checked from the just-returned user rather than the
+      // context's canAccessFinance, which hasn't re-rendered with the new user yet.
+      const hasFinanceAccess = loggedInUser.role === 'admin_principal' || !!loggedInUser.can_access_finance;
+      navigate(hasFinanceAccess ? '/choose-module' : '/select-marathon');
     } catch (err) {
       toast.error(err.response?.data?.detail || err.message || 'Code invalide');
     }
