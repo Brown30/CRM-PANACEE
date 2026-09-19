@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatAmount } from '@/lib/finance';
-import { buildPaymentsTablePdf } from '@/lib/paymentsTableExport';
+import { buildPaymentsTablePdf, buildFullPaymentsTablePdf } from '@/lib/paymentsTableExport';
 import { slugifyFileName } from '@/lib/certificate';
 
 export default function FinanceCourseDetailPage() {
@@ -19,21 +19,25 @@ export default function FinanceCourseDetailPage() {
   const navigate = useNavigate();
 
   const [overview, setOverview] = useState(null);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [courseEndDate, setCourseEndDate] = useState('');
   const [savingDate, setSavingDate] = useState(false);
 
   const [showDetails, setShowDetails] = useState(false);
-  const [rows, setRows] = useState(null);
-  const [loadingRows, setLoadingRows] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportingFull, setExportingFull] = useState(false);
 
   const fetchOverview = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/finance/overview', { params: { marathon_id: marathonId } });
-      setOverview(data);
-      setCourseEndDate(data.marathon?.course_end_date || '');
+      const [overviewRes, summaryRes] = await Promise.all([
+        api.get('/finance/overview', { params: { marathon_id: marathonId } }),
+        api.get('/payments/summary', { params: { marathon_id: marathonId } })
+      ]);
+      setOverview(overviewRes.data);
+      setCourseEndDate(overviewRes.data.marathon?.course_end_date || '');
+      setSummary(summaryRes.data);
     } catch {
       toast.error('Erreur chargement');
     }
@@ -54,24 +58,11 @@ export default function FinanceCourseDetailPage() {
     setSavingDate(false);
   };
 
-  const toggleDetails = async () => {
-    const next = !showDetails;
-    setShowDetails(next);
-    if (next && rows === null) {
-      setLoadingRows(true);
-      try {
-        const { data } = await api.get('/payments/summary', { params: { marathon_id: marathonId } });
-        setRows(data.rows || []);
-      } catch {
-        toast.error('Erreur chargement des détails');
-      }
-      setLoadingRows(false);
-    }
-  };
-
+  const rows = summary?.rows || [];
+  const allRows = summary?.all_rows || [];
   const limit = overview?.participation_fee || 0;
-  const totalPaid = (rows || []).reduce((s, r) => s + Number(r.participation_paid || 0), 0);
-  const totalMissing = (rows || []).reduce((s, r) => s + Math.max(limit - Number(r.participation_paid || 0), 0), 0);
+  const totalPaid = rows.reduce((s, r) => s + Number(r.participation_paid || 0), 0);
+  const totalMissing = rows.reduce((s, r) => s + Math.max(limit - Number(r.participation_paid || 0), 0), 0);
 
   const handleExport = () => {
     setExporting(true);
@@ -79,7 +70,7 @@ export default function FinanceCourseDetailPage() {
       const pdf = buildPaymentsTablePdf({
         title: 'Détail des paiements',
         subtitle: `${overview?.marathon?.name || ''}`,
-        rows: (rows || []).map(r => ({
+        rows: rows.map(r => ({
           full_name: `${r.full_name} (${r.vendeur_name})`,
           paid: formatAmount(r.participation_paid),
           missing: limit > 0 ? formatAmount(Math.max(limit - r.participation_paid, 0)) : '-'
@@ -93,6 +84,33 @@ export default function FinanceCourseDetailPage() {
       toast.error(err.message || 'Erreur export');
     }
     setExporting(false);
+  };
+
+  const handleExportFull = () => {
+    setExportingFull(true);
+    try {
+      const totalInscription = allRows.reduce((s, r) => s + Number(r.inscription_fee || 0), 0);
+      const totalParticipation = allRows.reduce((s, r) => s + Number(r.participation_paid || 0), 0);
+      const pdf = buildFullPaymentsTablePdf({
+        title: 'Liste complète des inscrits',
+        subtitle: `${overview?.marathon?.name || ''}`,
+        rows: allRows.map(r => ({
+          full_name: r.full_name,
+          vendeur_name: r.vendeur_name,
+          inscription_fee: formatAmount(r.inscription_fee),
+          participation_paid: formatAmount(r.participation_paid),
+          total: formatAmount(r.total)
+        })),
+        totalInscription,
+        totalParticipation,
+        totalGeneral: totalInscription + totalParticipation,
+        formatAmount
+      });
+      pdf.save(`Liste_complete_${slugifyFileName(overview?.marathon?.name || '')}.pdf`);
+    } catch (err) {
+      toast.error(err.message || 'Erreur export');
+    }
+    setExportingFull(false);
   };
 
   if (loading) return (
@@ -184,54 +202,59 @@ export default function FinanceCourseDetailPage() {
         </div>
       </div>
 
+      {/* Complete roster export: everyone enrolled, inscription + participation + total */}
+      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5 flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h3 className="font-semibold text-slate-800 text-sm" style={{ fontFamily: "'Outfit', sans-serif" }}>Liste complète des inscrits</h3>
+          <p className="text-xs text-slate-400 mt-0.5">Tous les noms, avec Frais d'inscription, Frais de participation et le total</p>
+        </div>
+        <Button onClick={handleExportFull} disabled={exportingFull} variant="outline" className="flex items-center gap-2 h-9 text-xs rounded-lg" data-testid="finance-export-full-btn">
+          <Download className="w-3.5 h-3.5" /> {exportingFull ? 'Export...' : 'Exporter PDF'}
+        </Button>
+      </div>
+
       {/* Details */}
       <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5 space-y-3">
-        <button onClick={toggleDetails} className="w-full flex items-center justify-between text-left" data-testid="finance-toggle-details">
-          <h3 className="font-semibold text-slate-800 text-sm" style={{ fontFamily: "'Outfit', sans-serif" }}>Voir la liste des inscrits et participants</h3>
+        <button onClick={() => setShowDetails(!showDetails)} className="w-full flex items-center justify-between text-left" data-testid="finance-toggle-details">
+          <h3 className="font-semibold text-slate-800 text-sm" style={{ fontFamily: "'Outfit', sans-serif" }}>Voir la liste des participants et paiements en cours</h3>
           {showDetails ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
         </button>
 
         {showDetails && (
-          loadingRows ? (
-            <div className="flex justify-center py-8">
-              <div className="w-6 h-6 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <>
+            <div className="flex justify-end">
+              <Button onClick={handleExport} disabled={exporting} variant="outline" className="flex items-center gap-2 h-9 text-xs rounded-lg" data-testid="finance-export-btn">
+                <Download className="w-3.5 h-3.5" /> {exporting ? 'Export...' : 'Exporter PDF'}
+              </Button>
             </div>
-          ) : (
-            <>
-              <div className="flex justify-end">
-                <Button onClick={handleExport} disabled={exporting} variant="outline" className="flex items-center gap-2 h-9 text-xs rounded-lg" data-testid="finance-export-btn">
-                  <Download className="w-3.5 h-3.5" /> {exporting ? 'Export...' : 'Exporter PDF'}
-                </Button>
-              </div>
-              <div className="overflow-x-auto -mx-5 px-5">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-slate-400 border-b border-slate-100">
-                      <th className="py-2 font-medium">Nom</th>
-                      <th className="py-2 font-medium">Vendeur</th>
-                      <th className="py-2 font-medium text-right">Payé</th>
-                      <th className="py-2 font-medium text-right">Reste à payer</th>
+            <div className="overflow-x-auto -mx-5 px-5">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-slate-400 border-b border-slate-100">
+                    <th className="py-2 font-medium">Nom</th>
+                    <th className="py-2 font-medium">Vendeur</th>
+                    <th className="py-2 font-medium text-right">Payé</th>
+                    <th className="py-2 font-medium text-right">Reste à payer</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(r => (
+                    <tr key={r.lead_id} className="border-b border-slate-50">
+                      <td className="py-2 text-slate-700">{r.full_name}</td>
+                      <td className="py-2 text-slate-500">{r.vendeur_name}</td>
+                      <td className="py-2 text-right text-slate-700">{formatAmount(r.participation_paid)} HTG</td>
+                      <td className="py-2 text-right text-slate-700">
+                        {limit > 0 ? `${formatAmount(Math.max(limit - r.participation_paid, 0))} HTG` : '-'}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {(rows || []).map(r => (
-                      <tr key={r.lead_id} className="border-b border-slate-50">
-                        <td className="py-2 text-slate-700">{r.full_name}</td>
-                        <td className="py-2 text-slate-500">{r.vendeur_name}</td>
-                        <td className="py-2 text-right text-slate-700">{formatAmount(r.participation_paid)} HTG</td>
-                        <td className="py-2 text-right text-slate-700">
-                          {limit > 0 ? `${formatAmount(Math.max(limit - r.participation_paid, 0))} HTG` : '-'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {(rows || []).length === 0 && (
-                  <p className="text-sm text-slate-400 text-center py-6">Aucun participant pour ce cours</p>
-                )}
-              </div>
-            </>
-          )
+                  ))}
+                </tbody>
+              </table>
+              {rows.length === 0 && (
+                <p className="text-sm text-slate-400 text-center py-6">Aucun participant pour ce cours</p>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>
