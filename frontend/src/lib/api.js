@@ -328,7 +328,25 @@ export const api = {
         }))
         .sort((a, b) => a.full_name.localeCompare(b.full_name));
 
-      return res({ total_inscrits, total_participants: participantLeads.length, rows });
+      // Full roster for the "complete list" export: every Inscrit/Participant, with
+      // the registration fee (automatic for anyone enrolled) alongside whatever
+      // participation they've paid — unlike `rows` above, this isn't limited to
+      // people who've actually shown up yet.
+      const INSCRIPTION_FEE = 1000;
+      const all_rows = (leads || [])
+        .map(l => {
+          const participation_paid = paidByLead[l.id] || 0;
+          return {
+            lead_id: l.id, full_name: l.full_name, vendeur_id: l.vendeur_id,
+            vendeur_name: vMap[l.vendeur_id] || 'N/A', status: l.status,
+            inscription_fee: INSCRIPTION_FEE,
+            participation_paid,
+            total: INSCRIPTION_FEE + participation_paid
+          };
+        })
+        .sort((a, b) => a.full_name.localeCompare(b.full_name));
+
+      return res({ total_inscrits, total_participants: participantLeads.length, rows, all_rows });
     }
 
     if (url === '/payments') {

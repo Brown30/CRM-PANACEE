@@ -39,31 +39,11 @@ export default function FinanceCoursesPage() {
     </div>
   );
 
-  const totalInscription = activeCourses.reduce((s, c) => s + (c.overview?.inscription_revenue || 0), 0);
-  const totalParticipation = activeCourses.reduce((s, c) => s + (c.overview?.participation_revenue || 0), 0);
-  const totalRevenue = totalInscription + totalParticipation;
-
   return (
     <div className="p-4 md:p-6 space-y-4" data-testid="finance-courses-page">
       <h2 className="text-xl font-bold text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
         Vue d'ensemble
       </h2>
-
-      {/* School-wide totals */}
-      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5" data-testid="finance-grand-total">
-        <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide">Recette générale — cours en cours</p>
-        <p className="text-3xl font-bold text-blue-700 mt-1">{formatAmount(totalRevenue)} HTG</p>
-        <div className="grid grid-cols-2 gap-3 mt-4">
-          <div className="bg-white rounded-xl p-3">
-            <p className="text-xs text-slate-400">Inscriptions</p>
-            <p className="text-lg font-bold text-slate-800">{formatAmount(totalInscription)} HTG</p>
-          </div>
-          <div className="bg-white rounded-xl p-3">
-            <p className="text-xs text-slate-400">Participations</p>
-            <p className="text-lg font-bold text-slate-800">{formatAmount(totalParticipation)} HTG</p>
-          </div>
-        </div>
-      </div>
 
       {/* Per-course breakdown */}
       <div className="space-y-3">
@@ -91,6 +71,7 @@ export default function FinanceCoursesPage() {
                 <span className="text-slate-500">Total: <span className="font-semibold text-blue-700">{formatAmount(o.total_revenue)} HTG</span></span>
               </div>
             )}
+            <p className="text-xs text-blue-600 font-medium mt-2">Voir plus d'informations →</p>
           </button>
         ))}
         {activeCourses.length === 0 && (
