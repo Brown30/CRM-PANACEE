@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Trophy, ChevronRight, AlertTriangle, Search } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList, ResponsiveContainer } from 'recharts';
+import { Trophy, ChevronRight, AlertTriangle, Search, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatAmount } from '@/lib/finance';
+import { formatAmount, formatDateFr } from '@/lib/finance';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
 
 // A course counts as "current" while today falls between the enrollment start
-// date and the course's actual end date — not the marathon's own active flag,
-// which is about the sales campaign, and not end_date, which only marks when
-// enrollment (and the course itself) starts. Missing a bound just means that
-// side is left open rather than excluding the course.
+// date and the course's actual end date. This is independent of the
+// marathon's active flag — a marathon can be closed to new leads/vendors
+// while the course it funded is still running and still collecting
+// payments, so active alone must never hide it here. Missing a bound just
+// leaves that side open rather than excluding the course.
 const isCurrent = (m) => {
-  if (m.active === false) return false;
   const today = todayStr();
   if (m.start_date && today < m.start_date) return false;
   if (m.course_end_date && today > m.course_end_date) return false;
@@ -52,10 +52,11 @@ export default function FinanceCoursesPage() {
     </div>
   );
 
+  // One bar per course (total revenue) instead of a grouped two-series chart —
+  // reads much more clearly once there are several courses at once.
   const chartData = currentCourses.map(({ marathon: m, overview: o }) => ({
     name: m.name,
-    Inscription: o?.inscription_revenue || 0,
-    Participation: o?.participation_revenue || 0
+    Total: o?.total_revenue || 0
   }));
 
   return (
@@ -69,17 +70,17 @@ export default function FinanceCoursesPage() {
 
       {chartData.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5">
-          <h3 className="font-semibold text-slate-800 text-sm mb-4" style={{ fontFamily: "'Outfit', sans-serif" }}>Recette par cours</h3>
-          <div className="h-64">
+          <h3 className="font-semibold text-slate-800 text-sm mb-4" style={{ fontFamily: "'Outfit', sans-serif" }}>Recette totale par cours</h3>
+          <div style={{ height: Math.max(currentCourses.length * 46, 120) }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#94A3B8" />
-                <YAxis tick={{ fontSize: 11 }} stroke="#94A3B8" />
+              <BarChart data={chartData} layout="vertical" margin={{ left: 8, right: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 11 }} stroke="#94A3B8" tickFormatter={formatAmount} />
+                <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} stroke="#94A3B8" width={130} />
                 <Tooltip formatter={(v) => `${formatAmount(v)} HTG`} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Inscription" fill="#10B981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Participation" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Total" fill="#3B82F6" radius={[0, 4, 4, 0]} barSize={22}>
+                  <LabelList dataKey="Total" position="right" formatter={formatAmount} style={{ fontSize: 11, fill: '#1e293b' }} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -97,14 +98,23 @@ export default function FinanceCoursesPage() {
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="font-semibold text-slate-800 text-sm" style={{ fontFamily: "'Outfit', sans-serif" }}>{m.name}</h3>
-                <span className="inline-flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-medium mt-1">
-                  <Trophy className="w-3 h-3" />
-                  {m.formation}
-                </span>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <span className="inline-flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
+                    <Trophy className="w-3 h-3" />
+                    {m.formation}
+                  </span>
+                  {m.active === false && (
+                    <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Fermée aux ventes</span>
+                  )}
+                </div>
               </div>
               <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
             </div>
-            <p className="text-2xl font-bold text-blue-700 mt-3" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            <p className="flex items-center gap-1 text-xs text-slate-400 mt-2">
+              <Calendar className="w-3 h-3" />
+              {formatDateFr(m.start_date) || '?'} - {formatDateFr(m.course_end_date) || '?'}
+            </p>
+            <p className="text-2xl font-bold text-blue-700 mt-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
               {formatAmount(o?.total_revenue || 0)} <span className="text-sm font-normal text-slate-400">HTG</span>
             </p>
             <p className="text-xs text-slate-400 mt-1">
@@ -125,8 +135,8 @@ export default function FinanceCoursesPage() {
         )}
       </div>
 
-      {/* Everything outside the current window: not yet started, past its course
-          end date, or closed — still reachable, just not front and center. */}
+      {/* Everything outside the current window: not yet started, or past its
+          course end date — still reachable, just not front and center. */}
       {otherCourses.length > 0 && (
         <div className="pt-2">
           <button
@@ -146,19 +156,20 @@ export default function FinanceCoursesPage() {
                   data-testid={`finance-other-course-${m.id}`}
                   className="w-full bg-white border border-slate-200/40 opacity-80 shadow-sm rounded-2xl p-4 text-left hover:shadow-md hover:opacity-100 transition-all duration-300 flex items-center justify-between"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-slate-700 text-sm">{m.name}</span>
                     <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
-                      {m.active === false
-                        ? 'Fermée'
-                        : (m.start_date && todayStr() < m.start_date)
-                          ? 'À venir'
-                          : (m.course_end_date && todayStr() > m.course_end_date)
-                            ? 'Terminée'
-                            : 'Fermée'}
+                      {(m.start_date && todayStr() < m.start_date)
+                        ? 'À venir'
+                        : (m.course_end_date && todayStr() > m.course_end_date)
+                          ? 'Terminée'
+                          : 'Sans date'}
                     </span>
+                    {m.active === false && (
+                      <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Fermée aux ventes</span>
+                    )}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-300" />
+                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
                 </button>
               ))}
             </div>
