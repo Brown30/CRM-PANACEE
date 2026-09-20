@@ -13,3 +13,23 @@ export const formatDateFr = (iso) => {
   const [y, m, d] = iso.split('-');
   return `${d}/${m}/${y}`;
 };
+
+export const todayStr = () => new Date().toISOString().split('T')[0];
+
+// A course counts as "current" for finance purposes while today falls
+// between the enrollment start date and the course's actual end date.
+// Independent of the marathon's active flag — a marathon can be closed to
+// new leads/vendors while the course it funded is still running and still
+// collecting payments. Missing a bound just leaves that side open.
+export const isCourseCurrent = (m) => {
+  const today = todayStr();
+  if (m.start_date && today < m.start_date) return false;
+  if (m.course_end_date && today > m.course_end_date) return false;
+  return true;
+};
+
+// Within the current window, a course is still in two very different
+// phases: selling/enrolling (up to end_date, the marathon's own end — same
+// day the course itself starts) or actually running (end_date to
+// course_end_date). Independent of the active flag too.
+export const coursePhase = (m) => (m.end_date && todayStr() < m.end_date) ? 'inscription' : 'active';
