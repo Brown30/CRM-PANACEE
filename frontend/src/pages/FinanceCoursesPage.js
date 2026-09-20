@@ -4,22 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList, ResponsiveContainer } from 'recharts';
 import { Trophy, ChevronRight, AlertTriangle, Search, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatAmount, formatDateFr } from '@/lib/finance';
-
-const todayStr = () => new Date().toISOString().split('T')[0];
-
-// A course counts as "current" while today falls between the enrollment start
-// date and the course's actual end date. This is independent of the
-// marathon's active flag — a marathon can be closed to new leads/vendors
-// while the course it funded is still running and still collecting
-// payments, so active alone must never hide it here. Missing a bound just
-// leaves that side open rather than excluding the course.
-const isCurrent = (m) => {
-  const today = todayStr();
-  if (m.start_date && today < m.start_date) return false;
-  if (m.course_end_date && today > m.course_end_date) return false;
-  return true;
-};
+import { formatAmount, formatDateFr, todayStr, isCourseCurrent, coursePhase } from '@/lib/finance';
 
 export default function FinanceCoursesPage() {
   const { api } = useAuth();
@@ -34,8 +19,8 @@ export default function FinanceCoursesPage() {
       try {
         const { data } = await api.get('/marathons/all');
         const all = data.marathons || [];
-        const current = all.filter(isCurrent).sort((a, b) => a.name.localeCompare(b.name));
-        setOtherCourses(all.filter(m => !isCurrent(m)).sort((a, b) => a.name.localeCompare(b.name)));
+        const current = all.filter(isCourseCurrent).sort((a, b) => a.name.localeCompare(b.name));
+        setOtherCourses(all.filter(m => !isCourseCurrent(m)).sort((a, b) => a.name.localeCompare(b.name)));
 
         const overviews = await Promise.all(current.map(m =>
           api.get('/finance/overview', { params: { marathon_id: m.id } }).then(r => r.data).catch(() => null)
@@ -103,8 +88,10 @@ export default function FinanceCoursesPage() {
                     <Trophy className="w-3 h-3" />
                     {m.formation}
                   </span>
-                  {m.active === false && (
-                    <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Fermée aux ventes</span>
+                  {coursePhase(m) === 'inscription' ? (
+                    <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">En période d'inscription</span>
+                  ) : (
+                    <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Cours Actif</span>
                   )}
                 </div>
               </div>

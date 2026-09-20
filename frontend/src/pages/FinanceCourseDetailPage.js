@@ -9,7 +9,7 @@ import {
   Wallet, Calendar, Download, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatAmount, formatDateFr } from '@/lib/finance';
+import { formatAmount, formatDateFr, coursePhase } from '@/lib/finance';
 import { buildPaymentsTablePdf, buildFullPaymentsTablePdf } from '@/lib/paymentsTableExport';
 import { slugifyFileName } from '@/lib/certificate';
 
@@ -133,7 +133,14 @@ export default function FinanceCourseDetailPage() {
 
       <div>
         <h2 className="text-xl font-bold text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>{m.name}</h2>
-        <p className="text-sm text-slate-500">{m.formation}</p>
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          <p className="text-sm text-slate-500">{m.formation}</p>
+          {coursePhase(m) === 'inscription' ? (
+            <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">En période d'inscription</span>
+          ) : (
+            <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Cours Actif</span>
+          )}
+        </div>
       </div>
 
       {/* Course dates */}
