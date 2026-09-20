@@ -9,7 +9,7 @@ import {
   Wallet, Calendar, Download, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatAmount } from '@/lib/finance';
+import { formatAmount, formatDateFr } from '@/lib/finance';
 import { buildPaymentsTablePdf, buildFullPaymentsTablePdf } from '@/lib/paymentsTableExport';
 import { slugifyFileName } from '@/lib/certificate';
 
@@ -23,6 +23,7 @@ export default function FinanceCourseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [courseEndDate, setCourseEndDate] = useState('');
   const [savingDate, setSavingDate] = useState(false);
+  const [editingEndDate, setEditingEndDate] = useState(false);
 
   const [showDetails, setShowDetails] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -51,6 +52,7 @@ export default function FinanceCourseDetailPage() {
     try {
       await api.put(`/marathons/${marathonId}`, { course_end_date: courseEndDate || null });
       toast.success('Date de fin enregistrée');
+      setEditingEndDate(false);
       fetchOverview();
     } catch (err) {
       toast.error(err.message || 'Erreur enregistrement');
@@ -138,16 +140,30 @@ export default function FinanceCourseDetailPage() {
       <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4 flex flex-wrap items-end gap-4">
         <div>
           <p className="text-xs text-slate-400 flex items-center gap-1"><Calendar className="w-3 h-3" /> Début du cours</p>
-          <p className="text-sm font-medium text-slate-800 mt-1">{m.end_date || 'Non défini'}</p>
+          <p className="text-sm font-medium text-slate-800 mt-1">{formatDateFr(m.end_date) || 'Non défini'}</p>
         </div>
         <div>
           <Label className="text-xs text-slate-400">Fin du cours</Label>
-          <div className="flex items-center gap-2 mt-1">
-            <Input type="date" value={courseEndDate || ''} onChange={e => setCourseEndDate(e.target.value)} className="h-9 rounded-lg w-[160px]" data-testid="course-end-date-input" />
-            <Button size="sm" className="btn-primary h-9 text-xs" onClick={handleSaveCourseEndDate} disabled={savingDate} data-testid="save-course-end-date-btn">
-              {savingDate ? '...' : 'Enregistrer'}
-            </Button>
-          </div>
+          {editingEndDate || !m.course_end_date ? (
+            <div className="flex items-center gap-2 mt-1">
+              <Input type="date" value={courseEndDate || ''} onChange={e => setCourseEndDate(e.target.value)} className="h-9 rounded-lg w-[160px]" data-testid="course-end-date-input" />
+              <Button size="sm" className="btn-primary h-9 text-xs" onClick={handleSaveCourseEndDate} disabled={savingDate} data-testid="save-course-end-date-btn">
+                {savingDate ? '...' : 'Enregistrer'}
+              </Button>
+              {editingEndDate && m.course_end_date && (
+                <Button size="sm" variant="ghost" className="h-9 text-xs" onClick={() => { setCourseEndDate(m.course_end_date); setEditingEndDate(false); }}>
+                  Annuler
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-sm font-medium text-slate-800">{formatDateFr(m.course_end_date)}</p>
+              <button onClick={() => setEditingEndDate(true)} className="text-xs text-blue-600 hover:text-blue-700 font-medium" data-testid="edit-course-end-date-btn">
+                Modifier
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
