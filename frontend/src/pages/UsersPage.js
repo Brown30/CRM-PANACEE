@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap, CalendarCheck, Wallet, Ban, RotateCcw, DollarSign } from 'lucide-react';
+import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap, CalendarCheck, Wallet, Ban, RotateCcw, DollarSign, ClipboardCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function UsersPage() {
@@ -73,6 +73,16 @@ export default function UsersPage() {
     try {
       await api.put(`/users/${u.id}`, { can_access_finance: !u.can_access_finance });
       toast.success(u.can_access_finance ? 'Accès Module Financier retiré' : 'Accès Module Financier accordé');
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.message || 'Erreur');
+    }
+  };
+
+  const handleTogglePedagogie = async (u) => {
+    try {
+      await api.put(`/users/${u.id}`, { can_access_pedagogie: !u.can_access_pedagogie });
+      toast.success(u.can_access_pedagogie ? 'Accès Pédagogie et Contrôle retiré' : 'Accès Pédagogie et Contrôle accordé');
       fetchUsers();
     } catch (err) {
       toast.error(err.message || 'Erreur');
@@ -187,6 +197,11 @@ export default function UsersPage() {
                     Financier
                   </span>
                 )}
+                {u.can_access_pedagogie && (
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                    Pédagogie
+                  </span>
+                )}
               </div>
             </div>
             {isAdminPrincipal && (
@@ -222,6 +237,17 @@ export default function UsersPage() {
                     title={u.can_access_finance ? 'Retirer accès Module Financier' : 'Accorder accès Module Financier'}
                   >
                     <DollarSign className="w-4 h-4" />
+                  </Button>
+                )}
+                {u.role === 'vendeur' && (
+                  <Button
+                    variant="ghost" size="icon"
+                    className={`h-8 w-8 ${u.can_access_pedagogie ? 'text-purple-500 hover:text-purple-600' : 'text-slate-400 hover:text-purple-500'}`}
+                    onClick={() => handleTogglePedagogie(u)}
+                    data-testid={`toggle-pedagogie-${u.id}`}
+                    title={u.can_access_pedagogie ? 'Retirer accès Pédagogie et Contrôle' : 'Accorder accès Pédagogie et Contrôle'}
+                  >
+                    <ClipboardCheck className="w-4 h-4" />
                   </Button>
                 )}
                 <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-500 h-8 w-8" onClick={() => openCodeEdit(u)} data-testid={`edit-code-${u.id}`} title="Modifier le code">
