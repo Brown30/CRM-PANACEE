@@ -130,6 +130,7 @@ export default function UsersPage() {
     if (role === 'admin_principal') return <ShieldCheck className="w-4 h-4 text-emerald-500" />;
     if (role === 'admin_secondary') return <Shield className="w-4 h-4 text-blue-500" />;
     if (role === 'pedagogia') return <GraduationCap className="w-4 h-4 text-purple-500" />;
+    if (role === 'professeur') return <ClipboardCheck className="w-4 h-4 text-teal-500" />;
     return <User className="w-4 h-4 text-slate-400" />;
   };
 
@@ -137,6 +138,7 @@ export default function UsersPage() {
     if (role === 'admin_principal') return 'bg-emerald-100 text-emerald-700';
     if (role === 'admin_secondary') return 'bg-blue-100 text-blue-700';
     if (role === 'pedagogia') return 'bg-purple-100 text-purple-700';
+    if (role === 'professeur') return 'bg-teal-100 text-teal-700';
     return 'bg-slate-100 text-slate-600';
   };
 
@@ -144,6 +146,7 @@ export default function UsersPage() {
     if (role === 'admin_principal') return 'Admin Principal';
     if (role === 'admin_secondary') return 'Admin Secondaire';
     if (role === 'pedagogia') return 'Pédagogie';
+    if (role === 'professeur') return 'Professeur';
     return 'Vendeur';
   };
 
@@ -302,6 +305,7 @@ export default function UsersPage() {
                   <SelectItem value="vendeur">Vendeur</SelectItem>
                   <SelectItem value="admin_secondary">Admin Secondaire</SelectItem>
                   <SelectItem value="pedagogia">Pédagogie</SelectItem>
+                  <SelectItem value="professeur">Professeur</SelectItem>
                 </SelectContent>
               </Select>
             </div>

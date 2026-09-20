@@ -57,6 +57,7 @@ export function AuthProvider({ children }) {
   const isAdmin = user?.role === 'admin_principal' || user?.role === 'admin_secondary';
   const isAdminPrincipal = user?.role === 'admin_principal';
   const isPedagogia = user?.role === 'pedagogia';
+  const isProfesseur = user?.role === 'professeur';
   const canManageAttendance = isAdmin || !!user?.can_manage_attendance;
   const canManagePayments = isAdmin || !!user?.can_manage_payments;
   // Finance access is a standalone grant, not implied by admin_secondary/vendeur/
@@ -72,7 +73,7 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       user, token, loading, login, logout,
       selectedMarathon, selectMarathon,
-      api: axiosInstance, isAdmin, isAdminPrincipal, isPedagogia, canManageAttendance, canManagePayments, canAccessFinance, canAccessPedagogie
+      api: axiosInstance, isAdmin, isAdminPrincipal, isPedagogia, isProfesseur, canManageAttendance, canManagePayments, canAccessFinance, canAccessPedagogie
     }}>
       {children}
     </AuthContext.Provider>

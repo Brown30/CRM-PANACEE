@@ -9,11 +9,13 @@ import { toast } from 'sonner';
 export default function LoginPage() {
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, user, canAccessFinance, canAccessPedagogie } = useAuth();
+  const { login, user, canAccessFinance, canAccessPedagogie, isProfesseur } = useAuth();
   const navigate = useNavigate();
 
   if (user) {
-    navigate((canAccessFinance || canAccessPedagogie) ? '/choose-module' : '/select-marathon');
+    // A professeur only ever does one thing here — mark their own program's
+    // topics — so there's no module to choose between, just their courses.
+    navigate(isProfesseur ? '/mon-programme' : (canAccessFinance || canAccessPedagogie) ? '/choose-module' : '/select-marathon');
     return null;
   }
 
@@ -27,10 +29,14 @@ export default function LoginPage() {
       // Module access is checked from the just-returned user rather than the
       // context's canAccessFinance/canAccessPedagogie, which haven't re-rendered
       // with the new user yet.
-      const hasFinanceAccess = loggedInUser.role === 'admin_principal' || !!loggedInUser.can_access_finance;
-      const isAdminRole = loggedInUser.role === 'admin_principal' || loggedInUser.role === 'admin_secondary';
-      const hasPedagogieAccess = isAdminRole || loggedInUser.role === 'pedagogia' || !!loggedInUser.can_access_pedagogie;
-      navigate((hasFinanceAccess || hasPedagogieAccess) ? '/choose-module' : '/select-marathon');
+      if (loggedInUser.role === 'professeur') {
+        navigate('/mon-programme');
+      } else {
+        const hasFinanceAccess = loggedInUser.role === 'admin_principal' || !!loggedInUser.can_access_finance;
+        const isAdminRole = loggedInUser.role === 'admin_principal' || loggedInUser.role === 'admin_secondary';
+        const hasPedagogieAccess = isAdminRole || loggedInUser.role === 'pedagogia' || !!loggedInUser.can_access_pedagogie;
+        navigate((hasFinanceAccess || hasPedagogieAccess) ? '/choose-module' : '/select-marathon');
+      }
     } catch (err) {
       toast.error(err.response?.data?.detail || err.message || 'Code invalide');
     }
