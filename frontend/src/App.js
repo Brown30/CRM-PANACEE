@@ -24,8 +24,11 @@ import VerifyCertificatePage from "@/pages/VerifyCertificatePage";
 import ChooseModulePage from "@/pages/ChooseModulePage";
 import FinanceCoursesPage from "@/pages/FinanceCoursesPage";
 import FinanceCourseDetailPage from "@/pages/FinanceCourseDetailPage";
-import PedagogieCoursesPage from "@/pages/PedagogieCoursesPage";
-import PedagogieCourseDetailPage from "@/pages/PedagogieCourseDetailPage";
+import PedagogieHomePage from "@/pages/PedagogieHomePage";
+import PresenceCoursesPage from "@/pages/PresenceCoursesPage";
+import PresenceCourseDetailPage from "@/pages/PresenceCourseDetailPage";
+import ProgrammeCoursesPage from "@/pages/ProgrammeCoursesPage";
+import ProgrammeCourseDetailPage from "@/pages/ProgrammeCourseDetailPage";
 import MesCoursProfesseurPage from "@/pages/MesCoursProfesseurPage";
 import ProfesseurProgramPage from "@/pages/ProfesseurProgramPage";
 import AppLayout from "@/components/AppLayout";
@@ -98,8 +101,11 @@ function App() {
           <Route path="/pedagogie" element={
             <PedagogieRoute><PedagogieLayout /></PedagogieRoute>
           }>
-            <Route index element={<PedagogieCoursesPage />} />
-            <Route path=":marathonId" element={<PedagogieCourseDetailPage />} />
+            <Route index element={<PedagogieHomePage />} />
+            <Route path="presence" element={<PresenceCoursesPage />} />
+            <Route path="presence/:marathonId" element={<PresenceCourseDetailPage />} />
+            <Route path="programme" element={<ProgrammeCoursesPage />} />
+            <Route path="programme/:marathonId" element={<ProgrammeCourseDetailPage />} />
           </Route>
           <Route path="/mon-programme" element={
             <ProfesseurRoute><ProfesseurLayout /></ProfesseurRoute>
