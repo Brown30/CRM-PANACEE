@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { GraduationCap, ChevronRight, Search, Calendar, Users } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatDateFr, todayStr, isCourseCurrent, coursePhase } from '@/lib/finance';
+import { formatDateFr, todayStr, isCourseCurrent, coursePhase, isModuleVisible } from '@/lib/finance';
 
 export default function PedagogieCoursesPage() {
   const { api } = useAuth();
@@ -17,9 +17,13 @@ export default function PedagogieCoursesPage() {
     (async () => {
       try {
         const { data } = await api.get('/marathons/all');
-        const all = data.marathons || [];
-        const current = all.filter(isCourseCurrent).sort((a, b) => a.name.localeCompare(b.name));
-        setOtherCourses(all.filter(m => !isCourseCurrent(m)).sort((a, b) => a.name.localeCompare(b.name)));
+        const all = (data.marathons || []).filter(isModuleVisible);
+        // Attendance only matters once classes have actually started — a
+        // course still in its enrollment window has no sessions to mark yet,
+        // so it waits in "autres cours" instead of cluttering the main list.
+        const isActiveNow = m => isCourseCurrent(m) && coursePhase(m) === 'active';
+        const current = all.filter(isActiveNow).sort((a, b) => a.name.localeCompare(b.name));
+        setOtherCourses(all.filter(m => !isActiveNow(m)).sort((a, b) => a.name.localeCompare(b.name)));
 
         const counts = await Promise.all(current.map(m =>
           api.get('/leads', { params: { marathon_id: m.id } }).then(r => (r.data.leads || []).filter(l => l.status === 'Inscrit' || l.status === 'Participant').length).catch(() => 0)
@@ -42,7 +46,7 @@ export default function PedagogieCoursesPage() {
         <h2 className="text-xl font-bold text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
           Présence aux cours
         </h2>
-        <p className="text-sm text-slate-500 mt-0.5">Cours actuellement ouverts, entre le début et la fin du cours</p>
+        <p className="text-sm text-slate-500 mt-0.5">Cours actifs, dont les séances ont déjà commencé</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -61,11 +65,7 @@ export default function PedagogieCoursesPage() {
                     <GraduationCap className="w-3 h-3" />
                     {m.formation}
                   </span>
-                  {coursePhase(m) === 'inscription' ? (
-                    <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">En période d'inscription</span>
-                  ) : (
-                    <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Cours Actif</span>
-                  )}
+                  <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Cours Actif</span>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
@@ -113,7 +113,9 @@ export default function PedagogieCoursesPage() {
                         ? 'À venir'
                         : (m.course_end_date && todayStr() > m.course_end_date)
                           ? 'Terminée'
-                          : 'Sans date'}
+                          : isCourseCurrent(m) && coursePhase(m) === 'inscription'
+                            ? "En période d'inscription"
+                            : 'Sans date'}
                     </span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />

@@ -9,7 +9,7 @@ import {
   Wallet, Calendar, Download, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatAmount, formatDateFr, coursePhase, isFinanceVisible } from '@/lib/finance';
+import { formatAmount, formatDateFr, coursePhase, isModuleVisible } from '@/lib/finance';
 import { buildPaymentsTablePdf, buildFullPaymentsTablePdf } from '@/lib/paymentsTableExport';
 import { slugifyFileName } from '@/lib/certificate';
 
@@ -37,7 +37,7 @@ export default function FinanceCourseDetailPage() {
         api.get('/payments/summary', { params: { marathon_id: marathonId } })
       ]);
       const marathon = overviewRes.data.marathon;
-      if (!isFinanceVisible(marathon)) {
+      if (!isModuleVisible(marathon)) {
         navigate('/finance');
         return;
       }
