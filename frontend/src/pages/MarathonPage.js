@@ -36,7 +36,7 @@ export default function MarathonPage() {
   const [showForm, setShowForm] = useState(false);
   const [editMarathon, setEditMarathon] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', formation: '', start_date: '', end_date: '',
+    name: '', formation: '', start_date: '', end_date: '', course_end_date: '',
     objectif_total: 0, objectif_par_vendeur: {}, participation_fee: 0, excluded_vendeurs: []
   });
 
@@ -100,6 +100,7 @@ export default function MarathonPage() {
       formation: marathon.formation || '',
       start_date: marathon.start_date || '',
       end_date: marathon.end_date || '',
+      course_end_date: marathon.course_end_date || '',
       objectif_total: marathon.objectif_total || 0,
       objectif_par_vendeur: marathon.objectif_par_vendeur || {},
       participation_fee: marathon.participation_fee || 0,
@@ -293,7 +294,7 @@ export default function MarathonPage() {
             <Button onClick={openImport} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="import-leads-btn">
               <Upload className="w-4 h-4" /> Importer leads
             </Button>
-            <Button onClick={() => { setEditMarathon(null); setFormData({ name: '', formation: '', start_date: '', end_date: '', objectif_total: 0, objectif_par_vendeur: {}, participation_fee: 0, excluded_vendeurs: [] }); setShowForm(true); }} className="btn-primary flex items-center gap-2 h-10 text-sm" data-testid="add-marathon-btn">
+            <Button onClick={() => { setEditMarathon(null); setFormData({ name: '', formation: '', start_date: '', end_date: '', course_end_date: '', objectif_total: 0, objectif_par_vendeur: {}, participation_fee: 0, excluded_vendeurs: [] }); setShowForm(true); }} className="btn-primary flex items-center gap-2 h-10 text-sm" data-testid="add-marathon-btn">
               <Plus className="w-4 h-4" /> Créer
             </Button>
           </div>
@@ -325,6 +326,7 @@ export default function MarathonPage() {
                 <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-500">
                   <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-emerald-500" />{m.formation}</span>
                   {m.start_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{m.start_date} → {m.end_date || '...'}</span>}
+                  {m.course_end_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />Fin du cours: {m.course_end_date}</span>}
                   <span className="flex items-center gap-1"><Target className="w-3 h-3" />Obj: {m.objectif_total}</span>
                   {m.participation_fee > 0 && (
                     <span className="flex items-center gap-1">Participation: {formatAmount(m.participation_fee)} HTG</span>
@@ -423,6 +425,11 @@ export default function MarathonPage() {
                 <Label className="text-xs font-semibold text-slate-500">Date fin</Label>
                 <Input type="date" value={formData.end_date} onChange={e => setFormData({...formData, end_date: e.target.value})} className="input-field mt-1" data-testid="marathon-end" />
               </div>
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-slate-500">Date de fin du cours</Label>
+              <Input type="date" value={formData.course_end_date} onChange={e => setFormData({...formData, course_end_date: e.target.value})} className="input-field mt-1" data-testid="marathon-course-end" />
+              <p className="text-xs text-slate-400 mt-1">Différent de "Date fin" ci-dessus (qui marque la fin des inscriptions / le début du cours) — c'est la date où le cours lui-même se termine. Utilisée par le Module Financier pour savoir quels cours sont encore en cours.</p>
             </div>
             <div>
               <Label className="text-xs font-semibold text-slate-500">Objectif total</Label>
