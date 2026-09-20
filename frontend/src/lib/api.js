@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { weekendDatesBetween } from './pedagogie';
+import { PROGRAM_TEMPLATES } from './programTemplates';
 
 /**
  * A shim that implements the python backend logic using Supabase directly,
@@ -41,6 +42,11 @@ export const api = {
     if (url === '/users/vendeurs') {
       const { data } = await supabase.from('users').select('*').eq('role', 'vendeur');
       return res({ vendeurs: data });
+    }
+
+    if (url === '/users/professeurs') {
+      const { data } = await supabase.from('users').select('*').eq('role', 'professeur');
+      return res({ professeurs: data });
     }
     
     if (url === '/marathons') {
@@ -300,6 +306,13 @@ export const api = {
         .eq('marathon_id', params.marathon_id).order('date', { ascending: true });
       if (error) throw new Error(error.message);
       return res({ dates: data });
+    }
+
+    if (url === '/pedagogie/program-topics') {
+      const { data, error } = await supabase.from('program_topics').select('*')
+        .eq('marathon_id', params.marathon_id).order('date', { ascending: true });
+      if (error) throw new Error(error.message);
+      return res({ topics: data });
     }
 
     if (url === '/pedagogie/attendance-report') {
@@ -702,6 +715,34 @@ export const api = {
       return res({ extra_date: data });
     }
 
+    if (url === '/pedagogie/program-topics/generate') {
+      const { marathon_id } = payload;
+      const { data: marathon, error: mErr } = await supabase.from('marathons').select('formation, end_date, course_end_date').eq('id', marathon_id).single();
+      if (mErr) throw new Error(mErr.message);
+      const template = PROGRAM_TEMPLATES[marathon.formation];
+      if (!template) throw new Error(`Aucun modèle de programme pour la formation "${marathon.formation}"`);
+      const dates = weekendDatesBetween(marathon.end_date, marathon.course_end_date);
+      if (dates.length === 0) throw new Error("Définissez d'abord la fin des inscriptions et la fin du cours");
+
+      const { data: existing, error: exErr } = await supabase.from('program_topics').select('date').eq('marathon_id', marathon_id);
+      if (exErr) throw new Error(exErr.message);
+      const existingDates = new Set((existing || []).map(e => e.date));
+
+      // Only fills in gaps — never overwrites a topic already generated, since
+      // it may carry edits or a completion mark the professor already made.
+      const toInsert = [];
+      for (let i = 0; i < Math.min(dates.length, template.length); i++) {
+        if (!existingDates.has(dates[i])) {
+          toInsert.push({ id: uuidv4(), marathon_id, date: dates[i], title: template[i].title, completed: false });
+        }
+      }
+      if (toInsert.length > 0) {
+        const { error: insErr } = await supabase.from('program_topics').insert(toInsert);
+        if (insErr) throw new Error(insErr.message);
+      }
+      return res({ inserted: toInsert.length });
+    }
+
     if (url === '/payments') {
       const { lead_id, marathon_id, amount, created_by, created_by_name } = payload;
       const requested = Number(amount);
@@ -765,6 +806,12 @@ export const api = {
       const { data, error } = await supabase.from('sales_methodologies').update(payload).eq('id', id).select().single();
       if (error) throw new Error(error.message);
       return res({ methodology: data });
+    }
+    if (url.match(/^\/pedagogie\/program-topics\/([^/]+)$/)) {
+      const id = url.split('/')[3];
+      const { data, error } = await supabase.from('program_topics').update(payload).eq('id', id).select().single();
+      if (error) throw new Error(error.message);
+      return res({ topic: data });
     }
   },
   

@@ -5,16 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ArrowLeft, GraduationCap, Calendar, Phone, Check, X, Plus, ClipboardList, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Calendar, Phone, Check, X, Plus, ClipboardList, ChevronDown, ChevronUp, CalendarCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateFr, todayStr } from '@/lib/finance';
 import { weekendDatesBetween, dayLabel } from '@/lib/pedagogie';
+import ProgramSection from '@/components/ProgramSection';
 
 export default function PedagogieCourseDetailPage() {
   const { marathonId } = useParams();
   const navigate = useNavigate();
   const { api } = useAuth();
 
+  const [activeTab, setActiveTab] = useState('presence');
   const [marathon, setMarathon] = useState(null);
   const [extraDates, setExtraDates] = useState([]);
   const [roster, setRoster] = useState([]);
@@ -167,6 +169,34 @@ export default function PedagogieCourseDetailPage() {
         )}
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setActiveTab('presence')}
+          data-testid="pedagogie-tab-presence"
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+            activeTab === 'presence' ? 'bg-purple-600 text-white' : 'bg-white border border-slate-200/60 text-slate-600 hover:border-purple-300'
+          }`}
+        >
+          <CalendarCheck className="w-4 h-4" /> Présence
+        </button>
+        <button
+          onClick={() => setActiveTab('programme')}
+          data-testid="pedagogie-tab-programme"
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+            activeTab === 'programme' ? 'bg-purple-600 text-white' : 'bg-white border border-slate-200/60 text-slate-600 hover:border-purple-300'
+          }`}
+        >
+          <ClipboardList className="w-4 h-4" /> Programme
+        </button>
+      </div>
+
+      {activeTab === 'programme' && (
+        <ProgramSection marathon={marathon} manage onMarathonUpdate={setMarathon} />
+      )}
+
+      {activeTab === 'presence' && (
+      <>
       {/* Date chips */}
       <div className="flex items-center gap-2">
         <div className="flex-1 flex gap-2 overflow-x-auto pb-1">
@@ -287,6 +317,8 @@ export default function PedagogieCourseDetailPage() {
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* Add practical class date dialog */}
       <Dialog open={showAddDate} onOpenChange={setShowAddDate}>
