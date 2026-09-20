@@ -63,12 +63,16 @@ export function AuthProvider({ children }) {
   // pedagogia roles — only admin_principal has it by default, everyone else needs
   // it turned on explicitly.
   const canAccessFinance = isAdminPrincipal || !!user?.can_access_finance;
+  // Pédagogie et Contrôle is an operational module like attendance/payments
+  // (both admin roles get it for free), plus the pedagogia role itself, plus
+  // whoever else is explicitly granted the flag (e.g. a vendeur helping out).
+  const canAccessPedagogie = isAdmin || isPedagogia || !!user?.can_access_pedagogie;
 
   return (
     <AuthContext.Provider value={{
       user, token, loading, login, logout,
       selectedMarathon, selectMarathon,
-      api: axiosInstance, isAdmin, isAdminPrincipal, isPedagogia, canManageAttendance, canManagePayments, canAccessFinance
+      api: axiosInstance, isAdmin, isAdminPrincipal, isPedagogia, canManageAttendance, canManagePayments, canAccessFinance, canAccessPedagogie
     }}>
       {children}
     </AuthContext.Provider>

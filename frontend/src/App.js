@@ -24,8 +24,11 @@ import VerifyCertificatePage from "@/pages/VerifyCertificatePage";
 import ChooseModulePage from "@/pages/ChooseModulePage";
 import FinanceCoursesPage from "@/pages/FinanceCoursesPage";
 import FinanceCourseDetailPage from "@/pages/FinanceCourseDetailPage";
+import PedagogieCoursesPage from "@/pages/PedagogieCoursesPage";
+import PedagogieCourseDetailPage from "@/pages/PedagogieCourseDetailPage";
 import AppLayout from "@/components/AppLayout";
 import FinanceLayout from "@/components/FinanceLayout";
+import PedagogieLayout from "@/components/PedagogieLayout";
 
 function ProtectedRoute({ children }) {
   const { user, loading, selectedMarathon } = useAuth();
@@ -53,6 +56,14 @@ function FinanceRoute({ children }) {
   return children;
 }
 
+function PedagogieRoute({ children }) {
+  const { user, loading, canAccessPedagogie } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" />;
+  if (!canAccessPedagogie) return <Navigate to="/select-marathon" />;
+  return children;
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -72,6 +83,12 @@ function App() {
           }>
             <Route index element={<FinanceCoursesPage />} />
             <Route path=":marathonId" element={<FinanceCourseDetailPage />} />
+          </Route>
+          <Route path="/pedagogie" element={
+            <PedagogieRoute><PedagogieLayout /></PedagogieRoute>
+          }>
+            <Route index element={<PedagogieCoursesPage />} />
+            <Route path=":marathonId" element={<PedagogieCourseDetailPage />} />
           </Route>
           <Route path="/" element={
             <ProtectedRoute><AppLayout /></ProtectedRoute>

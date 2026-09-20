@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { v4 as uuidv4 } from 'uuid';
+import { weekendDatesBetween } from './pedagogie';
 
 /**
  * A shim that implements the python backend logic using Supabase directly,
@@ -292,6 +293,52 @@ export const api = {
       if (error) throw new Error(error.message);
       const dates = [...new Set((data || []).map(d => d.date))].sort((a, b) => b.localeCompare(a));
       return res({ dates });
+    }
+
+    if (url === '/pedagogie/extra-dates') {
+      const { data, error } = await supabase.from('class_extra_dates').select('*')
+        .eq('marathon_id', params.marathon_id).order('date', { ascending: true });
+      if (error) throw new Error(error.message);
+      return res({ dates: data });
+    }
+
+    if (url === '/pedagogie/attendance-report') {
+      const { data: marathon, error: mErr } = await supabase.from('marathons').select('end_date, course_end_date').eq('id', params.marathon_id).single();
+      if (mErr) throw new Error(mErr.message);
+      const { data: extra, error: exErr } = await supabase.from('class_extra_dates').select('date').eq('marathon_id', params.marathon_id);
+      if (exErr) throw new Error(exErr.message);
+      const today = new Date().toISOString().split('T')[0];
+      const weekend = weekendDatesBetween(marathon?.end_date, marathon?.course_end_date);
+      // Only sessions that already happened count toward the report — a
+      // student can't be faulted for not attending a class that hasn't occurred yet.
+      const sessionDates = [...new Set([...weekend, ...(extra || []).map(e => e.date)])].filter(d => d <= today).sort();
+
+      const { data: leads, error: lErr } = await supabase.from('leads').select('id, full_name')
+        .eq('marathon_id', params.marathon_id).in('status', ['Inscrit', 'Participant']).order('full_name', { ascending: true });
+      if (lErr) throw new Error(lErr.message);
+
+      let attendance = [];
+      if (sessionDates.length > 0) {
+        const { data: att, error: attErr } = await supabase.from('attendance').select('lead_id, date, present')
+          .eq('marathon_id', params.marathon_id).in('date', sessionDates);
+        if (attErr) throw new Error(attErr.message);
+        attendance = att || [];
+      }
+
+      const presentSet = new Set(attendance.filter(a => a.present === true).map(a => `${a.lead_id}|${a.date}`));
+      const totalSessions = sessionDates.length;
+      const rows = (leads || []).map(l => {
+        const absences = sessionDates.filter(d => !presentSet.has(`${l.id}|${d}`));
+        const present_count = totalSessions - absences.length;
+        return {
+          lead_id: l.id, full_name: l.full_name,
+          present_count, total_sessions: totalSessions,
+          attendance_rate: totalSessions > 0 ? Math.round((present_count / totalSessions) * 100) : 0,
+          absences
+        };
+      });
+
+      return res({ session_dates: sessionDates, rows });
     }
 
     if (url === '/payments/summary') {
@@ -643,6 +690,18 @@ export const api = {
       return res({ message: 'ok' });
     }
 
+    if (url === '/pedagogie/extra-dates') {
+      const { marathon_id, date, label } = payload;
+      if (!marathon_id || !date) throw new Error('Marathon et date requis');
+      const { data, error } = await supabase.from('class_extra_dates')
+        .insert({ id: uuidv4(), marathon_id, date, label: label || null }).select().single();
+      if (error) {
+        if (error.code === '23505') throw new Error('Cette date existe déjà pour ce cours');
+        throw new Error(error.message);
+      }
+      return res({ extra_date: data });
+    }
+
     if (url === '/payments') {
       const { lead_id, marathon_id, amount, created_by, created_by_name } = payload;
       const requested = Number(amount);
@@ -744,6 +803,11 @@ export const api = {
       const id = url.split('/')[2];
       await supabase.from('payments').delete().eq('id', id);
       return res({ message: 'Paiement supprimé' });
+    }
+    if (url.match(/^\/pedagogie\/extra-dates\/([^/]+)$/)) {
+      const id = url.split('/')[3];
+      await supabase.from('class_extra_dates').delete().eq('id', id);
+      return res({ message: 'Date supprimée' });
     }
   }
 };

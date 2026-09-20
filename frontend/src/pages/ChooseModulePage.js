@@ -1,10 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Wallet, LogOut, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Wallet, GraduationCap, LogOut, ChevronRight } from 'lucide-react';
 
 export default function ChooseModulePage() {
-  const { user, logout } = useAuth();
+  const { user, logout, canAccessFinance, canAccessPedagogie } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -45,20 +45,39 @@ export default function ChooseModulePage() {
             <ChevronRight className="w-5 h-5 text-slate-300" />
           </button>
 
-          <button
-            onClick={() => navigate('/finance')}
-            data-testid="choose-finance-btn"
-            className="w-full bg-white border border-slate-200/60 shadow-sm rounded-2xl p-5 text-left hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-4"
-          >
-            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-              <Wallet className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-slate-800 text-base" style={{ fontFamily: "'Outfit', sans-serif" }}>Module Financier</p>
-              <p className="text-xs text-slate-400 mt-0.5">Vue d'ensemble des finances de l'école</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-slate-300" />
-          </button>
+          {canAccessFinance && (
+            <button
+              onClick={() => navigate('/finance')}
+              data-testid="choose-finance-btn"
+              className="w-full bg-white border border-slate-200/60 shadow-sm rounded-2xl p-5 text-left hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-4"
+            >
+              <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                <Wallet className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-slate-800 text-base" style={{ fontFamily: "'Outfit', sans-serif" }}>Module Financier</p>
+                <p className="text-xs text-slate-400 mt-0.5">Vue d'ensemble des finances de l'école</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-300" />
+            </button>
+          )}
+
+          {canAccessPedagogie && (
+            <button
+              onClick={() => navigate('/pedagogie')}
+              data-testid="choose-pedagogie-btn"
+              className="w-full bg-white border border-slate-200/60 shadow-sm rounded-2xl p-5 text-left hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-4"
+            >
+              <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+                <GraduationCap className="w-6 h-6 text-purple-600" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-slate-800 text-base" style={{ fontFamily: "'Outfit', sans-serif" }}>Pédagogie et Contrôle</p>
+                <p className="text-xs text-slate-400 mt-0.5">Présence aux cours, programmes des professeurs</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-300" />
+            </button>
+          )}
         </div>
       </div>
     </div>
