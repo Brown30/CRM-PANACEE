@@ -9,7 +9,7 @@ import {
   Wallet, Calendar, Download, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatAmount, formatDateFr, coursePhase } from '@/lib/finance';
+import { formatAmount, formatDateFr, coursePhase, isFinanceVisible } from '@/lib/finance';
 import { buildPaymentsTablePdf, buildFullPaymentsTablePdf } from '@/lib/paymentsTableExport';
 import { slugifyFileName } from '@/lib/certificate';
 
@@ -36,14 +36,19 @@ export default function FinanceCourseDetailPage() {
         api.get('/finance/overview', { params: { marathon_id: marathonId } }),
         api.get('/payments/summary', { params: { marathon_id: marathonId } })
       ]);
+      const marathon = overviewRes.data.marathon;
+      if (!isFinanceVisible(marathon)) {
+        navigate('/finance');
+        return;
+      }
       setOverview(overviewRes.data);
-      setCourseEndDate(overviewRes.data.marathon?.course_end_date || '');
+      setCourseEndDate(marathon?.course_end_date || '');
       setSummary(summaryRes.data);
     } catch {
       toast.error('Erreur chargement');
     }
     setLoading(false);
-  }, [api, marathonId]);
+  }, [api, marathonId, navigate]);
 
   useEffect(() => { fetchOverview(); }, [fetchOverview]);
 
