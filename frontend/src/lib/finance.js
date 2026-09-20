@@ -33,3 +33,9 @@ export const isCourseCurrent = (m) => {
 // day the course itself starts) or actually running (end_date to
 // course_end_date). Independent of the active flag too.
 export const coursePhase = (m) => (m.end_date && todayStr() < m.end_date) ? 'inscription' : 'active';
+
+// Courses in these formations stay fully usable in the CRM (leads, ranking,
+// etc.) but are left out of the Finance module entirely — they aren't
+// tracked there.
+export const FINANCE_EXCLUDED_FORMATIONS = ['Rolling Door'];
+export const isFinanceVisible = (m) => !FINANCE_EXCLUDED_FORMATIONS.includes(m.formation);

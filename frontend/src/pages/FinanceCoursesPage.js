@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList, ResponsiveContainer } from 'recharts';
 import { Trophy, ChevronRight, AlertTriangle, Search, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatAmount, formatDateFr, todayStr, isCourseCurrent, coursePhase } from '@/lib/finance';
+import { formatAmount, formatDateFr, todayStr, isCourseCurrent, coursePhase, isFinanceVisible } from '@/lib/finance';
 
 export default function FinanceCoursesPage() {
   const { api } = useAuth();
@@ -18,7 +18,7 @@ export default function FinanceCoursesPage() {
     (async () => {
       try {
         const { data } = await api.get('/marathons/all');
-        const all = data.marathons || [];
+        const all = (data.marathons || []).filter(isFinanceVisible);
         const current = all.filter(isCourseCurrent).sort((a, b) => a.name.localeCompare(b.name));
         setOtherCourses(all.filter(m => !isCourseCurrent(m)).sort((a, b) => a.name.localeCompare(b.name)));
 
