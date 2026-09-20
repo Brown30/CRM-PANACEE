@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { GraduationCap, ChevronRight, Search, Calendar, Users } from 'lucide-react';
+import { GraduationCap, ChevronRight, Search, Calendar, Users, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateFr, todayStr, isCourseCurrent, coursePhase, isModuleVisible } from '@/lib/finance';
 
-export default function PedagogieCoursesPage() {
+export default function PresenceCoursesPage() {
   const { api } = useAuth();
   const [currentCourses, setCurrentCourses] = useState([]);
   const [otherCourses, setOtherCourses] = useState([]);
@@ -42,6 +42,10 @@ export default function PedagogieCoursesPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-5" data-testid="pedagogie-courses-page">
+      <button onClick={() => navigate('/pedagogie')} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800">
+        <ArrowLeft className="w-4 h-4" /> Retour
+      </button>
+
       <div>
         <h2 className="text-xl font-bold text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
           Présence aux cours
@@ -53,7 +57,7 @@ export default function PedagogieCoursesPage() {
         {currentCourses.map(({ marathon: m, count }) => (
           <button
             key={m.id}
-            onClick={() => navigate(`/pedagogie/${m.id}`)}
+            onClick={() => navigate(`/pedagogie/presence/${m.id}`)}
             data-testid={`pedagogie-course-${m.id}`}
             className="stat-card text-left"
           >
@@ -102,7 +106,7 @@ export default function PedagogieCoursesPage() {
               {otherCourses.map(m => (
                 <button
                   key={m.id}
-                  onClick={() => navigate(`/pedagogie/${m.id}`)}
+                  onClick={() => navigate(`/pedagogie/presence/${m.id}`)}
                   data-testid={`pedagogie-other-course-${m.id}`}
                   className="w-full bg-white border border-slate-200/40 opacity-80 shadow-sm rounded-2xl p-4 text-left hover:shadow-md hover:opacity-100 transition-all duration-300 flex items-center justify-between"
                 >
