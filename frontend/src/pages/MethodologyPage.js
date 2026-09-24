@@ -6,10 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PhoneCall, HelpCircle, Pencil, Plus, X, Copy } from 'lucide-react';
+import { PhoneCall, HelpCircle, Pencil, Plus, X, Copy, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import RichTextEditor from '@/components/RichTextEditor';
 import NoMarathonFallback from '@/components/NoMarathonFallback';
+import { buildMethodologyPdf } from '@/lib/methodologyExport';
+import { slugifyFileName } from '@/lib/certificate';
 
 function MethodologyEditor({ methodology, api, onSaved, onCancel, onDelete }) {
   const [title, setTitle] = useState(methodology.title);
@@ -183,6 +185,20 @@ export default function MethodologyPage() {
     }
   };
 
+  // Mirrors the on-screen rendering, which substitutes {vendorName} into the
+  // body before display — the PDF should read the same way it's shown here.
+  const withVendorName = (m) => ({ ...m, body: (m.body || '').replace('{vendorName}', vendorName) });
+
+  const handleDownloadOne = (m) => {
+    const doc = buildMethodologyPdf([withVendorName(m)]);
+    doc.save(`Methodologie_${slugifyFileName(m.title || 'sans_titre')}.pdf`);
+  };
+
+  const handleDownloadAll = () => {
+    const doc = buildMethodologyPdf(methodologies.map(withVendorName));
+    doc.save(`Methodologies_${slugifyFileName(selectedMarathon?.name || 'cours')}.pdf`);
+  };
+
   const handlePush = async () => {
     if (!pushTargetId) { toast.error('Choisissez une marathon cible'); return; }
     setPushing(true);
@@ -213,18 +229,25 @@ export default function MethodologyPage() {
         <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
           <PhoneCall className="w-5 h-5 text-emerald-500" /> Méthodologie de Vente
         </h2>
-        {isAdminPrincipal && (
-          <div className="flex items-center gap-2">
-            {methodologies.length > 0 && (
-              <Button onClick={openPush} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="push-methodology-btn">
-                <Copy className="w-4 h-4" /> Copier vers une autre maratona
-              </Button>
-            )}
-            <Button onClick={() => setShowNew(true)} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="add-methodology-btn">
-              <Plus className="w-4 h-4" /> Nouvelle méthodologie
+        <div className="flex items-center gap-2 flex-wrap">
+          {methodologies.length > 0 && (
+            <Button onClick={handleDownloadAll} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="download-all-methodologies-btn">
+              <Download className="w-4 h-4" /> Télécharger tout en PDF
             </Button>
-          </div>
-        )}
+          )}
+          {isAdminPrincipal && (
+            <>
+              {methodologies.length > 0 && (
+                <Button onClick={openPush} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="push-methodology-btn">
+                  <Copy className="w-4 h-4" /> Copier vers une autre maratona
+                </Button>
+              )}
+              <Button onClick={() => setShowNew(true)} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="add-methodology-btn">
+                <Plus className="w-4 h-4" /> Nouvelle méthodologie
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {methodologies.length === 0 && (
@@ -245,6 +268,17 @@ export default function MethodologyPage() {
                     <p className="text-xs text-slate-400">{m.formation}</p>
                   </div>
                 </AccordionTrigger>
+                {editingId !== m.id && (
+                  <Button
+                    variant="ghost" size="icon"
+                    className="text-slate-400 hover:text-emerald-600 shrink-0 mr-1"
+                    onClick={() => handleDownloadOne(m)}
+                    data-testid={`download-methodology-${m.id}`}
+                    title="Télécharger en PDF"
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
+                )}
                 {isAdminPrincipal && editingId !== m.id && (
                   <Button
                     variant="ghost" size="icon"
