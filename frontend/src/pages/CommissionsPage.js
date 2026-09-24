@@ -27,17 +27,13 @@ export default function CommissionsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [mRes, vRes] = await Promise.all([
-          api.get('/marathons/all'),
-          isAdmin ? api.get('/users/vendeurs') : Promise.resolve({ data: { vendeurs: [] } })
-        ]);
-        const sorted = [...(mRes.data.marathons || [])].sort((a, b) => (b.active - a.active) || a.name.localeCompare(b.name));
+        const { data } = await api.get('/marathons/all');
+        const sorted = [...(data.marathons || [])].sort((a, b) => (b.active - a.active) || a.name.localeCompare(b.name));
         setMarathons(sorted);
-        setVendeurs(vRes.data.vendeurs || []);
       } catch { toast.error('Erreur chargement'); }
       setLoadingMarathons(false);
     })();
-  }, [api, isAdmin]);
+  }, [api]);
 
   const fetchReport = useCallback(async () => {
     if (!marathonId) return;
@@ -46,13 +42,15 @@ export default function CommissionsPage() {
       const params = { marathon_id: marathonId };
       if (!isAdmin) params.vendeur_id = user.id;
       else if (vendeurFilter !== 'all') params.vendeur_id = vendeurFilter;
-      const [sumRes, commRes] = await Promise.all([
+      const [sumRes, commRes, vRes] = await Promise.all([
         api.get('/payments/summary', { params }),
-        api.get('/commissions', { params })
+        api.get('/commissions', { params }),
+        isAdmin ? api.get('/users/vendeurs', { params: { marathon_id: marathonId } }) : Promise.resolve({ data: { vendeurs: [] } })
       ]);
       setSummary(sumRes.data);
       setCommissionVendors(commRes.data.vendors || []);
       setLimit(Number(commRes.data.participation_fee || 0));
+      setVendeurs(vRes.data.vendeurs || []);
     } catch { toast.error('Erreur chargement du rapport'); }
     setLoadingReport(false);
   }, [api, marathonId, isAdmin, user, vendeurFilter]);

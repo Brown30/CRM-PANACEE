@@ -46,7 +46,7 @@ export default function DashboardPage() {
         const [dashRes, timeRes, vendRes] = await Promise.all([
           api.get('/dashboard/admin', { params }),
           api.get(`/marathons/${selectedMarathon.id}/time-remaining`),
-          api.get('/users/vendeurs')
+          api.get('/users/vendeurs', { params: { marathon_id: selectedMarathon.id } })
         ]);
         setStats(dashRes.data);
         setTimeRemaining(timeRes.data);

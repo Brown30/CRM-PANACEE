@@ -41,7 +41,18 @@ export const api = {
     
     if (url === '/users/vendeurs') {
       const { data } = await supabase.from('users').select('*').eq('role', 'vendeur');
-      return res({ vendeurs: data });
+      // Without a marathon_id, callers need the raw full list (e.g. Marathons'
+      // per-course exclusion picker, or Leads' own assignment dropdown, which
+      // already does its own active/excluded filtering). With one, an inactive
+      // vendeur (someone who left) only belongs in that marathon's filters if
+      // they actually have leads there — otherwise they'd clutter every other
+      // course's vendor list forever after leaving.
+      if (!params.marathon_id) return res({ vendeurs: data });
+      const { data: leadRows, error: leadErr } = await supabase.from('leads').select('vendeur_id').eq('marathon_id', params.marathon_id);
+      if (leadErr) throw new Error(leadErr.message);
+      const vendeurIdsWithLeads = new Set((leadRows || []).map(l => l.vendeur_id));
+      const vendeurs = (data || []).filter(v => v.active !== false || vendeurIdsWithLeads.has(v.id));
+      return res({ vendeurs });
     }
 
     if (url === '/users/professeurs') {
@@ -167,7 +178,14 @@ export const api = {
       const objectif_total = mar?.objectif_total || 0;
       
       const { data: vendeurs } = await supabase.from('users').select('*').eq('role', 'vendeur');
-      const vendeur_stats = vendeurs.map(v => {
+      // vendeur_stats always breaks down every vendor for this marathon, regardless
+      // of whether params.vendeur_id narrowed the `leads` query above — so which
+      // vendors have leads here has to come from a separate, unfiltered query, not
+      // from `leads` itself. Someone inactive (left the company) only stays in this
+      // marathon's breakdown if they actually have leads in it.
+      const { data: allMarathonLeads } = await supabase.from('leads').select('vendeur_id').eq('marathon_id', params.marathon_id);
+      const vendeurIdsWithLeads = new Set((allMarathonLeads || []).map(l => l.vendeur_id));
+      const vendeur_stats = vendeurs.filter(v => v.active !== false || vendeurIdsWithLeads.has(v.id)).map(v => {
         const vLeads = leads.filter(l => l.vendeur_id === v.id);
         const vInscrits = vLeads.filter(l => isEnrolled(l)).length;
         const vTresInteresses = vLeads.filter(l => l.status === 'Très intéressé').length;
@@ -197,7 +215,11 @@ export const api = {
     if (url === '/ranking') {
       const { data: vendeurs } = await supabase.from('users').select('*').eq('role', 'vendeur');
       const { data: leads } = await supabase.from('leads').select('vendeur_id, status').eq('marathon_id', params.marathon_id);
-      let ranking = vendeurs.map(v => {
+      // An inactive vendeur (left the company) only shows up in this marathon's
+      // ranking if they actually have leads here — otherwise they'd clutter every
+      // other course's ranking forever after leaving.
+      const vendeurIdsWithLeads = new Set(leads.map(l => l.vendeur_id));
+      let ranking = vendeurs.filter(v => v.active !== false || vendeurIdsWithLeads.has(v.id)).map(v => {
         const vl = leads.filter(l => l.vendeur_id === v.id);
         const ins = vl.filter(l => isEnrolled(l)).length;
         const tot = vl.length;
