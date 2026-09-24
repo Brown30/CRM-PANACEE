@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { ClipboardList, ChevronRight, Search, Calendar, ArrowLeft, User } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatDateFr, todayStr, isCourseCurrent, isModuleVisible } from '@/lib/finance';
+import { formatDateFr, todayStr, isCourseCurrent, coursePhase, isModuleVisible } from '@/lib/finance';
 
 export default function ProgrammeCoursesPage() {
   const { api } = useAuth();
@@ -24,11 +24,12 @@ export default function ProgrammeCoursesPage() {
         const all = (data.marathons || [])
           .filter(isModuleVisible)
           .map(m => ({ ...m, professeur_name: profMap[m.professeur_id] || null }));
-        // Unlike Présence, setting up a programme (assigning a professeur,
-        // generating the topic list) is useful as soon as a course's dates
-        // are known — no need to wait for classes to actually start.
-        const current = all.filter(isCourseCurrent).sort((a, b) => a.name.localeCompare(b.name));
-        setOtherCourses(all.filter(m => !isCourseCurrent(m)).sort((a, b) => a.name.localeCompare(b.name)));
+        // Same window as Présence — only courses whose classes have actually
+        // started show up here; a course still in enrollment isn't ready for
+        // its programme to be tracked yet.
+        const isActiveNow = m => isCourseCurrent(m) && coursePhase(m) === 'active';
+        const current = all.filter(isActiveNow).sort((a, b) => a.name.localeCompare(b.name));
+        setOtherCourses(all.filter(m => !isActiveNow(m)).sort((a, b) => a.name.localeCompare(b.name)));
         setCurrentCourses(current);
       } catch { toast.error('Erreur chargement'); }
       setLoading(false);
@@ -51,7 +52,7 @@ export default function ProgrammeCoursesPage() {
         <h2 className="text-xl font-bold text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
           Programme des cours
         </h2>
-        <p className="text-sm text-slate-500 mt-0.5">Assignez un professeur et suivez l'avancement du programme</p>
+        <p className="text-sm text-slate-500 mt-0.5">Cours actifs — assignez un professeur et suivez l'avancement du programme</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -70,6 +71,7 @@ export default function ProgrammeCoursesPage() {
                     <ClipboardList className="w-3 h-3" />
                     {m.formation}
                   </span>
+                  <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Cours Actif</span>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
@@ -119,7 +121,9 @@ export default function ProgrammeCoursesPage() {
                         ? 'À venir'
                         : (m.course_end_date && todayStr() > m.course_end_date)
                           ? 'Terminée'
-                          : 'Sans date'}
+                          : isCourseCurrent(m) && coursePhase(m) === 'inscription'
+                            ? "En période d'inscription"
+                            : 'Sans date'}
                     </span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />

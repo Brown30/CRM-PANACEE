@@ -38,7 +38,7 @@ export default function PaymentsPage() {
       // stale here — re-fetch the marathon itself instead of trusting the cache.
       const [payRes, vRes, marRes] = await Promise.all([
         api.get('/payments', { params }),
-        canSeeAllVendors ? api.get('/users/vendeurs') : Promise.resolve({ data: { vendeurs: [] } }),
+        canSeeAllVendors ? api.get('/users/vendeurs', { params: { marathon_id: selectedMarathon.id } }) : Promise.resolve({ data: { vendeurs: [] } }),
         api.get(`/marathons/${selectedMarathon.id}`)
       ]);
       setRows(payRes.data.rows || []);

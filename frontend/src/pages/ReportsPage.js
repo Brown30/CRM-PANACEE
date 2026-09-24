@@ -27,7 +27,7 @@ export default function ReportsPage() {
       if (startDate && endDate) { params.start_date = startDate; params.end_date = endDate; }
       const [repRes, vRes] = await Promise.all([
         api.get('/reports', { params }),
-        api.get('/users/vendeurs')
+        api.get('/users/vendeurs', { params: { marathon_id: selectedMarathon.id } })
       ]);
       setReports(repRes.data);
       setVendeurs(vRes.data.vendeurs);
