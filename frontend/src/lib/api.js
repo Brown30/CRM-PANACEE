@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { weekendDatesBetween } from './pedagogie';
 import { PROGRAM_TEMPLATES } from './programTemplates';
+import { MODULE_EXCLUDED_FORMATIONS } from './finance';
 
 /**
  * A shim that implements the python backend logic using Supabase directly,
@@ -476,8 +477,14 @@ export const api = {
     }
 
     if (url === '/commissions') {
-      const { data: marathon, error: mErr } = await supabase.from('marathons').select('participation_fee').eq('id', params.marathon_id).single();
+      const { data: marathon, error: mErr } = await supabase.from('marathons').select('formation, participation_fee').eq('id', params.marathon_id).single();
       if (mErr) throw new Error(mErr.message);
+      // Rolling Door (and any other formation excluded from the operational
+      // modules) never counts toward commission, even if reached directly —
+      // the marathon picker already keeps it out of normal use.
+      if (MODULE_EXCLUDED_FORMATIONS.includes(marathon?.formation)) {
+        return res({ vendors: [], participation_fee: 0 });
+      }
       const limit = Number(marathon?.participation_fee || 0);
 
       // Inscription commission is earned the moment someone enrolls — the
@@ -548,15 +555,21 @@ export const api = {
       // fee is always paid in full, automatically) — participation commission
       // still only counts once that fee is paid in full.
       if (!params.vendeur_id) throw new Error('vendeur_id requis');
-      const { data: leads, error: lErr } = await supabase.from('leads').select('id, marathon_id, status')
+      const { data: rawLeads, error: lErr } = await supabase.from('leads').select('id, marathon_id, status')
         .eq('vendeur_id', params.vendeur_id).in('status', ['Inscrit', 'Participant']);
       if (lErr) throw new Error(lErr.message);
-      if (!leads || leads.length === 0) return res({ total_commission: 0, breakdown: [] });
+      if (!rawLeads || rawLeads.length === 0) return res({ total_commission: 0, breakdown: [] });
 
-      const marathonIds = [...new Set(leads.map(l => l.marathon_id))];
-      const { data: marathons, error: mErr } = await supabase.from('marathons').select('id, name, participation_fee').in('id', marathonIds);
+      const rawMarathonIds = [...new Set(rawLeads.map(l => l.marathon_id))];
+      const { data: rawMarathons, error: mErr } = await supabase.from('marathons').select('id, name, formation, participation_fee').in('id', rawMarathonIds);
       if (mErr) throw new Error(mErr.message);
-      const marathonById = Object.fromEntries((marathons || []).map(m => [m.id, m]));
+      // Rolling Door (and any other formation excluded from the operational
+      // modules) stays fully usable in the CRM, but never counts toward
+      // commission or payroll — same exclusion as the marathon picker itself.
+      const marathons = (rawMarathons || []).filter(m => !MODULE_EXCLUDED_FORMATIONS.includes(m.formation));
+      const marathonById = Object.fromEntries(marathons.map(m => [m.id, m]));
+      const leads = rawLeads.filter(l => marathonById[l.marathon_id]);
+      if (leads.length === 0) return res({ total_commission: 0, breakdown: [] });
 
       const participantLeads = leads.filter(l => l.status === 'Participant');
       const leadIds = participantLeads.map(l => l.id);
