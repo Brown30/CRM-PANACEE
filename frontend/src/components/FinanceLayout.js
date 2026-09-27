@@ -1,7 +1,7 @@
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Wallet, LayoutDashboard, LogOut } from 'lucide-react';
+import { Wallet, LayoutDashboard, LogOut, ArrowLeft } from 'lucide-react';
 
 export default function FinanceLayout() {
   const { user, logout } = useAuth();
@@ -18,6 +18,9 @@ export default function FinanceLayout() {
             <span className="font-bold text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>Module Financier</span>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-9 text-xs rounded-lg flex items-center gap-1.5 text-slate-500" onClick={() => navigate(-1)} data-testid="finance-go-back">
+              <ArrowLeft className="w-3.5 h-3.5" /> Retour
+            </Button>
             <Button variant="outline" size="sm" className="h-9 text-xs rounded-lg flex items-center gap-1.5" onClick={() => navigate('/choose-module')} data-testid="finance-switch-module">
               <LayoutDashboard className="w-3.5 h-3.5" /> Changer de module
             </Button>

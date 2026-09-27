@@ -1,7 +1,7 @@
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Percent, LayoutDashboard, LogOut } from 'lucide-react';
+import { Percent, LayoutDashboard, LogOut, ArrowLeft } from 'lucide-react';
 
 export default function VendeurCommissionLayout() {
   const { user, logout } = useAuth();
@@ -18,6 +18,9 @@ export default function VendeurCommissionLayout() {
             <span className="font-bold text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>Paiement et Commission</span>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-9 text-xs rounded-lg flex items-center gap-1.5 text-slate-500" onClick={() => navigate(-1)} data-testid="vendeur-commission-go-back">
+              <ArrowLeft className="w-3.5 h-3.5" /> Retour
+            </Button>
             <Button variant="outline" size="sm" className="h-9 text-xs rounded-lg flex items-center gap-1.5" onClick={() => navigate('/vendeur-home')} data-testid="vendeur-commission-switch">
               <LayoutDashboard className="w-3.5 h-3.5" /> Changer
             </Button>
