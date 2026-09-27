@@ -23,7 +23,7 @@ export default function ProgrammeCoursesPage() {
         const profMap = Object.fromEntries((profData.professeurs || []).map(p => [p.id, p.name]));
         const all = (data.marathons || [])
           .filter(isModuleVisible)
-          .map(m => ({ ...m, professeur_name: profMap[m.professeur_id] || null }));
+          .map(m => ({ ...m, professeur_names: (m.professeur_ids || []).map(id => profMap[id]).filter(Boolean) }));
         // Same window as Présence — only courses whose classes have actually
         // started show up here; a course still in enrollment isn't ready for
         // its programme to be tracked yet.
@@ -80,9 +80,9 @@ export default function ProgrammeCoursesPage() {
               <Calendar className="w-3 h-3" />
               {formatDateFr(m.end_date) || '?'} - {formatDateFr(m.course_end_date) || '?'}
             </p>
-            {m.professeur_name && (
+            {m.professeur_names.length > 0 && (
               <p className="flex items-center gap-1 text-xs text-slate-500 mt-2">
-                <User className="w-3.5 h-3.5" /> {m.professeur_name}
+                <User className="w-3.5 h-3.5" /> {m.professeur_names.join(', ')}
               </p>
             )}
           </button>

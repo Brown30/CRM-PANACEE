@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ClipboardList, Sparkles, User, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateFr } from '@/lib/finance';
@@ -48,10 +48,11 @@ export default function ProgramSection({ marathon, manage, onMarathonUpdate }) {
     setGenerating(false);
   };
 
-  const handleAssignProfesseur = async (professeurId) => {
+  const handleToggleProfesseur = async (professeurId, checked) => {
+    const current = marathon.professeur_ids || [];
+    const next = checked ? [...current, professeurId] : current.filter(id => id !== professeurId);
     try {
-      const { data } = await api.put(`/marathons/${marathon.id}`, { professeur_id: professeurId || null });
-      toast.success('Professeur assigné');
+      const { data } = await api.put(`/marathons/${marathon.id}`, { professeur_ids: next });
       onMarathonUpdate?.(data.marathon);
     } catch (err) { toast.error(err.message || 'Erreur'); }
   };
@@ -81,16 +82,22 @@ export default function ProgramSection({ marathon, manage, onMarathonUpdate }) {
       {manage && (
         <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4 space-y-3">
           <div>
-            <p className="text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1"><User className="w-3.5 h-3.5" /> Professeur</p>
-            <Select value={marathon.professeur_id || 'none'} onValueChange={v => handleAssignProfesseur(v === 'none' ? null : v)}>
-              <SelectTrigger className="input-field" data-testid="program-professeur-select">
-                <SelectValue placeholder="Aucun professeur assigné" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Aucun</SelectItem>
-                {professeurs.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <p className="text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1"><User className="w-3.5 h-3.5" /> Professeur(s)</p>
+            {professeurs.length === 0 ? (
+              <p className="text-xs text-slate-400">Aucun professeur n'existe encore</p>
+            ) : (
+              <div className="border border-slate-200/60 rounded-xl divide-y divide-slate-100" data-testid="program-professeur-list">
+                {professeurs.map(p => (
+                  <label key={p.id} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer" data-testid={`program-professeur-option-${p.id}`}>
+                    <Checkbox
+                      checked={(marathon.professeur_ids || []).includes(p.id)}
+                      onCheckedChange={checked => handleToggleProfesseur(p.id, checked === true)}
+                    />
+                    <span className="text-sm text-slate-700">{p.name}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
           {topics.length === 0 && (
             hasTemplate ? (
