@@ -40,10 +40,13 @@ export const coursePhase = (m) => (m.end_date && todayStr() < m.end_date) ? 'ins
 export const MODULE_EXCLUDED_FORMATIONS = ['Rolling Door'];
 export const isModuleVisible = (m) => !MODULE_EXCLUDED_FORMATIONS.includes(m.formation);
 
-// Separately, these formations don't count toward commission/payroll for now
-// (even though Windows and Sheetrock otherwise work fine in Finance and
-// Pédagogie — e.g. their Programme can still be set up and tracked there).
-export const COMMISSION_EXCLUDED_FORMATIONS = ['Rolling Door', 'Windows', 'Sheetrock'];
+// Rolling Door never counts toward commission/payroll — a permanent,
+// formation-wide exclusion. Windows and Sheetrock used to be blanket-excluded
+// here too, but that's now handled per vendeur/marathon instead (see
+// commission_exclusions, managed from Payroll's "Détail par cours"), since a
+// blanket rule meant a course couldn't even be reviewed to decide vendor by
+// vendor whether it should count yet.
+export const COMMISSION_EXCLUDED_FORMATIONS = ['Rolling Door'];
 export const isCommissionVisible = (m) => !COMMISSION_EXCLUDED_FORMATIONS.includes(m.formation);
 
 // 'YYYY-MM' (from a <input type="month"> or stored payroll month) -> 'Mois Année'.
