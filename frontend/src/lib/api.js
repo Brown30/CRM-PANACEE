@@ -532,17 +532,26 @@ export const api = {
         else getVendor(l.vendeur_id).pendingCount++;
       }
 
+      // A vendeur can be excluded from a specific marathon's commission
+      // (temporary, per-course call — e.g. a course they shouldn't be
+      // credited for right now) without touching their leads or their
+      // commission on any other course.
+      const { data: exclusionRows, error: exErr } = await supabase.from('commission_exclusions').select('vendeur_id').eq('marathon_id', params.marathon_id);
+      if (exErr) throw new Error(exErr.message);
+      const excludedVendeurIds = new Set((exclusionRows || []).map(r => r.vendeur_id));
+
       const INSCRIPTION_FEE = 1000, INSCRIPTION_RATE = 0.15, PARTICIPATION_RATE = 0.05;
       const vendors = Object.values(byVendor).map(v => {
-        const inscription_commission = v.inscritCount * INSCRIPTION_FEE * INSCRIPTION_RATE;
-        const participation_commission = v.fullCount * limit * PARTICIPATION_RATE;
-        const potential_commission = v.pendingCount * limit * PARTICIPATION_RATE;
+        const excluded = excludedVendeurIds.has(v.vendeur_id);
+        const inscription_commission = excluded ? 0 : v.inscritCount * INSCRIPTION_FEE * INSCRIPTION_RATE;
+        const participation_commission = excluded ? 0 : v.fullCount * limit * PARTICIPATION_RATE;
+        const potential_commission = excluded ? 0 : v.pendingCount * limit * PARTICIPATION_RATE;
         return {
           vendeur_id: v.vendeur_id, vendeur_name: v.vendeur_name,
           full_count: v.fullCount, pending_count: v.pendingCount,
           inscription_commission, participation_commission,
           total_commission: inscription_commission + participation_commission,
-          potential_commission
+          potential_commission, excluded
         };
       }).sort((a, b) => b.total_commission - a.total_commission);
 
@@ -599,6 +608,13 @@ export const api = {
       const paidByLead = {};
       for (const p of payments) paidByLead[p.lead_id] = (paidByLead[p.lead_id] || 0) + Number(p.amount);
 
+      // Per-vendeur, per-marathon exclusion (see /commissions) — a course
+      // still shows up in the breakdown below (so it's clear what it would
+      // have been worth) but contributes nothing to gross_commission.
+      const { data: exclusionRows, error: exErr } = await supabase.from('commission_exclusions').select('marathon_id').eq('vendeur_id', params.vendeur_id);
+      if (exErr) throw new Error(exErr.message);
+      const excludedMarathonIds = new Set((exclusionRows || []).map(r => r.marathon_id));
+
       const INSCRIPTION_FEE = 1000, INSCRIPTION_RATE = 0.15, PARTICIPATION_RATE = 0.05;
       const commissionByMarathon = {};
       const addCommission = (marathon_id, amount) => {
@@ -611,9 +627,9 @@ export const api = {
         if (feeLimit > 0 && paid >= feeLimit) addCommission(l.marathon_id, feeLimit * PARTICIPATION_RATE);
       }
       const breakdown = Object.entries(commissionByMarathon)
-        .map(([marathon_id, commission]) => ({ marathon_id, marathon_name: marathonById[marathon_id]?.name || 'N/A', commission }))
+        .map(([marathon_id, commission]) => ({ marathon_id, marathon_name: marathonById[marathon_id]?.name || 'N/A', commission, excluded: excludedMarathonIds.has(marathon_id) }))
         .sort((a, b) => b.commission - a.commission);
-      const gross_commission = breakdown.reduce((s, b) => s + b.commission, 0);
+      const gross_commission = breakdown.filter(b => !b.excluded).reduce((s, b) => s + b.commission, 0);
       // Never goes negative — if more has been marked paid than is currently
       // owed (e.g. a marathon's payments were corrected downward after the
       // fact), the vendeur simply owes nothing further for now.
@@ -703,6 +719,18 @@ export const api = {
         .select().single();
       if (error) throw new Error(error.message);
       return res({ payment: data });
+    }
+    if (url === '/commissions/toggle-exclusion') {
+      const { vendeur_id, marathon_id, excluded } = payload;
+      if (!vendeur_id || !marathon_id) throw new Error('Vendeur et cours requis');
+      if (excluded) {
+        const { error } = await supabase.from('commission_exclusions').upsert({ vendeur_id, marathon_id }, { onConflict: 'vendeur_id,marathon_id' });
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await supabase.from('commission_exclusions').delete().eq('vendeur_id', vendeur_id).eq('marathon_id', marathon_id);
+        if (error) throw new Error(error.message);
+      }
+      return res({ message: 'ok' });
     }
     if (url === '/marathons') {
       const { data } = await supabase.from('marathons').insert({ ...payload, id: uuidv4() }).select().single();
