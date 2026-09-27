@@ -17,6 +17,7 @@ import MethodologyPage from "@/pages/MethodologyPage";
 import AttendancePage from "@/pages/AttendancePage";
 import PaymentsPage from "@/pages/PaymentsPage";
 import CommissionsPage from "@/pages/CommissionsPage";
+import PayrollAdminPage from "@/pages/PayrollAdminPage";
 import ProfilePage from "@/pages/ProfilePage";
 import CertificatsPage from "@/pages/CertificatsPage";
 import CertificatCoursePage from "@/pages/CertificatCoursePage";
@@ -146,6 +147,7 @@ function App() {
             <Route path="presence" element={<AttendancePage />} />
             <Route path="paiements" element={<PaymentsPage />} />
             <Route path="commissions" element={<CommissionsPage />} />
+            <Route path="payroll" element={<PayrollAdminPage />} />
             <Route path="certificats" element={<CertificatsPage />} />
             <Route path="certificats/:marathonId" element={<CertificatCoursePage />} />
             <Route path="profile" element={<ProfilePage />} />

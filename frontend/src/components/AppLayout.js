@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { LayoutDashboard, Users, CalendarClock, Trophy, BarChart3, UserCog, LogOut, ChevronDown, Flag, User, MoreVertical, ClipboardList, Award, PhoneCall, CalendarCheck, Wallet, Percent } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarClock, Trophy, BarChart3, UserCog, LogOut, ChevronDown, Flag, User, MoreVertical, ClipboardList, Award, PhoneCall, CalendarCheck, Wallet, Percent, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import InstallPrompt from '@/components/InstallPrompt';
@@ -34,6 +34,7 @@ export default function AppLayout() {
     { to: '/marathons', icon: Flag, label: 'Marathons' },
     { to: '/rapports', icon: BarChart3, label: 'Rapports' },
     { to: '/utilisateurs', icon: UserCog, label: 'Utilisateurs' },
+    { to: '/payroll', icon: Banknote, label: 'Payroll' },
   ];
 
   const certificatesItem = { to: '/certificats', icon: Award, label: 'Certificats' };
