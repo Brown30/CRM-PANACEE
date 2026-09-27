@@ -14,8 +14,18 @@ export default function LoginPage() {
 
   if (user) {
     // A professeur only ever does one thing here — mark their own program's
-    // topics — so there's no module to choose between, just their courses.
-    navigate(isProfesseur ? '/mon-programme' : (canAccessFinance || canAccessPedagogie) ? '/choose-module' : '/select-marathon');
+    // topics — so there's no module to choose between, just their courses. A
+    // plain vendeur (no finance/pedagogie flag) picks between Commercial and
+    // their own Paiement et Commission report instead of jumping straight
+    // into the marathon selector.
+    const destination = isProfesseur
+      ? '/mon-programme'
+      : (canAccessFinance || canAccessPedagogie)
+        ? '/choose-module'
+        : user.role === 'vendeur'
+          ? '/vendeur-home'
+          : '/select-marathon';
+    navigate(destination);
     return null;
   }
 
@@ -35,7 +45,9 @@ export default function LoginPage() {
         const hasFinanceAccess = loggedInUser.role === 'admin_principal' || !!loggedInUser.can_access_finance;
         const isAdminRole = loggedInUser.role === 'admin_principal' || loggedInUser.role === 'admin_secondary';
         const hasPedagogieAccess = isAdminRole || loggedInUser.role === 'pedagogia' || !!loggedInUser.can_access_pedagogie;
-        navigate((hasFinanceAccess || hasPedagogieAccess) ? '/choose-module' : '/select-marathon');
+        if (hasFinanceAccess || hasPedagogieAccess) navigate('/choose-module');
+        else if (loggedInUser.role === 'vendeur') navigate('/vendeur-home');
+        else navigate('/select-marathon');
       }
     } catch (err) {
       toast.error(err.response?.data?.detail || err.message || 'Code invalide');

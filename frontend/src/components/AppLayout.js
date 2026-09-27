@@ -45,11 +45,14 @@ export default function AppLayout() {
   // payment, so it drops out of the nav for a plain vendeur without that access.
   const commissionsItem = { to: '/commissions', icon: Percent, label: 'Paiement & Commission' };
 
+  // A plain vendeur now reaches Paiement & Commission as its own module,
+  // straight from the post-login screen, so it no longer needs a spot in the
+  // CRM's own nav (the admin oversight view at /commissions is unaffected).
   const allItems = isPedagogia
     ? [certificatesItem, ...(canManageAttendance ? [presenceItem] : [])]
     : isAdmin
       ? [...navItems, presenceItem, paymentsItem, commissionsItem, ...adminItems, certificatesItem]
-      : [...navItems, ...(canManageAttendance ? [presenceItem] : []), ...(canManagePayments ? [paymentsItem] : []), commissionsItem];
+      : [...navItems, ...(canManageAttendance ? [presenceItem] : []), ...(canManagePayments ? [paymentsItem] : [])];
 
   const bottomNavItems = isPedagogia
     ? [certificatesItem, { to: '/profile', icon: User, label: 'Profile' }]
@@ -89,8 +92,8 @@ export default function AppLayout() {
           </button>
         )}
 
-        {(canAccessFinance || canAccessPedagogie) && (
-          <button onClick={() => navigate('/choose-module')} className="mx-4 mt-2 p-3 bg-blue-50 rounded-xl text-left hover:bg-blue-100 transition-colors flex items-center gap-2" data-testid="goto-finance-desktop">
+        {(canAccessFinance || canAccessPedagogie || isVendeur) && (
+          <button onClick={() => navigate((canAccessFinance || canAccessPedagogie) ? '/choose-module' : '/vendeur-home')} className="mx-4 mt-2 p-3 bg-blue-50 rounded-xl text-left hover:bg-blue-100 transition-colors flex items-center gap-2" data-testid="goto-finance-desktop">
             <Wallet className="w-4 h-4 text-blue-600 shrink-0" />
             <p className="text-sm font-medium text-blue-700">Changer de module</p>
           </button>
@@ -147,8 +150,8 @@ export default function AppLayout() {
                 {selectedMarathon?.name}
               </button>
             )}
-            {(canAccessFinance || canAccessPedagogie) && (
-              <button onClick={() => navigate('/choose-module')} className="text-xs bg-blue-50 text-blue-700 font-medium px-2.5 py-1.5 rounded-full shrink-0" data-testid="goto-finance-mobile">
+            {(canAccessFinance || canAccessPedagogie || isVendeur) && (
+              <button onClick={() => navigate((canAccessFinance || canAccessPedagogie) ? '/choose-module' : '/vendeur-home')} className="text-xs bg-blue-50 text-blue-700 font-medium px-2.5 py-1.5 rounded-full shrink-0" data-testid="goto-finance-mobile">
                 <Wallet className="w-3.5 h-3.5" />
               </button>
             )}
