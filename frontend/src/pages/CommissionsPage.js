@@ -23,6 +23,7 @@ export default function CommissionsPage() {
   const [commissionVendors, setCommissionVendors] = useState([]);
   const [limit, setLimit] = useState(0);
   const [totalCommissionAllMarathons, setTotalCommissionAllMarathons] = useState(0);
+  const [commissionBreakdown, setCommissionBreakdown] = useState([]);
 
   const selectedMarathon = marathons.find(m => m.id === marathonId) || null;
 
@@ -47,6 +48,7 @@ export default function CommissionsPage() {
         if (!isAdmin) {
           const { data: totalData } = await api.get('/commissions/total', { params: { vendeur_id: user.id } });
           setTotalCommissionAllMarathons(Number(totalData.total_commission || 0));
+          setCommissionBreakdown(totalData.breakdown || []);
         }
       } catch { toast.error('Erreur chargement'); }
       setLoadingMarathons(false);
@@ -258,6 +260,16 @@ export default function CommissionsPage() {
                   <p className="text-xs text-slate-300 font-semibold uppercase tracking-wide">Total prochain payroll (tous les cours)</p>
                   <p className="text-2xl font-bold text-white mt-1">{formatAmount((user.salaire_fixe ?? 15000) + totalCommissionAllMarathons)} HTG</p>
                   <p className="text-xs text-slate-400 mt-1">Fixe {formatAmount(user.salaire_fixe ?? 15000)} HTG + Commission {formatAmount(totalCommissionAllMarathons)} HTG</p>
+                  {commissionBreakdown.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-slate-700 space-y-1">
+                      {commissionBreakdown.map(b => (
+                        <div key={b.marathon_id} className="flex items-center justify-between text-xs" data-testid={`commission-breakdown-${b.marathon_id}`}>
+                          <span className="text-slate-300 truncate mr-2">{b.marathon_name}</span>
+                          <span className="text-white font-medium shrink-0">{formatAmount(b.commission)} HTG</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : null
