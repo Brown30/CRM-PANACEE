@@ -14,6 +14,7 @@ export default function CommissionsPage() {
   const [marathonId, setMarathonId] = useState('');
   const [vendeurs, setVendeurs] = useState([]);
   const [vendeurFilter, setVendeurFilter] = useState('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
   const [loadingMarathons, setLoadingMarathons] = useState(true);
   const [loadingReport, setLoadingReport] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -65,6 +66,7 @@ export default function CommissionsPage() {
   }, [api, marathonId, isAdmin, user, vendeurFilter]);
 
   useEffect(() => { fetchReport(); }, [fetchReport]);
+  useEffect(() => { setPaymentStatusFilter('all'); }, [marathonId]);
 
   const rows = summary?.rows || [];
   const getPaymentStatus = (row) => {
@@ -78,12 +80,16 @@ export default function CommissionsPage() {
     partial: 'bg-amber-100 text-amber-700',
     none: 'bg-red-100 text-red-600'
   };
+  const PAYMENT_FILTER_LABELS = { all: 'Tous les statuts', complete: 'Paiement total', partial: 'Paiement partiel', none: 'Aucun paiement' };
   const statusCounts = rows.reduce((acc, r) => {
     acc[getPaymentStatus(r)]++;
     return acc;
   }, { complete: 0, partial: 0, none: 0 });
-  const totalPaid = rows.reduce((s, r) => s + Number(r.participation_paid || 0), 0);
-  const totalMissing = rows.reduce((s, r) => s + Math.max(limit - Number(r.participation_paid || 0), 0), 0);
+  // Filtering only narrows the detailed table below — the summary tiles above
+  // always reflect every participant, so the overall picture never changes.
+  const filteredRows = paymentStatusFilter === 'all' ? rows : rows.filter(r => getPaymentStatus(r) === paymentStatusFilter);
+  const totalPaid = filteredRows.reduce((s, r) => s + Number(r.participation_paid || 0), 0);
+  const totalMissing = filteredRows.reduce((s, r) => s + Math.max(limit - Number(r.participation_paid || 0), 0), 0);
 
   const mine = !isAdmin ? commissionVendors[0] : null;
   const showVendeurColumn = isAdmin && vendeurFilter === 'all';
@@ -96,10 +102,11 @@ export default function CommissionsPage() {
         : vendeurFilter !== 'all'
           ? (vendeurs.find(v => v.id === vendeurFilter)?.name || '')
           : 'Tous les vendeurs';
+      const filterLabel = PAYMENT_FILTER_LABELS[paymentStatusFilter];
       const pdf = buildPaymentsTablePdf({
         title: 'Paiement & Commission',
-        subtitle: `${selectedMarathon?.name || ''} — ${vendorLabel}`,
-        rows: rows.map(r => ({
+        subtitle: `${selectedMarathon?.name || ''} — ${vendorLabel}${paymentStatusFilter !== 'all' ? ` — ${filterLabel}` : ''}`,
+        rows: filteredRows.map(r => ({
           full_name: showVendeurColumn ? `${r.full_name} (${r.vendeur_name})` : r.full_name,
           status: STATUS_LABELS[getPaymentStatus(r)],
           paid: formatAmount(r.participation_paid),
@@ -274,9 +281,22 @@ export default function CommissionsPage() {
                 <h3 className="font-semibold text-slate-800 text-sm" style={{ fontFamily: "'Outfit', sans-serif" }}>
                   Détail des paiements
                 </h3>
-                <Button onClick={handleExport} disabled={exporting} variant="outline" className="flex items-center gap-2 h-9 text-xs rounded-lg" data-testid="export-payments-table-btn">
-                  <Download className="w-3.5 h-3.5" /> {exporting ? 'Export...' : 'Exporter PDF'}
-                </Button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+                    <SelectTrigger className="w-[170px] h-9 rounded-lg text-xs" data-testid="commission-payment-status-filter">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les statuts</SelectItem>
+                      <SelectItem value="complete">Paiement total</SelectItem>
+                      <SelectItem value="partial">Paiement partiel</SelectItem>
+                      <SelectItem value="none">Aucun paiement</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={handleExport} disabled={exporting} variant="outline" className="flex items-center gap-2 h-9 text-xs rounded-lg" data-testid="export-payments-table-btn">
+                    <Download className="w-3.5 h-3.5" /> {exporting ? 'Export...' : 'Exporter PDF'}
+                  </Button>
+                </div>
               </div>
               <div className="overflow-x-auto -mx-5 px-5">
                 <table className="w-full text-sm">
@@ -290,7 +310,7 @@ export default function CommissionsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map(r => {
+                    {filteredRows.map(r => {
                       const status = getPaymentStatus(r);
                       return (
                         <tr key={r.lead_id} className="border-b border-slate-50">
@@ -310,6 +330,9 @@ export default function CommissionsPage() {
                     })}
                   </tbody>
                 </table>
+                {filteredRows.length === 0 && (
+                  <p className="text-sm text-slate-400 text-center py-6">Personne dans le statut "{PAYMENT_FILTER_LABELS[paymentStatusFilter]}"</p>
+                )}
               </div>
               <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-100 text-sm">
                 <span className="text-slate-500">Total payé: <span className="font-semibold text-slate-800">{formatAmount(totalPaid)} HTG</span></span>
