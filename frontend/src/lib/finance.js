@@ -35,11 +35,16 @@ export const isCourseCurrent = (m) => {
 export const coursePhase = (m) => (m.end_date && todayStr() < m.end_date) ? 'inscription' : 'active';
 
 // Courses in these formations stay fully usable in the CRM (leads, ranking,
-// etc.) but are left out of the Finance, Pédagogie and Paiement & Commission
-// modules entirely — not tracked there yet (no real weekend/curriculum
-// structure, or commission not enabled for them for now).
-export const MODULE_EXCLUDED_FORMATIONS = ['Rolling Door', 'Windows', 'Sheetrock'];
+// etc.) but are left out of the Finance and Pédagogie modules entirely — no
+// real weekend/curriculum structure tracked there.
+export const MODULE_EXCLUDED_FORMATIONS = ['Rolling Door'];
 export const isModuleVisible = (m) => !MODULE_EXCLUDED_FORMATIONS.includes(m.formation);
+
+// Separately, these formations don't count toward commission/payroll for now
+// (even though Windows and Sheetrock otherwise work fine in Finance and
+// Pédagogie — e.g. their Programme can still be set up and tracked there).
+export const COMMISSION_EXCLUDED_FORMATIONS = ['Rolling Door', 'Windows', 'Sheetrock'];
+export const isCommissionVisible = (m) => !COMMISSION_EXCLUDED_FORMATIONS.includes(m.formation);
 
 // 'YYYY-MM' (from a <input type="month"> or stored payroll month) -> 'Mois Année'.
 const MONTH_NAMES_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
