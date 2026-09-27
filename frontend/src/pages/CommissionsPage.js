@@ -42,20 +42,27 @@ export default function CommissionsPage() {
           const ownIds = new Set(idsData.marathon_ids || []);
           list = list.filter(m => ownIds.has(m.id));
         }
-        const sorted = [...list].sort((a, b) => (b.active - a.active) || a.name.localeCompare(b.name));
-        setMarathons(sorted);
 
         // The payroll total is per person, across every marathon they touch —
-        // not tied to whichever one happens to be selected below.
+        // not tied to whichever one happens to be selected below. A course an
+        // admin has excluded for this vendeur (Payroll > Détail par cours)
+        // must disappear entirely from their side — not just from the total,
+        // but from the marathon picker itself, until it's reactivated.
         if (!isAdmin) {
           const [{ data: totalData }, { data: historyData }] = await Promise.all([
             api.get('/commissions/total', { params: { vendeur_id: user.id } }),
             api.get('/commissions/history', { params: { vendeur_id: user.id } })
           ]);
+          const breakdown = totalData.breakdown || [];
+          const excludedIds = new Set(breakdown.filter(b => b.excluded).map(b => b.marathon_id));
+          list = list.filter(m => !excludedIds.has(m.id));
           setTotalCommissionAllMarathons(Number(totalData.total_commission || 0));
-          setCommissionBreakdown(totalData.breakdown || []);
+          setCommissionBreakdown(breakdown.filter(b => !b.excluded));
           setCommissionHistory(historyData.history || []);
         }
+
+        const sorted = [...list].sort((a, b) => (b.active - a.active) || a.name.localeCompare(b.name));
+        setMarathons(sorted);
       } catch { toast.error('Erreur chargement'); }
       setLoadingMarathons(false);
     })();
