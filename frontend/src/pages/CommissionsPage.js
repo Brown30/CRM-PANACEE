@@ -63,6 +63,12 @@ export default function CommissionsPage() {
     if (limit > 0 && row.participation_paid >= limit) return 'complete';
     return 'partial';
   };
+  const STATUS_LABELS = { complete: 'Payé', partial: 'Partiel', none: 'Aucun' };
+  const STATUS_BADGE_CLASSES = {
+    complete: 'bg-emerald-100 text-emerald-700',
+    partial: 'bg-amber-100 text-amber-700',
+    none: 'bg-red-100 text-red-600'
+  };
   const statusCounts = rows.reduce((acc, r) => {
     acc[getPaymentStatus(r)]++;
     return acc;
@@ -86,12 +92,14 @@ export default function CommissionsPage() {
         subtitle: `${selectedMarathon?.name || ''} — ${vendorLabel}`,
         rows: rows.map(r => ({
           full_name: showVendeurColumn ? `${r.full_name} (${r.vendeur_name})` : r.full_name,
+          status: STATUS_LABELS[getPaymentStatus(r)],
           paid: formatAmount(r.participation_paid),
           missing: limit > 0 ? formatAmount(Math.max(limit - r.participation_paid, 0)) : '-'
         })),
         totalPaid,
         totalMissing,
-        formatAmount
+        formatAmount,
+        showStatus: true
       });
       pdf.save(`Paiement_Commission_${slugifyFileName(selectedMarathon?.name || '')}_${slugifyFileName(vendorLabel)}.pdf`);
     } catch (err) {
@@ -260,21 +268,30 @@ export default function CommissionsPage() {
                     <tr className="text-left text-xs text-slate-400 border-b border-slate-100">
                       <th className="py-2 font-medium">Nom</th>
                       {showVendeurColumn && <th className="py-2 font-medium">Vendeur</th>}
+                      <th className="py-2 font-medium">Statut</th>
                       <th className="py-2 font-medium text-right">Payé</th>
                       <th className="py-2 font-medium text-right">Reste à payer</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map(r => (
-                      <tr key={r.lead_id} className="border-b border-slate-50">
-                        <td className="py-2 text-slate-700">{r.full_name}</td>
-                        {showVendeurColumn && <td className="py-2 text-slate-500">{r.vendeur_name}</td>}
-                        <td className="py-2 text-right text-slate-700">{formatAmount(r.participation_paid)} HTG</td>
-                        <td className="py-2 text-right text-slate-700">
-                          {limit > 0 ? `${formatAmount(Math.max(limit - r.participation_paid, 0))} HTG` : '-'}
-                        </td>
-                      </tr>
-                    ))}
+                    {rows.map(r => {
+                      const status = getPaymentStatus(r);
+                      return (
+                        <tr key={r.lead_id} className="border-b border-slate-50">
+                          <td className="py-2 text-slate-700">{r.full_name}</td>
+                          {showVendeurColumn && <td className="py-2 text-slate-500">{r.vendeur_name}</td>}
+                          <td className="py-2">
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE_CLASSES[status]}`}>
+                              {STATUS_LABELS[status]}
+                            </span>
+                          </td>
+                          <td className="py-2 text-right text-slate-700">{formatAmount(r.participation_paid)} HTG</td>
+                          <td className="py-2 text-right text-slate-700">
+                            {limit > 0 ? `${formatAmount(Math.max(limit - r.participation_paid, 0))} HTG` : '-'}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
