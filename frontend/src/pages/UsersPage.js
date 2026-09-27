@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap, CalendarCheck, Wallet, Ban, RotateCcw, DollarSign, ClipboardCheck } from 'lucide-react';
+import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap, CalendarCheck, Wallet, Ban, RotateCcw, DollarSign, ClipboardCheck, Banknote } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function UsersPage() {
@@ -14,8 +14,10 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showCodeEdit, setShowCodeEdit] = useState(false);
+  const [showSalaryEdit, setShowSalaryEdit] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [newCode, setNewCode] = useState('');
+  const [newSalary, setNewSalary] = useState('');
   const [formData, setFormData] = useState({ name: '', code: '', role: 'vendeur' });
 
   const fetchUsers = useCallback(async () => {
@@ -121,6 +123,26 @@ export default function UsersPage() {
     }
   };
 
+  const openSalaryEdit = (u) => {
+    setEditingUser(u);
+    setNewSalary(String(u.salaire_fixe ?? 15000));
+    setShowSalaryEdit(true);
+  };
+
+  const handleSalaryUpdate = async (e) => {
+    e.preventDefault();
+    const value = Number(newSalary);
+    if (!newSalary || Number.isNaN(value) || value < 0) { toast.error('Montant invalide'); return; }
+    try {
+      await api.put(`/users/${editingUser.id}`, { salaire_fixe: value });
+      toast.success('Salaire fixe modifié');
+      setShowSalaryEdit(false);
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.message || 'Erreur modification salaire');
+    }
+  };
+
   const getCodeHint = (role) => {
     if (role === 'vendeur') return '4 chiffres requis';
     return '6 chiffres requis';
@@ -185,6 +207,9 @@ export default function UsersPage() {
                   <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Inactif</span>
                 )}
                 <span className="text-xs text-slate-400">Code: {u.code}</span>
+                {u.role === 'vendeur' && (
+                  <span className="text-xs text-slate-400">Fixe: {(u.salaire_fixe ?? 15000).toLocaleString('de-DE')} HTG</span>
+                )}
                 {u.can_manage_attendance && (
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
                     Présence
@@ -256,6 +281,11 @@ export default function UsersPage() {
                 <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-500 h-8 w-8" onClick={() => openCodeEdit(u)} data-testid={`edit-code-${u.id}`} title="Modifier le code">
                   <KeyRound className="w-4 h-4" />
                 </Button>
+                {u.role === 'vendeur' && (
+                  <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-500 h-8 w-8" onClick={() => openSalaryEdit(u)} data-testid={`edit-salary-${u.id}`} title="Modifier le salaire fixe">
+                    <Banknote className="w-4 h-4" />
+                  </Button>
+                )}
                 {u.role !== 'admin_principal' && (
                   u.active === false ? (
                     <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-600 h-8 w-8" onClick={() => handleToggleActive(u)} data-testid={`reactivate-user-${u.id}`} title="Réactiver">
@@ -348,6 +378,35 @@ export default function UsersPage() {
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => setShowCodeEdit(false)}>Annuler</Button>
               <Button type="submit" className="btn-primary flex-1" data-testid="edit-code-submit-btn">Modifier</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Fixed Salary Dialog */}
+      <Dialog open={showSalaryEdit} onOpenChange={setShowSalaryEdit}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>Modifier le salaire fixe</DialogTitle>
+            <DialogDescription>
+              {editingUser?.name} — utilisé pour calculer le total du prochain payroll (fixe + commission)
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSalaryUpdate} className="space-y-4">
+            <div>
+              <Label className="text-xs font-semibold text-slate-500">Salaire fixe (HTG)</Label>
+              <Input
+                type="number" min="0" step="1"
+                value={newSalary}
+                onChange={e => setNewSalary(e.target.value)}
+                className="input-field mt-1"
+                data-testid="edit-salary-input"
+                required
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => setShowSalaryEdit(false)}>Annuler</Button>
+              <Button type="submit" className="btn-primary flex-1" data-testid="edit-salary-submit-btn">Modifier</Button>
             </div>
           </form>
         </DialogContent>

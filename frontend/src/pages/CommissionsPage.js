@@ -22,6 +22,7 @@ export default function CommissionsPage() {
   const [summary, setSummary] = useState(null);
   const [commissionVendors, setCommissionVendors] = useState([]);
   const [limit, setLimit] = useState(0);
+  const [totalCommissionAllMarathons, setTotalCommissionAllMarathons] = useState(0);
 
   const selectedMarathon = marathons.find(m => m.id === marathonId) || null;
 
@@ -40,6 +41,13 @@ export default function CommissionsPage() {
         }
         const sorted = [...list].sort((a, b) => (b.active - a.active) || a.name.localeCompare(b.name));
         setMarathons(sorted);
+
+        // The payroll total is per person, across every marathon they touch —
+        // not tied to whichever one happens to be selected below.
+        if (!isAdmin) {
+          const { data: totalData } = await api.get('/commissions/total', { params: { vendeur_id: user.id } });
+          setTotalCommissionAllMarathons(Number(totalData.total_commission || 0));
+        }
       } catch { toast.error('Erreur chargement'); }
       setLoadingMarathons(false);
     })();
@@ -245,6 +253,11 @@ export default function CommissionsPage() {
                     <p className="text-xs text-amber-600 font-semibold uppercase tracking-wide">Commission manquante</p>
                     <p className="text-2xl font-bold text-amber-700">{formatAmount(mine.potential_commission)} HTG</p>
                   </div>
+                </div>
+                <div className="bg-slate-900 rounded-xl p-4" data-testid="payroll-total">
+                  <p className="text-xs text-slate-300 font-semibold uppercase tracking-wide">Total prochain payroll (tous les cours)</p>
+                  <p className="text-2xl font-bold text-white mt-1">{formatAmount((user.salaire_fixe ?? 15000) + totalCommissionAllMarathons)} HTG</p>
+                  <p className="text-xs text-slate-400 mt-1">Fixe {formatAmount(user.salaire_fixe ?? 15000)} HTG + Commission {formatAmount(totalCommissionAllMarathons)} HTG</p>
                 </div>
               </div>
             ) : null
