@@ -314,8 +314,12 @@ export const api = {
     }
 
     if (url === '/attendance') {
-      const { data: leads, error: leadsErr } = await supabase.from('leads').select('id, full_name, phone, status')
-        .eq('marathon_id', params.marathon_id).in('status', ['Inscrit', 'Participant']).order('full_name', { ascending: true });
+      // Pédagogie's Présence only ever wants Participant leads (params.status)
+      // — the old CRM Présence page still needs both, to promote an Inscrit
+      // by marking them present, so the broader default stays for it.
+      let leadsQ = supabase.from('leads').select('id, full_name, phone, status').eq('marathon_id', params.marathon_id);
+      leadsQ = params.status ? leadsQ.eq('status', params.status) : leadsQ.in('status', ['Inscrit', 'Participant']);
+      const { data: leads, error: leadsErr } = await leadsQ.order('full_name', { ascending: true });
       if (leadsErr) throw new Error(leadsErr.message);
       const { data: att, error: attErr } = await supabase.from('attendance').select('lead_id, present')
         .eq('marathon_id', params.marathon_id).eq('date', params.date);
@@ -807,7 +811,7 @@ export const api = {
     }
 
     if (url === '/attendance/mark') {
-      const { marathon_id, lead_id, date, present } = payload;
+      const { marathon_id, lead_id, date, present, skip_status_update } = payload;
       const { data: existing, error: findErr } = await supabase.from('attendance').select('id')
         .eq('marathon_id', marathon_id).eq('lead_id', lead_id).eq('date', date).maybeSingle();
       if (findErr) throw new Error(findErr.message);
@@ -821,6 +825,9 @@ export const api = {
       // Business rule: showing up for a session promotes an enrolled lead to Participant.
       // Unmarking reverts them back to Inscrit, but only if this was their last remaining
       // present day for this marathon — someone who attended other days stays a Participant.
+      // Pédagogie's Présence only ever lists Participants already, and status changes there
+      // belong on the Leads page instead, so it passes skip_status_update to opt out.
+      if (skip_status_update) return res({ message: 'ok' });
       if (present) {
         const { data: lead } = await supabase.from('leads').select('status').eq('id', lead_id).single();
         if (lead?.status === 'Inscrit') {
