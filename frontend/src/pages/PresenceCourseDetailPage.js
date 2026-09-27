@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ArrowLeft, GraduationCap, Calendar, Phone, Check, X, Plus, ClipboardList, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Calendar, Phone, Check, X, Plus, ClipboardList, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateFr, todayStr } from '@/lib/finance';
 import { weekendDatesBetween, dayLabel } from '@/lib/pedagogie';
@@ -30,6 +30,11 @@ export default function PresenceCourseDetailPage() {
   const [showReport, setShowReport] = useState(false);
   const [report, setReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
+
+  const datesScrollRef = useRef(null);
+  const scrollDates = (direction) => {
+    datesScrollRef.current?.scrollBy({ left: direction * 220, behavior: 'smooth' });
+  };
 
   const fetchBase = useCallback(async () => {
     setLoading(true);
@@ -217,7 +222,17 @@ export default function PresenceCourseDetailPage() {
 
       {/* Date chips */}
       <div className="flex items-center gap-2">
-        <div className="flex-1 flex gap-2 overflow-x-auto pb-1">
+        {sessions.length > 0 && (
+          <button
+            onClick={() => scrollDates(-1)}
+            className="shrink-0 w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 flex items-center justify-center"
+            data-testid="pedagogie-dates-scroll-left"
+            title="Voir les dates précédentes"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        )}
+        <div ref={datesScrollRef} className="flex-1 flex gap-2 overflow-x-auto pb-1 scroll-smooth">
           {sessions.map(s => (
             <div key={s.date} className="relative shrink-0">
               <button
@@ -249,6 +264,16 @@ export default function PresenceCourseDetailPage() {
             <p className="text-sm text-slate-400 py-2">Aucune date de cours pour le moment</p>
           )}
         </div>
+        {sessions.length > 0 && (
+          <button
+            onClick={() => scrollDates(1)}
+            className="shrink-0 w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 flex items-center justify-center"
+            data-testid="pedagogie-dates-scroll-right"
+            title="Voir les dates suivantes"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
         <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl shrink-0" onClick={() => setShowAddDate(true)} data-testid="pedagogie-add-date-btn" title="Ajouter une date de cours pratique">
           <Plus className="w-4 h-4" />
         </Button>
