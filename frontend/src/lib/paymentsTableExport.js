@@ -3,7 +3,7 @@ import jsPDF from 'jspdf';
 // Same manual header+striped-rows table renderer used for the inscritos list
 // (see inscritosExport.js), sized for a simple 3-column payment breakdown
 // instead: name, amount paid, amount still owed.
-export function buildPaymentsTablePdf({ title, subtitle, rows, totalPaid, totalMissing, formatAmount }) {
+export function buildPaymentsTablePdf({ title, subtitle, rows, totalPaid, totalMissing, formatAmount, showStatus = false }) {
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -24,9 +24,10 @@ export function buildPaymentsTablePdf({ title, subtitle, rows, totalPaid, totalM
 
   const columns = [
     { key: '_idx', label: '#', width: 30 },
-    { key: 'full_name', label: 'Nom complet', width: 280 },
+    { key: 'full_name', label: 'Nom complet', width: showStatus ? 220 : 280 },
+    ...(showStatus ? [{ key: 'status', label: 'Statut', width: 90 }] : []),
     { key: 'paid', label: 'Payé (HTG)', width: 100 },
-    { key: 'missing', label: 'Reste à payer (HTG)', width: 105 },
+    { key: 'missing', label: 'Reste à payer (HTG)', width: showStatus ? 75 : 105 },
   ];
 
   const tableWidth = columns.reduce((s, c) => s + c.width, 0);

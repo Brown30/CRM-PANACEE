@@ -31,10 +31,12 @@ import ProgrammeCoursesPage from "@/pages/ProgrammeCoursesPage";
 import ProgrammeCourseDetailPage from "@/pages/ProgrammeCourseDetailPage";
 import MesCoursProfesseurPage from "@/pages/MesCoursProfesseurPage";
 import ProfesseurProgramPage from "@/pages/ProfesseurProgramPage";
+import VendeurHomePage from "@/pages/VendeurHomePage";
 import AppLayout from "@/components/AppLayout";
 import FinanceLayout from "@/components/FinanceLayout";
 import PedagogieLayout from "@/components/PedagogieLayout";
 import ProfesseurLayout from "@/components/ProfesseurLayout";
+import VendeurCommissionLayout from "@/components/VendeurCommissionLayout";
 
 function ProtectedRoute({ children }) {
   const { user, loading, selectedMarathon } = useAuth();
@@ -78,6 +80,14 @@ function ProfesseurRoute({ children }) {
   return children;
 }
 
+function VendeurRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" />;
+  if (user.role !== 'vendeur') return <Navigate to="/select-marathon" />;
+  return children;
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -112,6 +122,14 @@ function App() {
           }>
             <Route index element={<MesCoursProfesseurPage />} />
             <Route path=":marathonId" element={<ProfesseurProgramPage />} />
+          </Route>
+          <Route path="/vendeur-home" element={
+            <VendeurRoute><VendeurHomePage /></VendeurRoute>
+          } />
+          <Route path="/paiement-commission" element={
+            <VendeurRoute><VendeurCommissionLayout /></VendeurRoute>
+          }>
+            <Route index element={<CommissionsPage />} />
           </Route>
           <Route path="/" element={
             <ProtectedRoute><AppLayout /></ProtectedRoute>
