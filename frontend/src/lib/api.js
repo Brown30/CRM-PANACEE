@@ -126,9 +126,12 @@ export const api = {
     if (url === '/leads/marathon-ids') {
       // Powers "which marathons does this vendeur even have a lead in" — a
       // vendeur can be attached to several courses, but a course they've
-      // never touched shouldn't clutter their own Paiement & Commission picker.
+      // never touched shouldn't clutter their own Paiement & Commission
+      // picker. Only Inscrit/Participant leads are commission-relevant — a
+      // Contact/Prospect that never enrolled shouldn't pull a marathon in.
       if (!params.vendeur_id) throw new Error('vendeur_id requis');
-      const { data, error } = await supabase.from('leads').select('marathon_id').eq('vendeur_id', params.vendeur_id);
+      const { data, error } = await supabase.from('leads').select('marathon_id')
+        .eq('vendeur_id', params.vendeur_id).in('status', ['Inscrit', 'Participant']);
       if (error) throw new Error(error.message);
       const marathon_ids = [...new Set((data || []).map(l => l.marathon_id))];
       return res({ marathon_ids });
