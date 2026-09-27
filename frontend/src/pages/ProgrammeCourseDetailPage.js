@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, ClipboardList, Calendar } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Calendar, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateFr } from '@/lib/finance';
 import ProgramSection from '@/components/ProgramSection';
@@ -11,18 +11,28 @@ export default function ProgrammeCourseDetailPage() {
   const navigate = useNavigate();
   const { api } = useAuth();
   const [marathon, setMarathon] = useState(null);
+  const [professeurs, setProfesseurs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchMarathon = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get(`/marathons/${marathonId}`);
+      const [{ data }, { data: profData }] = await Promise.all([
+        api.get(`/marathons/${marathonId}`),
+        api.get('/users/professeurs')
+      ]);
       setMarathon(data.marathon);
+      setProfesseurs(profData.professeurs || []);
     } catch { toast.error('Erreur chargement'); }
     setLoading(false);
   }, [api, marathonId]);
 
   useEffect(() => { fetchMarathon(); }, [fetchMarathon]);
+
+  const professeurNames = useMemo(() => {
+    const profMap = Object.fromEntries(professeurs.map(p => [p.id, p.name]));
+    return (marathon?.professeur_ids || []).map(id => profMap[id]).filter(Boolean);
+  }, [marathon, professeurs]);
 
   if (loading) return (
     <div className="flex justify-center py-20">
@@ -53,6 +63,19 @@ export default function ProgrammeCourseDetailPage() {
             <Calendar className="w-3.5 h-3.5" /> {formatDateFr(marathon.end_date)} - {formatDateFr(marathon.course_end_date)}
           </p>
         )}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {professeurNames.length > 0 ? (
+            professeurNames.map(name => (
+              <span key={name} className="inline-flex items-center gap-1.5 bg-teal-50 text-teal-700 text-sm font-semibold px-3 py-1.5 rounded-full">
+                <GraduationCap className="w-4 h-4" /> {name}
+              </span>
+            ))
+          ) : (
+            <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 text-sm font-medium px-3 py-1.5 rounded-full">
+              <GraduationCap className="w-4 h-4" /> Aucun professeur assigné
+            </span>
+          )}
+        </div>
       </div>
 
       <ProgramSection marathon={marathon} manage onMarathonUpdate={setMarathon} />
