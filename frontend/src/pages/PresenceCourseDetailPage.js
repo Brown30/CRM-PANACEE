@@ -13,7 +13,7 @@ import { weekendDatesBetween, dayLabel } from '@/lib/pedagogie';
 export default function PresenceCourseDetailPage() {
   const { marathonId } = useParams();
   const navigate = useNavigate();
-  const { api } = useAuth();
+  const { api, isAdmin } = useAuth();
 
   const [marathon, setMarathon] = useState(null);
   const [extraDates, setExtraDates] = useState([]);
@@ -68,7 +68,9 @@ export default function PresenceCourseDetailPage() {
     if (!selectedDate) { setRoster([]); return; }
     setRosterLoading(true);
     try {
-      const { data } = await api.get('/attendance', { params: { marathon_id: marathonId, date: selectedDate } });
+      // Only Participants show up here — whether someone counts as a
+      // participant at all is decided on the Leads page, not here.
+      const { data } = await api.get('/attendance', { params: { marathon_id: marathonId, date: selectedDate, status: 'Participant' } });
       setRoster(data.roster || []);
     } catch { toast.error('Erreur chargement présence'); }
     setRosterLoading(false);
@@ -77,12 +79,19 @@ export default function PresenceCourseDetailPage() {
   useEffect(() => { loadRoster(); }, [loadRoster]);
 
   const toggle = async (row) => {
+    // Marking someone present is open to anyone with access to this page, but
+    // undoing it (they weren't actually there) is admin-only, to keep a
+    // careless tap from erasing someone else's attendance record.
+    if (row.present === true && !isAdmin) {
+      toast.error('Seul un admin peut retirer une présence déjà marquée');
+      return;
+    }
     const previous = row.present;
     const newPresent = row.present !== true;
     setSavingId(row.lead_id);
     setRoster(prev => prev.map(r => r.lead_id === row.lead_id ? { ...r, present: newPresent } : r));
     try {
-      await api.post('/attendance/mark', { marathon_id: marathonId, lead_id: row.lead_id, date: selectedDate, present: newPresent });
+      await api.post('/attendance/mark', { marathon_id: marathonId, lead_id: row.lead_id, date: selectedDate, present: newPresent, skip_status_update: true });
       await loadRoster();
     } catch (err) {
       toast.error(err.message || 'Erreur enregistrement');
@@ -167,6 +176,45 @@ export default function PresenceCourseDetailPage() {
         )}
       </div>
 
+      {/* Attendance report — up top as a collapsible card, so it doesn't take
+          scrolling past the whole roster to reach on a big class. */}
+      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm" data-testid="pedagogie-report-card">
+        <button onClick={toggleReport} className="w-full flex items-center justify-between p-4" data-testid="pedagogie-toggle-report">
+          <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <ClipboardList className="w-4 h-4 text-purple-500" />
+            Rapport de présence
+          </span>
+          {showReport ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+        </button>
+
+        {showReport && (
+          <div className="px-4 pb-4">
+            {reportLoading ? (
+              <div className="flex justify-center py-10">
+                <div className="w-6 h-6 border-3 border-purple-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : report && report.rows.length > 0 ? (
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <p className="text-xs text-slate-400 mb-2 mt-2">{report.session_dates.length} séance{report.session_dates.length > 1 ? 's' : ''} déjà passée{report.session_dates.length > 1 ? 's' : ''} comptabilisée{report.session_dates.length > 1 ? 's' : ''}</p>
+                {report.rows.map(row => (
+                  <div key={row.lead_id} className="flex items-center justify-between gap-3 py-2 border-b border-slate-100 last:border-0" data-testid={`pedagogie-report-row-${row.lead_id}`}>
+                    <p className="text-sm text-slate-700 truncate flex-1">{row.full_name}</p>
+                    <p className="text-xs text-slate-400 shrink-0">{row.present_count}/{row.total_sessions}</p>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                      row.attendance_rate >= 75 ? 'bg-emerald-100 text-emerald-700' : row.attendance_rate >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {row.attendance_rate}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400 text-center py-8">Aucune séance passée à comptabiliser pour le moment</p>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Date chips */}
       <div className="flex items-center gap-2">
         <div className="flex-1 flex gap-2 overflow-x-auto pb-1">
@@ -218,32 +266,37 @@ export default function PresenceCourseDetailPage() {
             ) : (
               <>
                 {roster.map(row => (
-                  <button
+                  <div
                     key={row.lead_id}
-                    type="button"
-                    onClick={() => toggle(row)}
-                    disabled={savingId === row.lead_id}
-                    className={`w-full flex items-center gap-3 p-4 rounded-2xl border shadow-sm text-left transition-all disabled:opacity-60 ${
-                      row.present === true ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200/60 hover:shadow-md'
+                    className={`w-full flex items-center gap-3 p-4 rounded-2xl border shadow-sm transition-all ${
+                      row.present === true ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200/60'
                     }`}
                     data-testid={`pedagogie-attendance-row-${row.lead_id}`}
                   >
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${row.present === true ? 'bg-emerald-500' : 'bg-slate-100'}`}>
-                      {row.present === true ? <Check className="w-4 h-4 text-white" /> : <X className="w-4 h-4 text-slate-400" />}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggle(row)}
+                      disabled={savingId === row.lead_id || (row.present === true && !isAdmin)}
+                      className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-all disabled:opacity-60 ${
+                        row.present === true ? 'bg-emerald-500' : 'bg-slate-100 hover:bg-emerald-100'
+                      }`}
+                      title={row.present === true ? (isAdmin ? 'Retirer la présence' : 'Seul un admin peut retirer une présence') : 'Marquer présent'}
+                      data-testid={`pedagogie-check-${row.lead_id}`}
+                    >
+                      <Check className={`w-7 h-7 ${row.present === true ? 'text-white' : 'text-slate-300'}`} strokeWidth={3} />
+                    </button>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-800 truncate">{row.full_name}</p>
                       <span className="flex items-center gap-1 text-xs text-slate-400">
                         <Phone className="w-3 h-3" />{row.phone}
                       </span>
                     </div>
-                    <span className={row.status === 'Participant' ? 'badge-participant' : 'badge-inscrit'}>{row.status}</span>
-                  </button>
+                  </div>
                 ))}
                 {roster.length === 0 && (
                   <div className="text-center py-16 text-slate-400">
                     <GraduationCap className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-                    <p className="font-medium">Aucun inscrit pour ce cours</p>
+                    <p className="font-medium">Aucun participant pour ce cours</p>
                   </div>
                 )}
               </>
@@ -251,42 +304,6 @@ export default function PresenceCourseDetailPage() {
           </div>
         </>
       )}
-
-      {/* Attendance report */}
-      <div className="pt-2">
-        <button onClick={toggleReport} className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-purple-700" data-testid="pedagogie-toggle-report">
-          <ClipboardList className="w-4 h-4" />
-          Rapport de présence
-          {showReport ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
-
-        {showReport && (
-          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4 mt-3">
-            {reportLoading ? (
-              <div className="flex justify-center py-10">
-                <div className="w-6 h-6 border-3 border-purple-500 border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : report && report.rows.length > 0 ? (
-              <div className="space-y-2">
-                <p className="text-xs text-slate-400 mb-2">{report.session_dates.length} séance{report.session_dates.length > 1 ? 's' : ''} déjà passée{report.session_dates.length > 1 ? 's' : ''} comptabilisée{report.session_dates.length > 1 ? 's' : ''}</p>
-                {report.rows.map(row => (
-                  <div key={row.lead_id} className="flex items-center justify-between gap-3 py-2 border-b border-slate-100 last:border-0" data-testid={`pedagogie-report-row-${row.lead_id}`}>
-                    <p className="text-sm text-slate-700 truncate flex-1">{row.full_name}</p>
-                    <p className="text-xs text-slate-400 shrink-0">{row.present_count}/{row.total_sessions}</p>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-                      row.attendance_rate >= 75 ? 'bg-emerald-100 text-emerald-700' : row.attendance_rate >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {row.attendance_rate}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-400 text-center py-8">Aucune séance passée à comptabiliser pour le moment</p>
-            )}
-          </div>
-        )}
-      </div>
 
       {/* Add practical class date dialog */}
       <Dialog open={showAddDate} onOpenChange={setShowAddDate}>
