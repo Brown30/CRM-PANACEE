@@ -122,6 +122,17 @@ export const api = {
       return res({ count: count || 0 });
     }
 
+    if (url === '/leads/marathon-ids') {
+      // Powers "which marathons does this vendeur even have a lead in" — a
+      // vendeur can be attached to several courses, but a course they've
+      // never touched shouldn't clutter their own Paiement & Commission picker.
+      if (!params.vendeur_id) throw new Error('vendeur_id requis');
+      const { data, error } = await supabase.from('leads').select('marathon_id').eq('vendeur_id', params.vendeur_id);
+      if (error) throw new Error(error.message);
+      const marathon_ids = [...new Set((data || []).map(l => l.marathon_id))];
+      return res({ marathon_ids });
+    }
+
     if (url.match(/^\/leads\/([^/]+)$/)) {
       const id = url.split('/')[2];
       const { data } = await supabase.from('leads').select('*').eq('id', id).single();
