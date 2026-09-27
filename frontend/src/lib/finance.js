@@ -40,3 +40,11 @@ export const coursePhase = (m) => (m.end_date && todayStr() < m.end_date) ? 'ins
 // structure, or commission not enabled for them for now).
 export const MODULE_EXCLUDED_FORMATIONS = ['Rolling Door', 'Windows', 'Sheetrock'];
 export const isModuleVisible = (m) => !MODULE_EXCLUDED_FORMATIONS.includes(m.formation);
+
+// 'YYYY-MM' (from a <input type="month"> or stored payroll month) -> 'Mois Année'.
+const MONTH_NAMES_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+export const monthLabelFr = (month) => {
+  if (!month) return '';
+  const [y, m] = month.split('-');
+  return `${MONTH_NAMES_FR[Number(m) - 1] || m} ${y}`;
+};

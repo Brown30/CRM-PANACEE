@@ -555,10 +555,21 @@ export const api = {
       // fee is always paid in full, automatically) — participation commission
       // still only counts once that fee is paid in full.
       if (!params.vendeur_id) throw new Error('vendeur_id requis');
+
+      // Whatever the admin has already marked paid out (commission_payments)
+      // is subtracted from the running total, regardless of which marathons
+      // it came from — payroll is a lump sum per person, not tracked lead by
+      // lead, so this is the only place that knows what's still outstanding.
+      const { data: paidRows, error: paidErr } = await supabase.from('commission_payments').select('amount').eq('vendeur_id', params.vendeur_id);
+      if (paidErr) throw new Error(paidErr.message);
+      const already_paid = (paidRows || []).reduce((s, r) => s + Number(r.amount || 0), 0);
+
       const { data: rawLeads, error: lErr } = await supabase.from('leads').select('id, marathon_id, status')
         .eq('vendeur_id', params.vendeur_id).in('status', ['Inscrit', 'Participant']);
       if (lErr) throw new Error(lErr.message);
-      if (!rawLeads || rawLeads.length === 0) return res({ total_commission: 0, breakdown: [] });
+      if (!rawLeads || rawLeads.length === 0) {
+        return res({ total_commission: Math.max(0 - already_paid, 0), gross_commission: 0, already_paid, breakdown: [] });
+      }
 
       const rawMarathonIds = [...new Set(rawLeads.map(l => l.marathon_id))];
       const { data: rawMarathons, error: mErr } = await supabase.from('marathons').select('id, name, formation, participation_fee').in('id', rawMarathonIds);
@@ -569,7 +580,9 @@ export const api = {
       const marathons = (rawMarathons || []).filter(m => !MODULE_EXCLUDED_FORMATIONS.includes(m.formation));
       const marathonById = Object.fromEntries(marathons.map(m => [m.id, m]));
       const leads = rawLeads.filter(l => marathonById[l.marathon_id]);
-      if (leads.length === 0) return res({ total_commission: 0, breakdown: [] });
+      if (leads.length === 0) {
+        return res({ total_commission: Math.max(0 - already_paid, 0), gross_commission: 0, already_paid, breakdown: [] });
+      }
 
       const participantLeads = leads.filter(l => l.status === 'Participant');
       const leadIds = participantLeads.map(l => l.id);
@@ -596,8 +609,20 @@ export const api = {
       const breakdown = Object.entries(commissionByMarathon)
         .map(([marathon_id, commission]) => ({ marathon_id, marathon_name: marathonById[marathon_id]?.name || 'N/A', commission }))
         .sort((a, b) => b.commission - a.commission);
-      const total_commission = breakdown.reduce((s, b) => s + b.commission, 0);
-      return res({ total_commission, breakdown });
+      const gross_commission = breakdown.reduce((s, b) => s + b.commission, 0);
+      // Never goes negative — if more has been marked paid than is currently
+      // owed (e.g. a marathon's payments were corrected downward after the
+      // fact), the vendeur simply owes nothing further for now.
+      const total_commission = Math.max(gross_commission - already_paid, 0);
+      return res({ total_commission, gross_commission, already_paid, breakdown });
+    }
+
+    if (url === '/commissions/history') {
+      if (!params.vendeur_id) throw new Error('vendeur_id requis');
+      const { data, error } = await supabase.from('commission_payments').select('*')
+        .eq('vendeur_id', params.vendeur_id).order('month', { ascending: false });
+      if (error) throw new Error(error.message);
+      return res({ history: data || [] });
     }
 
     if (url === '/finance/overview') {
@@ -663,6 +688,17 @@ export const api = {
       const { data, error } = await supabase.from('users').insert({ ...payload, id: uuidv4() }).select().single();
       if (error) throw new Error(error.message);
       return res({ user: data });
+    }
+    if (url === '/commissions/mark-paid') {
+      const { vendeur_id, month, amount, created_by } = payload;
+      if (!vendeur_id || !month) throw new Error('Vendeur et mois requis');
+      const value = Number(amount);
+      if (!value || value <= 0) throw new Error('Montant invalide');
+      const { data, error } = await supabase.from('commission_payments')
+        .insert({ id: uuidv4(), vendeur_id, month, amount: value, created_by: created_by || null })
+        .select().single();
+      if (error) throw new Error(error.message);
+      return res({ payment: data });
     }
     if (url === '/marathons') {
       const { data } = await supabase.from('marathons').insert({ ...payload, id: uuidv4() }).select().single();
@@ -920,6 +956,11 @@ export const api = {
       const id = url.split('/')[2];
       await supabase.from('users').delete().eq('id', id);
       return res({ message: 'Utilisateur supprimé' });
+    }
+    if (url.match(/^\/commissions\/payments\/([^/]+)$/)) {
+      const id = url.split('/')[3];
+      await supabase.from('commission_payments').delete().eq('id', id);
+      return res({ message: 'Paiement de commission annulé' });
     }
     if (url.match(/^\/marathons\/([^/]+)$/)) {
       const id = url.split('/')[2];

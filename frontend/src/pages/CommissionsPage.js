@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Percent, Users, UserCheck, CheckCircle2, CircleDotDashed, CircleDashed, Download } from 'lucide-react';
+import { Percent, Users, UserCheck, CheckCircle2, CircleDotDashed, CircleDashed, Download, ChevronDown, ChevronUp, History } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatAmount, isModuleVisible } from '@/lib/finance';
+import { formatAmount, isModuleVisible, monthLabelFr } from '@/lib/finance';
 import { buildPaymentsTablePdf } from '@/lib/paymentsTableExport';
 import { slugifyFileName } from '@/lib/certificate';
 
@@ -24,6 +24,8 @@ export default function CommissionsPage() {
   const [limit, setLimit] = useState(0);
   const [totalCommissionAllMarathons, setTotalCommissionAllMarathons] = useState(0);
   const [commissionBreakdown, setCommissionBreakdown] = useState([]);
+  const [commissionHistory, setCommissionHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   const selectedMarathon = marathons.find(m => m.id === marathonId) || null;
 
@@ -46,9 +48,13 @@ export default function CommissionsPage() {
         // The payroll total is per person, across every marathon they touch —
         // not tied to whichever one happens to be selected below.
         if (!isAdmin) {
-          const { data: totalData } = await api.get('/commissions/total', { params: { vendeur_id: user.id } });
+          const [{ data: totalData }, { data: historyData }] = await Promise.all([
+            api.get('/commissions/total', { params: { vendeur_id: user.id } }),
+            api.get('/commissions/history', { params: { vendeur_id: user.id } })
+          ]);
           setTotalCommissionAllMarathons(Number(totalData.total_commission || 0));
           setCommissionBreakdown(totalData.breakdown || []);
+          setCommissionHistory(historyData.history || []);
         }
       } catch { toast.error('Erreur chargement'); }
       setLoadingMarathons(false);
@@ -273,6 +279,32 @@ export default function CommissionsPage() {
                 </div>
               </div>
             ) : null
+          )}
+
+          {!isAdmin && (
+            <div className="pt-1">
+              <button onClick={() => setShowHistory(!showHistory)} className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-emerald-700" data-testid="toggle-commission-history">
+                <History className="w-4 h-4" />
+                Historique des commissions reçues
+                {showHistory ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+              {showHistory && (
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4 mt-3" data-testid="commission-history">
+                  {commissionHistory.length === 0 ? (
+                    <p className="text-sm text-slate-400 text-center py-6">Aucune commission reçue pour le moment</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {commissionHistory.map(h => (
+                        <div key={h.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0" data-testid={`commission-history-row-${h.id}`}>
+                          <span className="text-sm text-slate-600">{monthLabelFr(h.month)}</span>
+                          <span className="text-sm font-semibold text-slate-800">{formatAmount(h.amount)} HTG</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {isAdmin && commissionVendors.length > 0 && (
