@@ -480,16 +480,20 @@ export const api = {
       if (mErr) throw new Error(mErr.message);
       const limit = Number(marathon?.participation_fee || 0);
 
-      // Same rule as /payments: only Participant leads (marked present at least
-      // once) are candidates for commission — Inscrit-only leads count for neither
-      // the earned total nor the "potential" figure until they actually show up.
-      let leadsQ = supabase.from('leads').select('id, vendeur_id')
-        .eq('marathon_id', params.marathon_id).eq('status', 'Participant');
+      // Inscription commission is earned the moment someone enrolls — the
+      // 1000 HTG inscription fee is charged automatically and never partial,
+      // so every Inscrit/Participant lead counts for it, whether or not they
+      // ever pay participation. Participation commission is a separate,
+      // stricter rule: it only counts once that fee is paid in full; leads
+      // still short of that only feed the "potential" (missing) figure.
+      let leadsQ = supabase.from('leads').select('id, vendeur_id, status')
+        .eq('marathon_id', params.marathon_id).in('status', ['Inscrit', 'Participant']);
       if (params.vendeur_id) leadsQ = leadsQ.eq('vendeur_id', params.vendeur_id);
       const { data: leads, error: lErr } = await leadsQ;
       if (lErr) throw new Error(lErr.message);
 
-      const leadIds = (leads || []).map(l => l.id);
+      const participantLeads = (leads || []).filter(l => l.status === 'Participant');
+      const leadIds = participantLeads.map(l => l.id);
       let payments = [];
       if (leadIds.length > 0) {
         const { data: pay, error: pErr } = await supabase.from('payments').select('lead_id, amount').in('lead_id', leadIds);
@@ -502,25 +506,26 @@ export const api = {
       const { data: vendeurs } = await supabase.from('users').select('id, name').eq('role', 'vendeur');
       const vMap = Object.fromEntries((vendeurs || []).map(v => [v.id, v.name]));
 
-      // Commission — both the inscription and participation portions — only counts a
-      // lead once their participation fee is paid in full; leads still short of that
-      // don't contribute to the vendor's earned total, only to the "potential" figure.
       const byVendor = {};
-      for (const l of (leads || [])) {
-        if (!byVendor[l.vendeur_id]) {
-          byVendor[l.vendeur_id] = { vendeur_id: l.vendeur_id, vendeur_name: vMap[l.vendeur_id] || 'N/A', fullCount: 0, pendingCount: 0 };
+      const getVendor = (vendeur_id) => {
+        if (!byVendor[vendeur_id]) {
+          byVendor[vendeur_id] = { vendeur_id, vendeur_name: vMap[vendeur_id] || 'N/A', inscritCount: 0, fullCount: 0, pendingCount: 0 };
         }
+        return byVendor[vendeur_id];
+      };
+      for (const l of (leads || [])) getVendor(l.vendeur_id).inscritCount++;
+      for (const l of participantLeads) {
         const paid = paidByLead[l.id] || 0;
         const fullyPaid = limit > 0 && paid >= limit;
-        if (fullyPaid) byVendor[l.vendeur_id].fullCount++;
-        else byVendor[l.vendeur_id].pendingCount++;
+        if (fullyPaid) getVendor(l.vendeur_id).fullCount++;
+        else getVendor(l.vendeur_id).pendingCount++;
       }
 
       const INSCRIPTION_FEE = 1000, INSCRIPTION_RATE = 0.15, PARTICIPATION_RATE = 0.05;
       const vendors = Object.values(byVendor).map(v => {
-        const inscription_commission = v.fullCount * INSCRIPTION_FEE * INSCRIPTION_RATE;
+        const inscription_commission = v.inscritCount * INSCRIPTION_FEE * INSCRIPTION_RATE;
         const participation_commission = v.fullCount * limit * PARTICIPATION_RATE;
-        const potential_commission = v.pendingCount * (INSCRIPTION_FEE * INSCRIPTION_RATE + limit * PARTICIPATION_RATE);
+        const potential_commission = v.pendingCount * limit * PARTICIPATION_RATE;
         return {
           vendeur_id: v.vendeur_id, vendeur_name: v.vendeur_name,
           full_count: v.fullCount, pending_count: v.pendingCount,
@@ -535,13 +540,16 @@ export const api = {
 
     if (url === '/commissions/total') {
       // The payroll total (fixe + commission) is per person, not per course —
-      // sums the same "only fully-paid counts" commission across every
-      // marathon this vendeur has leads in, regardless of which one is
-      // currently open in the Paiement & Commission screen. Also breaks the
-      // sum down by marathon, so it's clear which course contributed what.
+      // sums the same commission rule as /commissions across every marathon
+      // this vendeur has leads in, regardless of which one is currently open
+      // in the Paiement & Commission screen. Also breaks the sum down by
+      // marathon, so it's clear which course contributed what. Inscription
+      // commission counts for every Inscrit/Participant lead (the inscription
+      // fee is always paid in full, automatically) — participation commission
+      // still only counts once that fee is paid in full.
       if (!params.vendeur_id) throw new Error('vendeur_id requis');
-      const { data: leads, error: lErr } = await supabase.from('leads').select('id, marathon_id')
-        .eq('vendeur_id', params.vendeur_id).eq('status', 'Participant');
+      const { data: leads, error: lErr } = await supabase.from('leads').select('id, marathon_id, status')
+        .eq('vendeur_id', params.vendeur_id).in('status', ['Inscrit', 'Participant']);
       if (lErr) throw new Error(lErr.message);
       if (!leads || leads.length === 0) return res({ total_commission: 0, breakdown: [] });
 
@@ -550,21 +558,27 @@ export const api = {
       if (mErr) throw new Error(mErr.message);
       const marathonById = Object.fromEntries((marathons || []).map(m => [m.id, m]));
 
-      const leadIds = leads.map(l => l.id);
-      const { data: payments, error: pErr } = await supabase.from('payments').select('lead_id, amount').in('lead_id', leadIds);
-      if (pErr) throw new Error(pErr.message);
+      const participantLeads = leads.filter(l => l.status === 'Participant');
+      const leadIds = participantLeads.map(l => l.id);
+      let payments = [];
+      if (leadIds.length > 0) {
+        const { data: pay, error: pErr } = await supabase.from('payments').select('lead_id, amount').in('lead_id', leadIds);
+        if (pErr) throw new Error(pErr.message);
+        payments = pay || [];
+      }
       const paidByLead = {};
-      for (const p of (payments || [])) paidByLead[p.lead_id] = (paidByLead[p.lead_id] || 0) + Number(p.amount);
+      for (const p of payments) paidByLead[p.lead_id] = (paidByLead[p.lead_id] || 0) + Number(p.amount);
 
       const INSCRIPTION_FEE = 1000, INSCRIPTION_RATE = 0.15, PARTICIPATION_RATE = 0.05;
       const commissionByMarathon = {};
-      for (const l of leads) {
+      const addCommission = (marathon_id, amount) => {
+        commissionByMarathon[marathon_id] = (commissionByMarathon[marathon_id] || 0) + amount;
+      };
+      for (const l of leads) addCommission(l.marathon_id, INSCRIPTION_FEE * INSCRIPTION_RATE);
+      for (const l of participantLeads) {
         const feeLimit = Number(marathonById[l.marathon_id]?.participation_fee || 0);
         const paid = paidByLead[l.id] || 0;
-        if (feeLimit > 0 && paid >= feeLimit) {
-          const earned = INSCRIPTION_FEE * INSCRIPTION_RATE + feeLimit * PARTICIPATION_RATE;
-          commissionByMarathon[l.marathon_id] = (commissionByMarathon[l.marathon_id] || 0) + earned;
-        }
+        if (feeLimit > 0 && paid >= feeLimit) addCommission(l.marathon_id, feeLimit * PARTICIPATION_RATE);
       }
       const breakdown = Object.entries(commissionByMarathon)
         .map(([marathon_id, commission]) => ({ marathon_id, marathon_name: marathonById[marathon_id]?.name || 'N/A', commission }))
