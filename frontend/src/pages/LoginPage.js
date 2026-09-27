@@ -44,7 +44,7 @@ export default function LoginPage() {
       } else {
         const hasFinanceAccess = loggedInUser.role === 'admin_principal' || !!loggedInUser.can_access_finance;
         const isAdminRole = loggedInUser.role === 'admin_principal' || loggedInUser.role === 'admin_secondary';
-        const hasPedagogieAccess = isAdminRole || loggedInUser.role === 'pedagogia' || !!loggedInUser.can_access_pedagogie;
+        const hasPedagogieAccess = isAdminRole || loggedInUser.role === 'pedagogia' || loggedInUser.role === 'directeur_pedagogique' || !!loggedInUser.can_access_pedagogie;
         if (hasFinanceAccess || hasPedagogieAccess) navigate('/choose-module');
         else if (loggedInUser.role === 'vendeur') navigate('/vendeur-home');
         else navigate('/select-marathon');

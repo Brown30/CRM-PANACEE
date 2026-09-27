@@ -13,7 +13,7 @@ import { weekendDatesBetween, dayLabel } from '@/lib/pedagogie';
 export default function PresenceCourseDetailPage() {
   const { marathonId } = useParams();
   const navigate = useNavigate();
-  const { api, isAdmin } = useAuth();
+  const { api, isAdmin, canManagePresence } = useAuth();
 
   const [marathon, setMarathon] = useState(null);
   const [extraDates, setExtraDates] = useState([]);
@@ -84,11 +84,18 @@ export default function PresenceCourseDetailPage() {
   useEffect(() => { loadRoster(); }, [loadRoster]);
 
   const toggle = async (row) => {
-    // Marking someone present is open to anyone with access to this page, but
-    // undoing it (they weren't actually there) is admin-only, to keep a
-    // careless tap from erasing someone else's attendance record.
-    if (row.present === true && !isAdmin) {
-      toast.error('Seul un admin peut retirer une présence déjà marquée');
+    // Undoing a presence already marked (they weren't actually there) is
+    // admin-only, to keep a careless tap from erasing someone else's
+    // attendance record. Marking someone present in the first place is
+    // restricted to admins and the Directeur Pédagogique — everyone else with
+    // access to this page (e.g. a plain pedagogia grant) can only view it.
+    if (row.present === true) {
+      if (!isAdmin) {
+        toast.error('Seul un admin peut retirer une présence déjà marquée');
+        return;
+      }
+    } else if (!canManagePresence) {
+      toast.error('Seul un admin ou le Directeur Pédagogique peut marquer une présence');
       return;
     }
     const previous = row.present;
@@ -301,11 +308,11 @@ export default function PresenceCourseDetailPage() {
                     <button
                       type="button"
                       onClick={() => toggle(row)}
-                      disabled={savingId === row.lead_id || (row.present === true && !isAdmin)}
+                      disabled={savingId === row.lead_id || (row.present === true ? !isAdmin : !canManagePresence)}
                       className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-all disabled:opacity-60 ${
                         row.present === true ? 'bg-emerald-500' : 'bg-slate-100 hover:bg-emerald-100'
                       }`}
-                      title={row.present === true ? (isAdmin ? 'Retirer la présence' : 'Seul un admin peut retirer une présence') : 'Marquer présent'}
+                      title={row.present === true ? (isAdmin ? 'Retirer la présence' : 'Seul un admin peut retirer une présence') : (canManagePresence ? 'Marquer présent' : 'Seul un admin ou le Directeur Pédagogique peut marquer une présence')}
                       data-testid={`pedagogie-check-${row.lead_id}`}
                     >
                       <Check className={`w-7 h-7 ${row.present === true ? 'text-white' : 'text-slate-300'}`} strokeWidth={3} />
