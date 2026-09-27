@@ -40,13 +40,19 @@ import ProfesseurLayout from "@/components/ProfesseurLayout";
 import VendeurCommissionLayout from "@/components/VendeurCommissionLayout";
 
 function ProtectedRoute({ children }) {
-  const { user, loading, selectedMarathon } = useAuth();
+  const { user, loading, selectedMarathon, isProfesseur, isDirecteurPedagogique } = useAuth();
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
   if (!user) return <Navigate to="/login" />;
+  // This whole layout is the CRM Commercial section (Dashboard, Leads,
+  // Utilisateurs, Payroll...) — neither the professeur nor the Directeur
+  // Pédagogique need it, so a direct link/URL there sends them back to their
+  // own module instead of letting them in.
+  if (isProfesseur) return <Navigate to="/mon-programme" />;
+  if (isDirecteurPedagogique) return <Navigate to="/pedagogie" />;
   return children;
 }
 
@@ -54,6 +60,18 @@ function MarathonRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/login" />;
+  return children;
+}
+
+// The CRM Commercial (marathon list, leads, ranking...) isn't part of the
+// professeur's or Directeur Pédagogique's job — they're routed to their own
+// module instead of ever landing in it, even by typing the URL directly.
+function CommercialRoute({ children }) {
+  const { user, loading, isProfesseur, isDirecteurPedagogique } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" />;
+  if (isProfesseur) return <Navigate to="/mon-programme" />;
+  if (isDirecteurPedagogique) return <Navigate to="/pedagogie" />;
   return children;
 }
 
@@ -98,7 +116,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/verificar/:id" element={<VerifyCertificatePage />} />
           <Route path="/select-marathon" element={
-            <MarathonRoute><MarathonSelectPage /></MarathonRoute>
+            <CommercialRoute><MarathonSelectPage /></CommercialRoute>
           } />
           <Route path="/choose-module" element={
             <MarathonRoute><ChooseModulePage /></MarathonRoute>
