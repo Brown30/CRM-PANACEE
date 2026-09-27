@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Banknote, ChevronDown, ChevronUp, Trash2, CheckCircle2 } from 'lucide-react';
+import { Banknote, ChevronDown, ChevronUp, Trash2, CheckCircle2, EyeOff, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatAmount, monthLabelFr } from '@/lib/finance';
 
@@ -15,6 +15,7 @@ export default function PayrollAdminPage() {
   const [expandedId, setExpandedId] = useState(null);
   const [history, setHistory] = useState({});
   const [historyLoading, setHistoryLoading] = useState(null);
+  const [expandedBreakdownId, setExpandedBreakdownId] = useState(null);
 
   const [payingVendeur, setPayingVendeur] = useState(null);
   const [month, setMonth] = useState('');
@@ -27,9 +28,9 @@ export default function PayrollAdminPage() {
       const { data: vRes } = await api.get('/users/vendeurs');
       const list = vRes.vendeurs || [];
       const totals = await Promise.all(list.map(v =>
-        api.get('/commissions/total', { params: { vendeur_id: v.id } }).then(r => r.data).catch(() => ({ total_commission: 0 }))
+        api.get('/commissions/total', { params: { vendeur_id: v.id } }).then(r => r.data).catch(() => ({ total_commission: 0, breakdown: [] }))
       ));
-      setVendeurs(list.map((v, i) => ({ ...v, commission: totals[i].total_commission || 0 })));
+      setVendeurs(list.map((v, i) => ({ ...v, commission: totals[i].total_commission || 0, breakdown: totals[i].breakdown || [] })));
     } catch { toast.error('Erreur chargement'); }
     setLoading(false);
   }, [api]);
@@ -70,6 +71,21 @@ export default function PayrollAdminPage() {
       toast.error(err.message || 'Erreur');
     }
     setSaving(false);
+  };
+
+  const refreshVendeur = async (vendeurId) => {
+    try {
+      const { data } = await api.get('/commissions/total', { params: { vendeur_id: vendeurId } });
+      setVendeurs(prev => prev.map(v => v.id === vendeurId ? { ...v, commission: data.total_commission || 0, breakdown: data.breakdown || [] } : v));
+    } catch { toast.error('Erreur chargement'); }
+  };
+
+  const handleToggleExclusion = async (v, marathonId, excluded) => {
+    try {
+      await api.post('/commissions/toggle-exclusion', { vendeur_id: v.id, marathon_id: marathonId, excluded });
+      toast.success(excluded ? 'Cours exclu de sa commission' : 'Cours réintégré à sa commission');
+      refreshVendeur(v.id);
+    } catch (err) { toast.error(err.message || 'Erreur'); }
   };
 
   const handleDeletePayment = async (v, paymentId) => {
@@ -125,9 +141,39 @@ export default function PayrollAdminPage() {
               </div>
             </div>
 
-            <button onClick={() => toggleHistory(v)} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 mt-3" data-testid={`toggle-history-${v.id}`}>
-              Historique {expandedId === v.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
+            <div className="flex items-center gap-4 mt-3">
+              <button onClick={() => toggleHistory(v)} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800" data-testid={`toggle-history-${v.id}`}>
+                Historique {expandedId === v.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+              <button onClick={() => setExpandedBreakdownId(expandedBreakdownId === v.id ? null : v.id)} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800" data-testid={`toggle-breakdown-${v.id}`}>
+                Détail par cours {expandedBreakdownId === v.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+
+            {expandedBreakdownId === v.id && (
+              <div className="mt-2 space-y-1.5">
+                {v.breakdown.length === 0 ? (
+                  <p className="text-xs text-slate-400 py-2">Aucun cours pour le moment</p>
+                ) : (
+                  v.breakdown.map(b => (
+                    <div key={b.marathon_id} className={`flex items-center justify-between rounded-lg px-3 py-2 text-xs ${b.excluded ? 'bg-slate-50 opacity-60' : 'bg-slate-50'}`} data-testid={`breakdown-row-${v.id}-${b.marathon_id}`}>
+                      <span className="text-slate-600 truncate mr-2">{b.marathon_name}{b.excluded && <span className="ml-1.5 text-amber-600 font-medium">(exclu)</span>}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`font-medium ${b.excluded ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{formatAmount(b.commission)} HTG</span>
+                        <button
+                          onClick={() => handleToggleExclusion(v, b.marathon_id, !b.excluded)}
+                          className={b.excluded ? 'text-emerald-500 hover:text-emerald-600' : 'text-slate-400 hover:text-red-500'}
+                          title={b.excluded ? 'Réintégrer ce cours dans sa commission' : 'Exclure ce cours de sa commission'}
+                          data-testid={`toggle-exclusion-${v.id}-${b.marathon_id}`}
+                        >
+                          {b.excluded ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
 
             {expandedId === v.id && (
               <div className="mt-2 space-y-1.5">
