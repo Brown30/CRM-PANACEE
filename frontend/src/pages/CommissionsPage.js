@@ -236,22 +236,16 @@ export default function CommissionsPage() {
                     <p className="text-lg font-bold text-slate-800">{formatAmount(mine.participation_commission)} HTG</p>
                   </div>
                 </div>
-                <div className="bg-emerald-50 rounded-xl p-4">
-                  <p className="text-xs text-emerald-600 font-semibold uppercase tracking-wide">Déjà à recevoir</p>
-                  <p className="text-2xl font-bold text-emerald-700">{formatAmount(mine.total_commission)} HTG</p>
-                </div>
-                {mine.potential_commission > 0 && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-blue-50 rounded-xl p-3">
-                      <p className="text-xs text-blue-600">Potentiel supplémentaire</p>
-                      <p className="text-lg font-bold text-blue-700">+{formatAmount(mine.potential_commission)} HTG</p>
-                    </div>
-                    <div className="bg-blue-50 rounded-xl p-3">
-                      <p className="text-xs text-blue-600">Total si tout paie</p>
-                      <p className="text-lg font-bold text-blue-700">{formatAmount(mine.total_commission + mine.potential_commission)} HTG</p>
-                    </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-emerald-50 rounded-xl p-4">
+                    <p className="text-xs text-emerald-600 font-semibold uppercase tracking-wide">Commission à recevoir</p>
+                    <p className="text-2xl font-bold text-emerald-700">{formatAmount(mine.total_commission)} HTG</p>
                   </div>
-                )}
+                  <div className="bg-amber-50 rounded-xl p-4">
+                    <p className="text-xs text-amber-600 font-semibold uppercase tracking-wide">Commission manquante</p>
+                    <p className="text-2xl font-bold text-amber-700">{formatAmount(mine.potential_commission)} HTG</p>
+                  </div>
+                </div>
               </div>
             ) : null
           )}
