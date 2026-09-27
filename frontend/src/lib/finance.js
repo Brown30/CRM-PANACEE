@@ -35,7 +35,8 @@ export const isCourseCurrent = (m) => {
 export const coursePhase = (m) => (m.end_date && todayStr() < m.end_date) ? 'inscription' : 'active';
 
 // Courses in these formations stay fully usable in the CRM (leads, ranking,
-// etc.) but are left out of the Finance and Pédagogie modules entirely —
-// they aren't tracked there (no real weekend/curriculum structure).
-export const MODULE_EXCLUDED_FORMATIONS = ['Rolling Door'];
+// etc.) but are left out of the Finance, Pédagogie and Paiement & Commission
+// modules entirely — not tracked there yet (no real weekend/curriculum
+// structure, or commission not enabled for them for now).
+export const MODULE_EXCLUDED_FORMATIONS = ['Rolling Door', 'Windows', 'Sheetrock'];
 export const isModuleVisible = (m) => !MODULE_EXCLUDED_FORMATIONS.includes(m.formation);
