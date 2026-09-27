@@ -537,17 +537,18 @@ export const api = {
       // The payroll total (fixe + commission) is per person, not per course —
       // sums the same "only fully-paid counts" commission across every
       // marathon this vendeur has leads in, regardless of which one is
-      // currently open in the Paiement & Commission screen.
+      // currently open in the Paiement & Commission screen. Also breaks the
+      // sum down by marathon, so it's clear which course contributed what.
       if (!params.vendeur_id) throw new Error('vendeur_id requis');
       const { data: leads, error: lErr } = await supabase.from('leads').select('id, marathon_id')
         .eq('vendeur_id', params.vendeur_id).eq('status', 'Participant');
       if (lErr) throw new Error(lErr.message);
-      if (!leads || leads.length === 0) return res({ total_commission: 0 });
+      if (!leads || leads.length === 0) return res({ total_commission: 0, breakdown: [] });
 
       const marathonIds = [...new Set(leads.map(l => l.marathon_id))];
-      const { data: marathons, error: mErr } = await supabase.from('marathons').select('id, participation_fee').in('id', marathonIds);
+      const { data: marathons, error: mErr } = await supabase.from('marathons').select('id, name, participation_fee').in('id', marathonIds);
       if (mErr) throw new Error(mErr.message);
-      const feeByMarathon = Object.fromEntries((marathons || []).map(m => [m.id, Number(m.participation_fee || 0)]));
+      const marathonById = Object.fromEntries((marathons || []).map(m => [m.id, m]));
 
       const leadIds = leads.map(l => l.id);
       const { data: payments, error: pErr } = await supabase.from('payments').select('lead_id, amount').in('lead_id', leadIds);
@@ -556,15 +557,20 @@ export const api = {
       for (const p of (payments || [])) paidByLead[p.lead_id] = (paidByLead[p.lead_id] || 0) + Number(p.amount);
 
       const INSCRIPTION_FEE = 1000, INSCRIPTION_RATE = 0.15, PARTICIPATION_RATE = 0.05;
-      let total_commission = 0;
+      const commissionByMarathon = {};
       for (const l of leads) {
-        const feeLimit = feeByMarathon[l.marathon_id] || 0;
+        const feeLimit = Number(marathonById[l.marathon_id]?.participation_fee || 0);
         const paid = paidByLead[l.id] || 0;
         if (feeLimit > 0 && paid >= feeLimit) {
-          total_commission += INSCRIPTION_FEE * INSCRIPTION_RATE + feeLimit * PARTICIPATION_RATE;
+          const earned = INSCRIPTION_FEE * INSCRIPTION_RATE + feeLimit * PARTICIPATION_RATE;
+          commissionByMarathon[l.marathon_id] = (commissionByMarathon[l.marathon_id] || 0) + earned;
         }
       }
-      return res({ total_commission });
+      const breakdown = Object.entries(commissionByMarathon)
+        .map(([marathon_id, commission]) => ({ marathon_id, marathon_name: marathonById[marathon_id]?.name || 'N/A', commission }))
+        .sort((a, b) => b.commission - a.commission);
+      const total_commission = breakdown.reduce((s, b) => s + b.commission, 0);
+      return res({ total_commission, breakdown });
     }
 
     if (url === '/finance/overview') {
