@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Percent, Users, UserCheck, CheckCircle2, CircleDotDashed, CircleDashed, TrendingUp, Download } from 'lucide-react';
+import { Percent, Users, UserCheck, CheckCircle2, CircleDotDashed, CircleDashed, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatAmount, isModuleVisible } from '@/lib/finance';
 import { buildPaymentsTablePdf } from '@/lib/paymentsTableExport';
@@ -241,9 +241,15 @@ export default function CommissionsPage() {
                   <p className="text-2xl font-bold text-emerald-700">{formatAmount(mine.total_commission)} HTG</p>
                 </div>
                 {mine.potential_commission > 0 && (
-                  <div className="flex items-center gap-2 bg-blue-50 text-blue-700 rounded-xl p-3 text-sm">
-                    <TrendingUp className="w-4 h-4 shrink-0" />
-                    <span>Tu pourrais recevoir {formatAmount(mine.total_commission + mine.potential_commission)} HTG au total si tout le monde paie ({formatAmount(mine.potential_commission)} HTG de plus).</span>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-blue-50 rounded-xl p-3">
+                      <p className="text-xs text-blue-600">Potentiel supplémentaire</p>
+                      <p className="text-lg font-bold text-blue-700">+{formatAmount(mine.potential_commission)} HTG</p>
+                    </div>
+                    <div className="bg-blue-50 rounded-xl p-3">
+                      <p className="text-xs text-blue-600">Total si tout paie</p>
+                      <p className="text-lg font-bold text-blue-700">{formatAmount(mine.total_commission + mine.potential_commission)} HTG</p>
+                    </div>
                   </div>
                 )}
               </div>
