@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { LayoutDashboard, Wallet, GraduationCap, LogOut, ChevronRight } from 'lucide-react';
 
 export default function ChooseModulePage() {
-  const { user, logout, canAccessFinance, canAccessPedagogie } = useAuth();
+  const { user, logout, canAccessFinance, canAccessPedagogie, isProfesseur, isDirecteurPedagogique } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -30,20 +30,22 @@ export default function ChooseModulePage() {
         </div>
 
         <div className="space-y-3">
-          <button
-            onClick={() => navigate('/select-marathon')}
-            data-testid="choose-crm-btn"
-            className="w-full bg-white border border-slate-200/60 shadow-sm rounded-2xl p-5 text-left hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-4"
-          >
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-              <LayoutDashboard className="w-6 h-6 text-emerald-600" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-slate-800 text-base" style={{ fontFamily: "'Outfit', sans-serif" }}>CRM Commercial</p>
-              <p className="text-xs text-slate-400 mt-0.5">Leads, ventes, présence, paiements par vendeur</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-slate-300" />
-          </button>
+          {!isProfesseur && !isDirecteurPedagogique && (
+            <button
+              onClick={() => navigate('/select-marathon')}
+              data-testid="choose-crm-btn"
+              className="w-full bg-white border border-slate-200/60 shadow-sm rounded-2xl p-5 text-left hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-4"
+            >
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                <LayoutDashboard className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-slate-800 text-base" style={{ fontFamily: "'Outfit', sans-serif" }}>CRM Commercial</p>
+                <p className="text-xs text-slate-400 mt-0.5">Leads, ventes, présence, paiements par vendeur</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-300" />
+            </button>
+          )}
 
           {canAccessFinance && (
             <button
