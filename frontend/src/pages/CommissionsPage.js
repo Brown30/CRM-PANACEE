@@ -28,12 +28,21 @@ export default function CommissionsPage() {
     (async () => {
       try {
         const { data } = await api.get('/marathons/all');
-        const sorted = [...(data.marathons || [])].sort((a, b) => (b.active - a.active) || a.name.localeCompare(b.name));
+        let list = data.marathons || [];
+        // A vendeur only ever sees marathons where they actually have at
+        // least one lead — an admin still needs every marathon, since they
+        // can pick any vendeur once a marathon is chosen.
+        if (!isAdmin) {
+          const { data: idsData } = await api.get('/leads/marathon-ids', { params: { vendeur_id: user.id } });
+          const ownIds = new Set(idsData.marathon_ids || []);
+          list = list.filter(m => ownIds.has(m.id));
+        }
+        const sorted = [...list].sort((a, b) => (b.active - a.active) || a.name.localeCompare(b.name));
         setMarathons(sorted);
       } catch { toast.error('Erreur chargement'); }
       setLoadingMarathons(false);
     })();
-  }, [api]);
+  }, [api, isAdmin, user]);
 
   const fetchReport = useCallback(async () => {
     if (!marathonId) return;
@@ -144,7 +153,14 @@ export default function CommissionsPage() {
         )}
       </div>
 
-      {!marathonId && (
+      {!marathonId && marathons.length === 0 && (
+        <div className="text-center py-16 text-slate-400">
+          <Percent className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+          <p className="font-medium">Tu n'as encore aucun inscrit sur aucune marathon</p>
+        </div>
+      )}
+
+      {!marathonId && marathons.length > 0 && (
         <div className="text-center py-16 text-slate-400">
           <Percent className="w-10 h-10 mx-auto mb-2 text-slate-300" />
           <p className="font-medium">Choisissez une marathon pour voir le rapport</p>
