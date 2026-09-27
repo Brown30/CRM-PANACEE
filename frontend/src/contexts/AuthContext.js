@@ -58,6 +58,10 @@ export function AuthProvider({ children }) {
   const isAdminPrincipal = user?.role === 'admin_principal';
   const isPedagogia = user?.role === 'pedagogia';
   const isProfesseur = user?.role === 'professeur';
+  // Directeur Pédagogique et disciplinaire: oversees both Présence and
+  // Programme across all courses, on top of (not instead of) the professeurs'
+  // own responsibility for their course's Programme.
+  const isDirecteurPedagogique = user?.role === 'directeur_pedagogique';
   const canManageAttendance = isAdmin || !!user?.can_manage_attendance;
   const canManagePayments = isAdmin || !!user?.can_manage_payments;
   // Finance access is a standalone grant, not implied by admin_secondary/vendeur/
@@ -67,13 +71,17 @@ export function AuthProvider({ children }) {
   // Pédagogie et Contrôle is an operational module like attendance/payments
   // (both admin roles get it for free), plus the pedagogia role itself, plus
   // whoever else is explicitly granted the flag (e.g. a vendeur helping out).
-  const canAccessPedagogie = isAdmin || isPedagogia || !!user?.can_access_pedagogie;
+  const canAccessPedagogie = isAdmin || isPedagogia || isDirecteurPedagogique || !!user?.can_access_pedagogie;
+  // Marking/unmarking presence in the Pédagogie module's Présence page: besides
+  // the admins, only the Directeur Pédagogique can touch it — a plain pedagogia
+  // grant only gets read access there (see PresenceCourseDetailPage).
+  const canManagePresence = isAdmin || isDirecteurPedagogique;
 
   return (
     <AuthContext.Provider value={{
       user, token, loading, login, logout,
       selectedMarathon, selectMarathon,
-      api: axiosInstance, isAdmin, isAdminPrincipal, isPedagogia, isProfesseur, canManageAttendance, canManagePayments, canAccessFinance, canAccessPedagogie
+      api: axiosInstance, isAdmin, isAdminPrincipal, isPedagogia, isProfesseur, isDirecteurPedagogique, canManageAttendance, canManagePayments, canAccessFinance, canAccessPedagogie, canManagePresence
     }}>
       {children}
     </AuthContext.Provider>

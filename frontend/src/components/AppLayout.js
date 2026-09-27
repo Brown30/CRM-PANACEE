@@ -7,9 +7,13 @@ import InstallPrompt from '@/components/InstallPrompt';
 import NotificationBell from '@/components/NotificationBell';
 
 export default function AppLayout() {
-  const { user, logout, selectedMarathon, selectMarathon, isAdmin, isPedagogia, canManageAttendance, canManagePayments, canAccessFinance, canAccessPedagogie } = useAuth();
+  const { user, logout, selectedMarathon, selectMarathon, isAdmin, isPedagogia, isDirecteurPedagogique, canManageAttendance, canManagePayments, canAccessFinance, canAccessPedagogie } = useAuth();
   const navigate = useNavigate();
   const isVendeur = user?.role === 'vendeur';
+  // The Directeur Pédagogique gets the same restricted CRM-commercial nav as
+  // a plain pedagogia grant — this module scopes them to Présence/Programme,
+  // not the sales-facing CRM.
+  const isPedagogieOnly = isPedagogia || isDirecteurPedagogique;
 
   const handleLogout = () => {
     logout();
@@ -49,13 +53,13 @@ export default function AppLayout() {
   // A plain vendeur now reaches Paiement & Commission as its own module,
   // straight from the post-login screen, so it no longer needs a spot in the
   // CRM's own nav (the admin oversight view at /commissions is unaffected).
-  const allItems = isPedagogia
+  const allItems = isPedagogieOnly
     ? [certificatesItem, ...(canManageAttendance ? [presenceItem] : [])]
     : isAdmin
       ? [...navItems, presenceItem, paymentsItem, commissionsItem, ...adminItems, certificatesItem]
       : [...navItems, ...(canManageAttendance ? [presenceItem] : []), ...(canManagePayments ? [paymentsItem] : [])];
 
-  const bottomNavItems = isPedagogia
+  const bottomNavItems = isPedagogieOnly
     ? [certificatesItem, { to: '/profile', icon: User, label: 'Profile' }]
     : [
         { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -83,7 +87,7 @@ export default function AppLayout() {
         </div>
 
         {/* Marathon selector */}
-        {!isPedagogia && (
+        {!isPedagogieOnly && (
           <button onClick={handleChangeMarathon} className="mx-4 mt-4 p-3 bg-emerald-50 rounded-xl text-left hover:bg-emerald-100 transition-colors" data-testid="change-marathon-desktop">
             <p className="text-xs text-emerald-600 font-semibold uppercase tracking-wide">Marathon active</p>
             <div className="flex items-center justify-between mt-1">
@@ -146,7 +150,7 @@ export default function AppLayout() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            {!isPedagogia && (
+            {!isPedagogieOnly && (
               <button onClick={handleChangeMarathon} className="text-xs bg-emerald-50 text-emerald-700 font-medium px-3 py-1.5 rounded-full max-w-[140px] truncate" data-testid="change-marathon-mobile">
                 {selectedMarathon?.name}
               </button>
