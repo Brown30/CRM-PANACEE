@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Percent, Users, UserCheck, CheckCircle2, CircleDotDashed, CircleDashed, TrendingUp, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatAmount } from '@/lib/finance';
+import { formatAmount, isModuleVisible } from '@/lib/finance';
 import { buildPaymentsTablePdf } from '@/lib/paymentsTableExport';
 import { slugifyFileName } from '@/lib/certificate';
 
@@ -29,7 +29,7 @@ export default function CommissionsPage() {
     (async () => {
       try {
         const { data } = await api.get('/marathons/all');
-        let list = data.marathons || [];
+        let list = (data.marathons || []).filter(isModuleVisible);
         // A vendeur only ever sees marathons where they actually have at
         // least one lead — an admin still needs every marathon, since they
         // can pick any vendeur once a marathon is chosen.
