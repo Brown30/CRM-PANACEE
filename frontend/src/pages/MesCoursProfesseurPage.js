@@ -15,7 +15,7 @@ export default function MesCoursProfesseurPage() {
     (async () => {
       try {
         const { data } = await api.get('/marathons/all');
-        setCourses((data.marathons || []).filter(m => m.professeur_id === user.id).sort((a, b) => a.name.localeCompare(b.name)));
+        setCourses((data.marathons || []).filter(m => (m.professeur_ids || []).includes(user.id)).sort((a, b) => a.name.localeCompare(b.name)));
       } catch { toast.error('Erreur chargement'); }
       setLoading(false);
     })();

@@ -16,7 +16,7 @@ export default function ProfesseurProgramPage() {
     setLoading(true);
     try {
       const { data } = await api.get(`/marathons/${marathonId}`);
-      if (data.marathon?.professeur_id !== user.id) {
+      if (!(data.marathon?.professeur_ids || []).includes(user.id)) {
         toast.error('Ce cours ne vous est pas assigné');
         navigate('/mon-programme');
         return;
