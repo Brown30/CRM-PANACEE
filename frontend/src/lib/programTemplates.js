@@ -40,5 +40,23 @@ export const PROGRAM_TEMPLATES = {
     { title: "Semaine 11, Dimanche — Montage chambre d'hôpital - Schéma - Pratique" },
     { title: "Semaine 12, Samedi — Test d'évaluation" },
     { title: "Semaine 12, Dimanche — Résultat - Pratique" }
+  ],
+  'Sheetrock': [
+    { title: "Semaine 1, Samedi — Module 1, Introduction au Sheetrock : définition, avantages et désavantages, types de métal et types de vis" },
+    { title: "Semaine 1, Dimanche — Module 1, Introduction au Sheetrock : types de Sheetrock, types de métal, types de vis, choix des matériaux selon les travaux" },
+    { title: "Semaine 2, Samedi — Module 2, Outils et techniques : drywall, ruban métrique, présentation des outils de travail, devis métrique" },
+    { title: "Semaine 2, Dimanche — Module 2, Outils et techniques : utilisation des outils, entretien des outils, techniques de base, cahier de devis (pro-forma)" },
+    { title: "Semaine 3, Samedi — Module 3, Approvisionnement et matériel : visite d'un atelier/point de vente, identification des matériaux, présentation du matériel, utilisation des matériaux et outils" },
+    { title: "Semaine 3, Dimanche — Module 3, Approvisionnement et matériel : visite et démonstration en magasin, choix des matériaux, stockage et sécurité, récapitulatif et questions" },
+    { title: "Semaine 4, Samedi — Module 4, Pratique professionnelle : démonstration du kit de travail, préparation du chantier, mesurage et traçage, découpe des matériaux" },
+    { title: "Semaine 4, Dimanche — Module 4, Pratique professionnelle : utilisation des outils, règles de sécurité, préparation des surfaces, application des techniques" },
+    { title: "Semaine 5, Samedi — Module 4, Travaux pratiques : montage de la structure métallique, pose du Sheetrock, utilisation des vis et outils" },
+    { title: "Semaine 5, Dimanche — Module 4, Travaux pratiques : finitions des joints, application des bandes, ponçage" },
+    { title: "Semaine 6, Samedi — Module 4, Montage et finition : pose des plaques, traitement des joints, utilisation correcte des outils" },
+    { title: "Semaine 6, Dimanche — Module 4, Montage et finition : finitions avancées, coins et plafonds, contrôle de la qualité" },
+    { title: "Semaine 7, Samedi — Module 4, Application sur chantier : réalisation d'un projet complet, travail en équipe, suivi et corrections" },
+    { title: "Semaine 7, Dimanche — Module 4, Application sur chantier : mise en pratique des acquis, conseils du formateur, préparation de l'évaluation" },
+    { title: "Semaine 8, Samedi — Module 4, Évaluation finale : vérification des finitions, nettoyage du chantier, présentation des travaux" },
+    { title: "Semaine 8, Dimanche — Module 4, Évaluation finale : évaluation pratique et théorique, remise des attestations, conseils pour la suite" }
   ]
 };

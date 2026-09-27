@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { weekendDatesBetween } from './pedagogie';
 import { PROGRAM_TEMPLATES } from './programTemplates';
-import { MODULE_EXCLUDED_FORMATIONS } from './finance';
+import { COMMISSION_EXCLUDED_FORMATIONS } from './finance';
 
 /**
  * A shim that implements the python backend logic using Supabase directly,
@@ -482,7 +482,7 @@ export const api = {
       // Rolling Door (and any other formation excluded from the operational
       // modules) never counts toward commission, even if reached directly —
       // the marathon picker already keeps it out of normal use.
-      if (MODULE_EXCLUDED_FORMATIONS.includes(marathon?.formation)) {
+      if (COMMISSION_EXCLUDED_FORMATIONS.includes(marathon?.formation)) {
         return res({ vendors: [], participation_fee: 0 });
       }
       const limit = Number(marathon?.participation_fee || 0);
@@ -577,7 +577,7 @@ export const api = {
       // Rolling Door (and any other formation excluded from the operational
       // modules) stays fully usable in the CRM, but never counts toward
       // commission or payroll — same exclusion as the marathon picker itself.
-      const marathons = (rawMarathons || []).filter(m => !MODULE_EXCLUDED_FORMATIONS.includes(m.formation));
+      const marathons = (rawMarathons || []).filter(m => !COMMISSION_EXCLUDED_FORMATIONS.includes(m.formation));
       const marathonById = Object.fromEntries(marathons.map(m => [m.id, m]));
       const leads = rawLeads.filter(l => marathonById[l.marathon_id]);
       if (leads.length === 0) {
