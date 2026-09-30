@@ -25,6 +25,7 @@ import VerifyCertificatePage from "@/pages/VerifyCertificatePage";
 import ChooseModulePage from "@/pages/ChooseModulePage";
 import FinanceCoursesPage from "@/pages/FinanceCoursesPage";
 import FinanceCourseDetailPage from "@/pages/FinanceCourseDetailPage";
+import FinanceDespensesPage from "@/pages/FinanceDespensesPage";
 import PedagogieHomePage from "@/pages/PedagogieHomePage";
 import PresenceCoursesPage from "@/pages/PresenceCoursesPage";
 import PresenceCourseDetailPage from "@/pages/PresenceCourseDetailPage";
@@ -125,6 +126,7 @@ function App() {
             <FinanceRoute><FinanceLayout /></FinanceRoute>
           }>
             <Route index element={<FinanceCoursesPage />} />
+            <Route path="despesas" element={<FinanceDespensesPage />} />
             <Route path=":marathonId" element={<FinanceCourseDetailPage />} />
           </Route>
           <Route path="/pedagogie" element={
