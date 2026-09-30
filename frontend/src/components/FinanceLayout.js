@@ -1,7 +1,7 @@
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Wallet, LayoutDashboard, LogOut, ArrowLeft } from 'lucide-react';
+import { Wallet, LayoutDashboard, LogOut, ArrowLeft, TrendingUp } from 'lucide-react';
 
 export default function FinanceLayout() {
   const { user, logout } = useAuth();
@@ -28,6 +28,23 @@ export default function FinanceLayout() {
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
+        </div>
+        <div className="max-w-4xl mx-auto px-4 md:px-6 pb-2 flex items-center gap-2">
+          <NavLink
+            to="/finance"
+            end
+            className={({ isActive }) => `text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 ${isActive ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:bg-slate-100'}`}
+            data-testid="finance-nav-overview"
+          >
+            <TrendingUp className="w-3.5 h-3.5" /> Vue d'ensemble
+          </NavLink>
+          <NavLink
+            to="/finance/despesas"
+            className={({ isActive }) => `text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 ${isActive ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:bg-slate-100'}`}
+            data-testid="finance-nav-despesas"
+          >
+            <Wallet className="w-3.5 h-3.5" /> Dépenses
+          </NavLink>
         </div>
       </header>
       <main className="max-w-4xl mx-auto">

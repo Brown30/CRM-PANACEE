@@ -696,6 +696,15 @@ export const api = {
       });
     }
 
+    if (url === '/expenses') {
+      // Recurring fixed expenses (salaries, rent...) — not tied to any
+      // marathon, feeds the Finance module's own cash-flow/forecast view
+      // instead of a course's revenue.
+      const { data, error } = await supabase.from('expenses').select('*').order('category').order('label');
+      if (error) throw new Error(error.message);
+      return res({ expenses: data || [] });
+    }
+
     console.warn("Unmocked GET", url);
     return res({});
   },
@@ -711,6 +720,11 @@ export const api = {
       const { data, error } = await supabase.from('users').insert({ ...payload, id: uuidv4() }).select().single();
       if (error) throw new Error(error.message);
       return res({ user: data });
+    }
+    if (url === '/expenses') {
+      const { data, error } = await supabase.from('expenses').insert({ ...payload, id: uuidv4() }).select().single();
+      if (error) throw new Error(error.message);
+      return res({ expense: data });
     }
     if (url === '/commissions/mark-paid') {
       const { vendeur_id, month, amount, created_by } = payload;
@@ -963,6 +977,12 @@ export const api = {
       if (error) throw new Error(error.message);
       return res({ marathon: data });
     }
+    if (url.match(/^\/expenses\/([^/]+)$/)) {
+      const id = url.split('/')[2];
+      const { data, error } = await supabase.from('expenses').update(payload).eq('id', id).select().single();
+      if (error) throw new Error(error.message);
+      return res({ expense: data });
+    }
     if (url.match(/^\/leads\/([^/]+)$/)) {
       const id = url.split('/')[2];
       const { data, error } = await supabase.from('leads').update(payload).eq('id', id).select().single();
@@ -994,6 +1014,11 @@ export const api = {
       const id = url.split('/')[2];
       await supabase.from('users').delete().eq('id', id);
       return res({ message: 'Utilisateur supprimé' });
+    }
+    if (url.match(/^\/expenses\/([^/]+)$/)) {
+      const id = url.split('/')[2];
+      await supabase.from('expenses').delete().eq('id', id);
+      return res({ message: 'Dépense supprimée' });
     }
     if (url.match(/^\/commissions\/payments\/([^/]+)$/)) {
       const id = url.split('/')[3];
