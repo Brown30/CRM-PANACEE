@@ -705,6 +705,17 @@ export const api = {
       return res({ expenses: data || [] });
     }
 
+    if (url === '/expenses/entries') {
+      // Per-month confirmation: some months a given expense (e.g. an hourly
+      // salary, or someone who didn't work that month) doesn't actually get
+      // paid, or gets paid a different amount than its usual template value —
+      // this is the record of what was actually decided for one given month.
+      if (!params.month) throw new Error('Mois requis');
+      const { data, error } = await supabase.from('expense_entries').select('*').eq('month', params.month);
+      if (error) throw new Error(error.message);
+      return res({ entries: data || [] });
+    }
+
     console.warn("Unmocked GET", url);
     return res({});
   },
@@ -725,6 +736,15 @@ export const api = {
       const { data, error } = await supabase.from('expenses').insert({ ...payload, id: uuidv4() }).select().single();
       if (error) throw new Error(error.message);
       return res({ expense: data });
+    }
+    if (url === '/expenses/entries') {
+      const { expense_id, month, amount, confirmed } = payload;
+      if (!expense_id || !month) throw new Error('Dépense et mois requis');
+      const { data, error } = await supabase.from('expense_entries')
+        .upsert({ expense_id, month, amount: Number(amount) || 0, confirmed: confirmed !== false }, { onConflict: 'expense_id,month' })
+        .select().single();
+      if (error) throw new Error(error.message);
+      return res({ entry: data });
     }
     if (url === '/commissions/mark-paid') {
       const { vendeur_id, month, amount, created_by } = payload;
@@ -1019,6 +1039,11 @@ export const api = {
       const id = url.split('/')[2];
       await supabase.from('expenses').delete().eq('id', id);
       return res({ message: 'Dépense supprimée' });
+    }
+    if (url.match(/^\/expenses\/entries\/([^/]+)$/)) {
+      const id = url.split('/')[3];
+      await supabase.from('expense_entries').delete().eq('id', id);
+      return res({ message: 'Entrée supprimée' });
     }
     if (url.match(/^\/commissions\/payments\/([^/]+)$/)) {
       const id = url.split('/')[3];
