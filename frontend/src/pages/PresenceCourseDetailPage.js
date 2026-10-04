@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ArrowLeft, GraduationCap, Calendar, Phone, Check, X, Plus, ClipboardList, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, UserPlus } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Calendar, Phone, Check, X, Plus, ClipboardList, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, UserPlus, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateFr, todayStr } from '@/lib/finance';
 import { weekendDatesBetween, dayLabel } from '@/lib/pedagogie';
@@ -35,6 +35,7 @@ export default function PresenceCourseDetailPage() {
   const [inscritLeads, setInscritLeads] = useState([]);
   const [loadingInscrits, setLoadingInscrits] = useState(false);
   const [promotingId, setPromotingId] = useState(null);
+  const [participantSearch, setParticipantSearch] = useState('');
 
   const datesScrollRef = useRef(null);
   const scrollDates = (direction) => {
@@ -55,6 +56,12 @@ export default function PresenceCourseDetailPage() {
   }, [api, marathonId]);
 
   useEffect(() => { fetchBase(); }, [fetchBase]);
+
+  const filteredInscritLeads = useMemo(() => {
+    const q = participantSearch.trim().toLowerCase();
+    if (!q) return inscritLeads;
+    return inscritLeads.filter(l => l.full_name?.toLowerCase().includes(q) || l.phone?.includes(q));
+  }, [inscritLeads, participantSearch]);
 
   const sessions = useMemo(() => {
     if (!marathon) return [];
@@ -123,6 +130,7 @@ export default function PresenceCourseDetailPage() {
   // lead on the Leads list first.
   const openAddParticipant = async () => {
     setShowAddParticipant(true);
+    setParticipantSearch('');
     setLoadingInscrits(true);
     try {
       const { data } = await api.get('/leads', { params: { marathon_id: marathonId, status: 'Inscrit' } });
@@ -405,15 +413,26 @@ export default function PresenceCourseDetailPage() {
             <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>Ajouter des participants</DialogTitle>
             <DialogDescription>Personnes inscrites à ce cours, pas encore comptées comme participantes</DialogDescription>
           </DialogHeader>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              value={participantSearch}
+              onChange={e => setParticipantSearch(e.target.value)}
+              placeholder="Rechercher par nom ou téléphone..."
+              className="input-field pl-9"
+              data-testid="pedagogie-participant-search"
+              autoFocus
+            />
+          </div>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {loadingInscrits ? (
               <div className="flex justify-center py-10">
                 <div className="w-6 h-6 border-3 border-purple-500 border-t-transparent rounded-full animate-spin" />
               </div>
-            ) : inscritLeads.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-8">Aucun inscrit en attente</p>
+            ) : filteredInscritLeads.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-8">{inscritLeads.length === 0 ? 'Aucun inscrit en attente' : 'Aucun résultat'}</p>
             ) : (
-              inscritLeads.map(lead => (
+              filteredInscritLeads.map(lead => (
                 <div key={lead.id} className="flex items-center justify-between gap-3 bg-slate-50 rounded-xl px-3 py-2.5" data-testid={`pedagogie-inscrit-row-${lead.id}`}>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-800 truncate">{lead.full_name}</p>
