@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ArrowLeft, GraduationCap, Calendar, Phone, Check, X, Plus, ClipboardList, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Calendar, Phone, Check, X, Plus, ClipboardList, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateFr, todayStr } from '@/lib/finance';
 import { weekendDatesBetween, dayLabel } from '@/lib/pedagogie';
@@ -30,6 +30,11 @@ export default function PresenceCourseDetailPage() {
   const [showReport, setShowReport] = useState(false);
   const [report, setReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
+
+  const [showAddParticipant, setShowAddParticipant] = useState(false);
+  const [inscritLeads, setInscritLeads] = useState([]);
+  const [loadingInscrits, setLoadingInscrits] = useState(false);
+  const [promotingId, setPromotingId] = useState(null);
 
   const datesScrollRef = useRef(null);
   const scrollDates = (direction) => {
@@ -110,6 +115,31 @@ export default function PresenceCourseDetailPage() {
       setRoster(prev => prev.map(r => r.lead_id === row.lead_id ? { ...r, present: previous } : r));
     }
     setSavingId(null);
+  };
+
+  // Inscrit -> Participant is still a deliberate, explicit action (not an
+  // automatic side effect of marking presence) — this just lets whoever
+  // manages Présence do that promotion without leaving the page to find the
+  // lead on the Leads list first.
+  const openAddParticipant = async () => {
+    setShowAddParticipant(true);
+    setLoadingInscrits(true);
+    try {
+      const { data } = await api.get('/leads', { params: { marathon_id: marathonId, status: 'Inscrit' } });
+      setInscritLeads(data.leads || []);
+    } catch { toast.error('Erreur chargement'); }
+    setLoadingInscrits(false);
+  };
+
+  const handlePromote = async (lead) => {
+    setPromotingId(lead.id);
+    try {
+      await api.put(`/leads/${lead.id}`, { status: 'Participant' });
+      toast.success(`${lead.full_name} ajouté comme participant`);
+      setInscritLeads(prev => prev.filter(l => l.id !== lead.id));
+      await loadRoster();
+    } catch (err) { toast.error(err.message || 'Erreur'); }
+    setPromotingId(null);
   };
 
   const handleAddDate = async (e) => {
@@ -288,7 +318,14 @@ export default function PresenceCourseDetailPage() {
 
       {selectedDate && (
         <>
-          <p className="text-sm text-slate-500">{presentCount}/{roster.length} présent(s) le {formatDateFr(selectedDate)}</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-slate-500">{presentCount}/{roster.length} présent(s) le {formatDateFr(selectedDate)}</p>
+            {canManagePresence && (
+              <Button variant="outline" size="sm" className="h-8 text-xs rounded-lg flex items-center gap-1.5 shrink-0" onClick={openAddParticipant} data-testid="pedagogie-open-add-participant">
+                <UserPlus className="w-3.5 h-3.5" /> Ajouter des participants
+              </Button>
+            )}
+          </div>
 
           <div className="space-y-2">
             {rosterLoading ? (
@@ -358,6 +395,46 @@ export default function PresenceCourseDetailPage() {
               <Button type="submit" className="btn-primary flex-1" data-testid="pedagogie-new-date-submit">Ajouter</Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Promote Inscrit leads to Participant, without leaving this page */}
+      <Dialog open={showAddParticipant} onOpenChange={setShowAddParticipant}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>Ajouter des participants</DialogTitle>
+            <DialogDescription>Personnes inscrites à ce cours, pas encore comptées comme participantes</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {loadingInscrits ? (
+              <div className="flex justify-center py-10">
+                <div className="w-6 h-6 border-3 border-purple-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : inscritLeads.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-8">Aucun inscrit en attente</p>
+            ) : (
+              inscritLeads.map(lead => (
+                <div key={lead.id} className="flex items-center justify-between gap-3 bg-slate-50 rounded-xl px-3 py-2.5" data-testid={`pedagogie-inscrit-row-${lead.id}`}>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">{lead.full_name}</p>
+                    <span className="flex items-center gap-1 text-xs text-slate-400">
+                      <Phone className="w-3 h-3" />{lead.phone}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="btn-primary h-8 text-xs shrink-0 flex items-center gap-1"
+                    onClick={() => handlePromote(lead)}
+                    disabled={promotingId === lead.id}
+                    data-testid={`pedagogie-promote-${lead.id}`}
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Ajouter
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+          <Button type="button" variant="outline" className="w-full h-11 rounded-xl" onClick={() => setShowAddParticipant(false)}>Fermer</Button>
         </DialogContent>
       </Dialog>
     </div>
