@@ -89,7 +89,7 @@ export default function MarathonPage() {
       setEditMarathon(null);
       fetchData();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Erreur');
+      toast.error(err.message || 'Erreur');
     }
   };
 
