@@ -22,6 +22,11 @@ const isEnrolled = (l) => l.status === 'Inscrit' || l.status === 'Participant';
 // Helper to mimic axios response
 const res = (data) => ({ data });
 
+// A PostgREST error isn't always in .message — a check constraint or FK
+// violation often puts the useful text in .details/.hint instead, leaving
+// .message empty and every toast showing a bare, useless "Erreur".
+const errMsg = (error) => error?.message || error?.details || error?.hint || (error ? JSON.stringify(error) : 'Erreur inconnue');
+
 export const api = {
   get: async (url, config = {}) => {
     const params = config.params || {};
@@ -132,7 +137,7 @@ export const api = {
       if (!params.vendeur_id) throw new Error('vendeur_id requis');
       const { data, error } = await supabase.from('leads').select('marathon_id')
         .eq('vendeur_id', params.vendeur_id).in('status', ['Inscrit', 'Participant']);
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       const marathon_ids = [...new Set((data || []).map(l => l.marathon_id))];
       return res({ marathon_ids });
     }
@@ -304,7 +309,7 @@ export const api = {
 
     if (url === '/notifications') {
       const { data, error } = await supabase.from('notifications').select('*').eq('vendeur_id', params.vendeur_id).order('created_at', { ascending: false });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ notifications: data });
     }
 
@@ -312,7 +317,7 @@ export const api = {
       let q = supabase.from('sales_methodologies').select('*').order('formation', { ascending: true });
       if (params.marathon_id) q = q.eq('marathon_id', params.marathon_id);
       const { data, error } = await q;
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ methodologies: data });
     }
 
@@ -337,7 +342,7 @@ export const api = {
 
     if (url === '/attendance/dates') {
       const { data, error } = await supabase.from('attendance').select('date').eq('marathon_id', params.marathon_id);
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       const dates = [...new Set((data || []).map(d => d.date))].sort((a, b) => b.localeCompare(a));
       return res({ dates });
     }
@@ -345,14 +350,14 @@ export const api = {
     if (url === '/pedagogie/extra-dates') {
       const { data, error } = await supabase.from('class_extra_dates').select('*')
         .eq('marathon_id', params.marathon_id).order('date', { ascending: true });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ dates: data });
     }
 
     if (url === '/pedagogie/program-topics') {
       const { data, error } = await supabase.from('program_topics').select('*')
         .eq('marathon_id', params.marathon_id).order('date', { ascending: true });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ topics: data });
     }
 
@@ -644,7 +649,7 @@ export const api = {
       if (!params.vendeur_id) throw new Error('vendeur_id requis');
       const { data, error } = await supabase.from('commission_payments').select('*')
         .eq('vendeur_id', params.vendeur_id).order('month', { ascending: false });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ history: data || [] });
     }
 
@@ -701,7 +706,7 @@ export const api = {
       // marathon, feeds the Finance module's own cash-flow/forecast view
       // instead of a course's revenue.
       const { data, error } = await supabase.from('expenses').select('*').order('category').order('label');
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ expenses: data || [] });
     }
 
@@ -712,7 +717,7 @@ export const api = {
       // this is the record of what was actually decided for one given month.
       if (!params.month) throw new Error('Mois requis');
       const { data, error } = await supabase.from('expense_entries').select('*').eq('month', params.month);
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ entries: data || [] });
     }
 
@@ -729,12 +734,12 @@ export const api = {
     }
     if (url === '/users') {
       const { data, error } = await supabase.from('users').insert({ ...payload, id: uuidv4() }).select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ user: data });
     }
     if (url === '/expenses') {
       const { data, error } = await supabase.from('expenses').insert({ ...payload, id: uuidv4() }).select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ expense: data });
     }
     if (url === '/expenses/entries') {
@@ -743,7 +748,7 @@ export const api = {
       const { data, error } = await supabase.from('expense_entries')
         .upsert({ expense_id, month, amount: Number(amount) || 0, confirmed: confirmed !== false }, { onConflict: 'expense_id,month' })
         .select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ entry: data });
     }
     if (url === '/commissions/mark-paid') {
@@ -754,7 +759,7 @@ export const api = {
       const { data, error } = await supabase.from('commission_payments')
         .insert({ id: uuidv4(), vendeur_id, month, amount: value, created_by: created_by || null })
         .select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ payment: data });
     }
     if (url === '/commissions/toggle-exclusion') {
@@ -762,10 +767,10 @@ export const api = {
       if (!vendeur_id || !marathon_id) throw new Error('Vendeur et cours requis');
       if (excluded) {
         const { error } = await supabase.from('commission_exclusions').upsert({ vendeur_id, marathon_id }, { onConflict: 'vendeur_id,marathon_id' });
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(errMsg(error));
       } else {
         const { error } = await supabase.from('commission_exclusions').delete().eq('vendeur_id', vendeur_id).eq('marathon_id', marathon_id);
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(errMsg(error));
       }
       return res({ message: 'ok' });
     }
@@ -775,7 +780,7 @@ export const api = {
     }
     if (url === '/leads') {
       const { data, error } = await supabase.from('leads').insert({ ...payload, id: uuidv4() }).select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ lead: data });
     }
     if (url.match(/^\/deletion-requests\/([^/]+)\/approve$/)) {
@@ -834,13 +839,13 @@ export const api = {
 
     if (url === '/notifications') {
       const { data, error } = await supabase.from('notifications').insert({ ...payload, id: uuidv4() }).select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ notification: data });
     }
 
     if (url === '/methodologies') {
       const { data, error } = await supabase.from('sales_methodologies').insert({ ...payload, id: uuidv4() }).select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ methodology: data });
     }
 
@@ -882,10 +887,10 @@ export const api = {
       if (findErr) throw new Error(findErr.message);
       if (existing) {
         const { error } = await supabase.from('attendance').update({ present, updated_at: new Date().toISOString() }).eq('id', existing.id);
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(errMsg(error));
       } else {
         const { error } = await supabase.from('attendance').insert({ id: uuidv4(), marathon_id, lead_id, date, present });
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(errMsg(error));
       }
       // Business rule: showing up for a session promotes an enrolled lead to Participant.
       // Unmarking reverts them back to Inscrit, but only if this was their last remaining
@@ -918,7 +923,7 @@ export const api = {
         .insert({ id: uuidv4(), marathon_id, date, label: label || null }).select().single();
       if (error) {
         if (error.code === '23505') throw new Error('Cette date existe déjà pour ce cours');
-        throw new Error(error.message);
+        throw new Error(errMsg(error));
       }
       return res({ extra_date: data });
     }
@@ -973,7 +978,7 @@ export const api = {
       const { data, error } = await supabase.from('payments').insert({
         id: uuidv4(), lead_id, marathon_id, amount: amt, created_by, created_by_name
       }).select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ payment: data });
     }
   },
@@ -982,49 +987,49 @@ export const api = {
     if (url.match(/^\/users\/([^/]+)\/code$/)) {
       const id = url.split('/')[2];
       const { data, error } = await supabase.from('users').update({ code: payload.code }).eq('id', id).select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ user: data });
     }
     if (url.match(/^\/users\/([^/]+)$/)) {
       const id = url.split('/')[2];
       const { data, error } = await supabase.from('users').update(payload).eq('id', id).select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ user: data });
     }
     if (url.match(/^\/marathons\/([^/]+)$/)) {
       const id = url.split('/')[2];
       const { data, error } = await supabase.from('marathons').update(payload).eq('id', id).select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ marathon: data });
     }
     if (url.match(/^\/expenses\/([^/]+)$/)) {
       const id = url.split('/')[2];
       const { data, error } = await supabase.from('expenses').update(payload).eq('id', id).select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ expense: data });
     }
     if (url.match(/^\/leads\/([^/]+)$/)) {
       const id = url.split('/')[2];
       const { data, error } = await supabase.from('leads').update(payload).eq('id', id).select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ lead: data });
     }
     if (url.match(/^\/notifications\/([^/]+)$/)) {
       const id = url.split('/')[2];
       const { data, error } = await supabase.from('notifications').update(payload).eq('id', id).select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ notification: data });
     }
     if (url.match(/^\/methodologies\/([^/]+)$/)) {
       const id = url.split('/')[2];
       const { data, error } = await supabase.from('sales_methodologies').update(payload).eq('id', id).select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ methodology: data });
     }
     if (url.match(/^\/pedagogie\/program-topics\/([^/]+)$/)) {
       const id = url.split('/')[3];
       const { data, error } = await supabase.from('program_topics').update(payload).eq('id', id).select().single();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(errMsg(error));
       return res({ topic: data });
     }
   },
