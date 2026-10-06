@@ -82,9 +82,9 @@ export default function ProgramSection({ marathon, manage, onMarathonUpdate }) {
       {manage && (
         <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4 space-y-3">
           <div>
-            <p className="text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1"><User className="w-3.5 h-3.5" /> Professeur(s)</p>
+            <p className="text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1"><User className="w-3.5 h-3.5" /> Responsable(s)</p>
             {professeurs.length === 0 ? (
-              <p className="text-xs text-slate-400">Aucun professeur n'existe encore</p>
+              <p className="text-xs text-slate-400">Aucun responsable n'existe encore</p>
             ) : (
               <div className="border border-slate-200/60 rounded-xl divide-y divide-slate-100" data-testid="program-professeur-list">
                 {professeurs.map(p => (

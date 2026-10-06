@@ -16,7 +16,7 @@ export default function ProfesseurLayout() {
               <GraduationCap className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-wide text-teal-600 font-semibold leading-none">Professeur</p>
+              <p className="text-[11px] uppercase tracking-wide text-teal-600 font-semibold leading-none">Responsable</p>
               <p className="font-bold text-slate-900 text-base leading-tight mt-0.5" style={{ fontFamily: "'Outfit', sans-serif" }} data-testid="professeur-header-name">
                 {user?.name}
               </p>
@@ -37,7 +37,7 @@ export default function ProfesseurLayout() {
           </NavLink>
           <NavLink
             to="/mon-programme/finance"
-            className={({ isActive }) => `text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 ${isActive ? 'bg-teal-100 text-teal-700' : 'text-slate-500 hover:bg-slate-100'}`}
+            className={({ isActive }) => `text-xs font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-emerald-500 text-white shadow-sm transition-all hover:brightness-110 ${isActive ? 'ring-2 ring-offset-1 ring-blue-400' : ''}`}
             data-testid="professeur-nav-finance"
           >
             <Wallet className="w-3.5 h-3.5" /> Finance

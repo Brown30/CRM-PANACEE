@@ -52,7 +52,7 @@ export default function ProgrammeCoursesPage() {
         <h2 className="text-xl font-bold text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
           Programme des cours
         </h2>
-        <p className="text-sm text-slate-500 mt-0.5">Cours actifs — assignez un professeur et suivez l'avancement du programme</p>
+        <p className="text-sm text-slate-500 mt-0.5">Cours actifs — assignez un responsable et suivez l'avancement du programme</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

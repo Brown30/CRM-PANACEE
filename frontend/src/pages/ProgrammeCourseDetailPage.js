@@ -72,7 +72,7 @@ export default function ProgrammeCourseDetailPage() {
             ))
           ) : (
             <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 text-sm font-medium px-3 py-1.5 rounded-full">
-              <GraduationCap className="w-4 h-4" /> Aucun professeur assigné
+              <GraduationCap className="w-4 h-4" /> Aucun responsable assigné
             </span>
           )}
         </div>

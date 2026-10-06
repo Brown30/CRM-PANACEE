@@ -170,7 +170,7 @@ export default function UsersPage() {
     if (role === 'admin_principal') return 'Admin Principal';
     if (role === 'admin_secondary') return 'Admin Secondaire';
     if (role === 'pedagogia') return 'Pédagogie';
-    if (role === 'professeur') return 'Professeur';
+    if (role === 'professeur') return 'Responsable';
     if (role === 'directeur_pedagogique') return 'Directeur Pédagogique';
     return 'Vendeur';
   };
@@ -338,7 +338,7 @@ export default function UsersPage() {
                   <SelectItem value="vendeur">Vendeur</SelectItem>
                   <SelectItem value="admin_secondary">Admin Secondaire</SelectItem>
                   <SelectItem value="pedagogia">Pédagogie</SelectItem>
-                  <SelectItem value="professeur">Professeur</SelectItem>
+                  <SelectItem value="professeur">Responsable</SelectItem>
                   <SelectItem value="directeur_pedagogique">Directeur Pédagogique</SelectItem>
                 </SelectContent>
               </Select>
