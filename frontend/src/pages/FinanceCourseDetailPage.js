@@ -4,9 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   ArrowLeft, Users, UserCheck, CheckCircle2, CircleDotDashed, CircleDashed,
-  Wallet, Calendar, Download, ChevronDown, ChevronUp
+  Wallet, Calendar, Download, ChevronDown, ChevronUp, GraduationCap
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatAmount, formatDateFr, coursePhase, isModuleVisible } from '@/lib/finance';
@@ -28,6 +29,21 @@ export default function FinanceCourseDetailPage() {
   const [showDetails, setShowDetails] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportingFull, setExportingFull] = useState(false);
+
+  const [professeurs, setProfesseurs] = useState([]);
+
+  useEffect(() => {
+    api.get('/users/professeurs').then(({ data }) => setProfesseurs(data.professeurs || [])).catch(() => {});
+  }, [api]);
+
+  const handleToggleFinanceViewer = async (professeurId, checked) => {
+    const current = overview?.marathon?.finance_viewer_ids || [];
+    const next = checked ? [...current, professeurId] : current.filter(id => id !== professeurId);
+    try {
+      const { data } = await api.put(`/marathons/${marathonId}`, { finance_viewer_ids: next });
+      setOverview(prev => ({ ...prev, marathon: data.marathon }));
+    } catch (err) { toast.error(err.message || 'Erreur'); }
+  };
 
   const fetchOverview = useCallback(async () => {
     setLoading(true);
@@ -177,6 +193,27 @@ export default function FinanceCourseDetailPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Professeur finance access */}
+      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4">
+        <p className="text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1"><GraduationCap className="w-3.5 h-3.5" /> Accès financier professeur</p>
+        <p className="text-xs text-slate-400 mb-2">Un professeur coché voit cette page (lecture seule) dans son propre espace, sous "Finance"</p>
+        {professeurs.length === 0 ? (
+          <p className="text-xs text-slate-400">Aucun professeur n'existe encore</p>
+        ) : (
+          <div className="border border-slate-200/60 rounded-xl divide-y divide-slate-100" data-testid="finance-professeur-list">
+            {professeurs.map(p => (
+              <label key={p.id} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer" data-testid={`finance-professeur-option-${p.id}`}>
+                <Checkbox
+                  checked={(m.finance_viewer_ids || []).includes(p.id)}
+                  onCheckedChange={checked => handleToggleFinanceViewer(p.id, checked === true)}
+                />
+                <span className="text-sm text-slate-700">{p.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       {limit <= 0 && (

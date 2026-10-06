@@ -33,6 +33,8 @@ import ProgrammeCoursesPage from "@/pages/ProgrammeCoursesPage";
 import ProgrammeCourseDetailPage from "@/pages/ProgrammeCourseDetailPage";
 import MesCoursProfesseurPage from "@/pages/MesCoursProfesseurPage";
 import ProfesseurProgramPage from "@/pages/ProfesseurProgramPage";
+import ProfesseurFinanceCoursesPage from "@/pages/ProfesseurFinanceCoursesPage";
+import ProfesseurFinanceCourseDetailPage from "@/pages/ProfesseurFinanceCourseDetailPage";
 import VendeurHomePage from "@/pages/VendeurHomePage";
 import AppLayout from "@/components/AppLayout";
 import FinanceLayout from "@/components/FinanceLayout";
@@ -142,6 +144,8 @@ function App() {
             <ProfesseurRoute><ProfesseurLayout /></ProfesseurRoute>
           }>
             <Route index element={<MesCoursProfesseurPage />} />
+            <Route path="finance" element={<ProfesseurFinanceCoursesPage />} />
+            <Route path="finance/:marathonId" element={<ProfesseurFinanceCourseDetailPage />} />
             <Route path=":marathonId" element={<ProfesseurProgramPage />} />
           </Route>
           <Route path="/vendeur-home" element={
