@@ -75,7 +75,7 @@ export default function ChooseModulePage() {
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-slate-800 text-base" style={{ fontFamily: "'Outfit', sans-serif" }}>Pédagogie et Contrôle</p>
-                <p className="text-xs text-slate-400 mt-0.5">Présence aux cours, programmes des professeurs</p>
+                <p className="text-xs text-slate-400 mt-0.5">Présence aux cours, programmes des responsables</p>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-300" />
             </button>

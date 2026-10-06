@@ -197,10 +197,10 @@ export default function FinanceCourseDetailPage() {
 
       {/* Professeur finance access */}
       <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4">
-        <p className="text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1"><GraduationCap className="w-3.5 h-3.5" /> Accès financier professeur</p>
-        <p className="text-xs text-slate-400 mb-2">Un professeur coché voit cette page (lecture seule) dans son propre espace, sous "Finance"</p>
+        <p className="text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1"><GraduationCap className="w-3.5 h-3.5" /> Accès financier responsable</p>
+        <p className="text-xs text-slate-400 mb-2">Un responsable coché voit cette page (lecture seule) dans son propre espace, sous "Finance"</p>
         {professeurs.length === 0 ? (
-          <p className="text-xs text-slate-400">Aucun professeur n'existe encore</p>
+          <p className="text-xs text-slate-400">Aucun responsable n'existe encore</p>
         ) : (
           <div className="border border-slate-200/60 rounded-xl divide-y divide-slate-100" data-testid="finance-professeur-list">
             {professeurs.map(p => (
