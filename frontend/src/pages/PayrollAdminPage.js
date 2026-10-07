@@ -1,15 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Banknote, ChevronDown, ChevronUp, Trash2, CheckCircle2, EyeOff, Eye } from 'lucide-react';
+import { Banknote, ChevronDown, ChevronUp, Trash2, CheckCircle2, EyeOff, Eye, Table } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatAmount, monthLabelFr } from '@/lib/finance';
 
 export default function PayrollAdminPage() {
   const { api, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [vendeurs, setVendeurs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
@@ -112,9 +114,14 @@ export default function PayrollAdminPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-4" data-testid="payroll-admin-page">
-      <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
-        <Banknote className="w-5 h-5 text-emerald-500" /> Payroll
-      </h2>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
+          <Banknote className="w-5 h-5 text-emerald-500" /> Payroll
+        </h2>
+        <Button variant="outline" size="sm" className="h-9 text-xs rounded-lg flex items-center gap-1.5" onClick={() => navigate('/payroll/resume')} data-testid="payroll-summary-link">
+          <Table className="w-3.5 h-3.5" /> Fiche de paie (tableau)
+        </Button>
+      </div>
       <p className="text-sm text-slate-500">Commission à recevoir par vendeur, tous cours confondus. Marquer comme payée la retire d'ici et l'ajoute à l'historique du vendeur.</p>
 
       <div className="space-y-2">
