@@ -23,20 +23,25 @@ export default function PayrollSummaryPage() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
+    // Fetched independently — vendeurs, expenses and expense_entries are
+    // unrelated tables, so one missing/erroring (e.g. a migration not run
+    // yet) shouldn't blank out the parts that do work.
     try {
-      const [{ data: vRes }, { data: expRes }, { data: entRes }] = await Promise.all([
-        api.get('/users/vendeurs'),
-        api.get('/expenses'),
-        api.get('/expenses/entries', { params: { month } })
-      ]);
+      const { data: vRes } = await api.get('/users/vendeurs');
       const vendeurList = (vRes.vendeurs || []).filter(v => v.active !== false);
       const totals = await Promise.all(vendeurList.map(v =>
         api.get('/commissions/total', { params: { vendeur_id: v.id } }).then(r => r.data).catch(() => ({ total_commission: 0 }))
       ));
       setVendeurs(vendeurList.map((v, i) => ({ ...v, commission: totals[i].total_commission || 0 })));
+    } catch (err) { toast.error(`Vendeurs: ${err.message || 'erreur'}`); }
+    try {
+      const { data: expRes } = await api.get('/expenses');
       setExpenses(expRes.expenses || []);
+    } catch (err) { toast.error(`Dépenses: ${err.message || 'erreur'}`); }
+    try {
+      const { data: entRes } = await api.get('/expenses/entries', { params: { month } });
       setEntries(entRes.entries || []);
-    } catch { toast.error('Erreur chargement'); }
+    } catch (err) { toast.error(`Dépenses (validation du mois): ${err.message || 'erreur'}`); }
     setLoading(false);
   }, [api, month]);
 
