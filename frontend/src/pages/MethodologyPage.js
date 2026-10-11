@@ -195,7 +195,7 @@ export default function MethodologyPage() {
     setPushTargetId('');
     setShowPush(true);
     try {
-      const { data } = await api.get('/marathons');
+      const { data } = await api.get('/marathons/all');
       const candidates = (data.marathons || []).filter(m => m.formation === selectedMarathon.formation && m.id !== selectedMarathon.id);
       setSameFormationMarathons(candidates);
     } catch {
