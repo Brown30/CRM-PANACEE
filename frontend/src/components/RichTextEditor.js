@@ -22,7 +22,7 @@ const FONT_SIZES = [
 // This avoids re-render/cursor-jump issues that a fully controlled contentEditable would have.
 // All toolbar actions fire on mousedown+preventDefault (not click) so the current text
 // selection in the editable div is never lost before document.execCommand runs.
-const RichTextEditor = forwardRef(function RichTextEditor({ defaultValue, placeholder, minRows = 3 }, ref) {
+const RichTextEditor = forwardRef(function RichTextEditor({ defaultValue, placeholder, minRows = 3, onChange }, ref) {
   const divRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
@@ -69,6 +69,7 @@ const RichTextEditor = forwardRef(function RichTextEditor({ defaultValue, placeh
         ref={divRef}
         contentEditable
         suppressContentEditableWarning
+        onInput={onChange}
         className="p-2.5 text-sm outline-none whitespace-pre-wrap text-slate-700"
         style={{ minHeight: `${minRows * 1.5}em` }}
         dangerouslySetInnerHTML={{ __html: defaultValue || '' }}

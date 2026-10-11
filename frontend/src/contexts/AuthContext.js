@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { api as supabaseApi } from '../lib/api';
 
 const AuthContext = createContext(null);
@@ -49,9 +49,23 @@ export function AuthProvider({ children }) {
     setSelectedMarathon(null);
   };
 
+  // Lets a page with an unsaved draft (e.g. editing a méthodologie) hold off
+  // a marathon switch — switching navigates away from /methodologie (and
+  // most other pages), unmounting whatever local edit state was there with
+  // no warning otherwise. A page opts in via setHasUnsavedChanges(true) while
+  // dirty and clears it on save/cancel; nothing changes for pages that never call it.
+  const hasUnsavedChangesRef = useRef(false);
+  const setHasUnsavedChanges = useCallback((value) => { hasUnsavedChangesRef.current = value; }, []);
+
   const selectMarathon = (marathon) => {
+    if (hasUnsavedChangesRef.current) {
+      const confirmed = window.confirm('Vous avez des modifications non enregistrées sur cette page. Elles seront perdues si vous changez de marathon maintenant. Continuer ?');
+      if (!confirmed) return false;
+    }
+    hasUnsavedChangesRef.current = false;
     setSelectedMarathon(marathon);
     localStorage.setItem('panacee_marathon', JSON.stringify(marathon));
+    return true;
   };
 
   const isAdmin = user?.role === 'admin_principal' || user?.role === 'admin_secondary';
@@ -80,7 +94,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, token, loading, login, logout,
-      selectedMarathon, selectMarathon,
+      selectedMarathon, selectMarathon, setHasUnsavedChanges,
       api: axiosInstance, isAdmin, isAdminPrincipal, isPedagogia, isProfesseur, isDirecteurPedagogique, canManageAttendance, canManagePayments, canAccessFinance, canAccessPedagogie, canManagePresence
     }}>
       {children}

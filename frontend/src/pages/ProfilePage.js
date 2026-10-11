@@ -13,7 +13,7 @@ export default function ProfilePage() {
   };
 
   const handleChangeMarathon = () => {
-    selectMarathon(null);
+    if (!selectMarathon(null)) return;
     navigate('/select-marathon');
   };
 
