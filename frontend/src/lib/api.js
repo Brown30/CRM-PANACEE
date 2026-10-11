@@ -857,7 +857,8 @@ export const api = {
         const { error } = await supabase.from('leads').update({
           marathon_id: target_marathon_id,
           formation: targetMarathon?.formation,
-          comments
+          comments,
+          tag: 'ANSYEN SESYON'
         }).eq('id', lead.id);
         if (error) throw new Error(errMsg(error));
         movedCount++;

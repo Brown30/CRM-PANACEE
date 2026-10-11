@@ -257,11 +257,13 @@ export default function LeadsPage() {
 
   const vendeurMap = Object.fromEntries(vendeurs.map(v => [v.id, v.name]));
 
-  // Import batches tag leads with a short one-line comment (e.g. "Ansyen Enterese X (date)",
-  // "Enterese Kamera (Janvier 2026)"). Any single-line comment is shown as a badge; longer,
-  // multi-line free-text notes are not, since those aren't tags.
-  const getTagBadge = (comments) => {
-    const trimmed = comments?.trim();
+  // A lead can carry an explicit tag (e.g. "ANSYEN SESYON" set when
+  // transferred from another marathon) — shown as a badge regardless of
+  // whatever else is in comments. Falls back to the old heuristic (import
+  // batches used to tag leads via a short one-line comment).
+  const getTagBadge = (lead) => {
+    if (lead.tag) return lead.tag;
+    const trimmed = lead.comments?.trim();
     if (!trimmed || trimmed.includes('\n') || trimmed.length > 80) return null;
     return trimmed;
   };
@@ -405,9 +407,9 @@ export default function LeadsPage() {
                     {lead.status}
                   </span>
                 </div>
-                {getTagBadge(lead.comments) && (
+                {getTagBadge(lead) && (
                   <span className="inline-block bg-purple-50 text-purple-700 border border-purple-200 text-[11px] font-medium px-2 py-0.5 rounded-full mb-1">
-                    {getTagBadge(lead.comments)}
+                    {getTagBadge(lead)}
                   </span>
                 )}
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 mt-2">
