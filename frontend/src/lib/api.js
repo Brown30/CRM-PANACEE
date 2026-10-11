@@ -837,6 +837,34 @@ export const api = {
       return res({ moved: movedCount });
     }
 
+    if (url === '/leads/bulk-move') {
+      // Unlike bulk-redistribute (random picks, quantity per vendeur), this
+      // moves exact leads the admin hand-picked — vendeur and status stay
+      // untouched, only the marathon (and formation, to match it) changes.
+      const { lead_ids, target_marathon_id } = payload;
+      if (!lead_ids || lead_ids.length === 0) throw new Error('Aucun lead sélectionné');
+      if (!target_marathon_id) throw new Error('Marathon de destination requis');
+      const { data: sourceLeads, error: lErr } = await supabase.from('leads').select('id, marathon_id, comments').in('id', lead_ids);
+      if (lErr) throw new Error(errMsg(lErr));
+      const { data: targetMarathon, error: mErr } = await supabase.from('marathons').select('*').eq('id', target_marathon_id).single();
+      if (mErr) throw new Error(errMsg(mErr));
+      const { data: sourceMarathon } = await supabase.from('marathons').select('name').eq('id', sourceLeads[0]?.marathon_id).single();
+      const today = new Date().toISOString().split('T')[0];
+      let movedCount = 0;
+      for (const lead of sourceLeads || []) {
+        const note = `Transféré de la maratona "${sourceMarathon?.name || ''}" en ${today}`;
+        const comments = lead.comments ? `${lead.comments}\n${note}` : note;
+        const { error } = await supabase.from('leads').update({
+          marathon_id: target_marathon_id,
+          formation: targetMarathon?.formation,
+          comments
+        }).eq('id', lead.id);
+        if (error) throw new Error(errMsg(error));
+        movedCount++;
+      }
+      return res({ moved: movedCount });
+    }
+
     if (url === '/notifications') {
       const { data, error } = await supabase.from('notifications').insert({ ...payload, id: uuidv4() }).select().single();
       if (error) throw new Error(errMsg(error));
