@@ -14,6 +14,7 @@ import { buildMethodologyPdf } from '@/lib/methodologyExport';
 import { slugifyFileName } from '@/lib/certificate';
 
 function MethodologyEditor({ methodology, api, onSaved, onCancel, onDelete }) {
+  const { setHasUnsavedChanges } = useAuth();
   const [title, setTitle] = useState(methodology.title);
   const [objections, setObjections] = useState(() =>
     (methodology.objections || []).map((o, i) => ({ id: o.id || `o${i}`, question: o.question, answer: o.answer }))
@@ -24,13 +25,29 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel, onDelete }) {
   const questionRefs = useRef({});
   const answerRefs = useRef({});
 
+  // Switching the active marathon elsewhere in the app unmounts this editor
+  // with no warning otherwise — flagged while open, cleared on save/cancel/
+  // unmount, so a careless marathon switch doesn't silently wipe a draft.
+  useEffect(() => {
+    return () => setHasUnsavedChanges(false);
+  }, [setHasUnsavedChanges]);
+
+  const markDirty = () => setHasUnsavedChanges(true);
+
   const addObjection = () => {
     setObjections(prev => [...prev, { id: `o-new-${Date.now()}`, question: '', answer: '' }]);
+    markDirty();
   };
   const removeObjection = (id) => {
     setObjections(prev => prev.filter(o => o.id !== id));
     delete questionRefs.current[id];
     delete answerRefs.current[id];
+    markDirty();
+  };
+
+  const handleCancel = () => {
+    setHasUnsavedChanges(false);
+    onCancel();
   };
 
   const handleSave = async () => {
@@ -47,6 +64,7 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel, onDelete }) {
     try {
       await api.put(`/methodologies/${methodology.id}`, { title, body: newBody, objections: newObjections });
       toast.success('Méthodologie enregistrée');
+      setHasUnsavedChanges(false);
       onSaved();
     } catch (err) {
       toast.error(err.message || 'Erreur enregistrement');
@@ -58,12 +76,12 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel, onDelete }) {
     <div className="space-y-4">
       <div>
         <Label className="text-xs font-semibold text-slate-500">Titre</Label>
-        <Input value={title} onChange={e => setTitle(e.target.value)} className="input-field mt-1" />
+        <Input value={title} onChange={e => { setTitle(e.target.value); markDirty(); }} className="input-field mt-1" />
       </div>
 
       <div>
         <Label className="text-xs font-semibold text-slate-500 mb-1 block">Méthodologie</Label>
-        <RichTextEditor ref={bodyRef} defaultValue={methodology.body} placeholder="Texte de la méthodologie..." minRows={16} />
+        <RichTextEditor ref={bodyRef} defaultValue={methodology.body} placeholder="Texte de la méthodologie..." minRows={16} onChange={markDirty} />
       </div>
 
       <div className="space-y-2 border-t border-slate-100 pt-3">
@@ -74,13 +92,13 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel, onDelete }) {
           <div key={o.id} className="bg-slate-50 rounded-xl p-3 space-y-2">
             <div className="flex items-start gap-2">
               <div className="flex-1">
-                <RichTextEditor ref={el => { questionRefs.current[o.id] = el; }} defaultValue={o.question} placeholder="Question / objection" minRows={1} />
+                <RichTextEditor ref={el => { questionRefs.current[o.id] = el; }} defaultValue={o.question} placeholder="Question / objection" minRows={1} onChange={markDirty} />
               </div>
               <Button type="button" variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 shrink-0 h-9 w-9" onClick={() => removeObjection(o.id)}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
-            <RichTextEditor ref={el => { answerRefs.current[o.id] = el; }} defaultValue={o.answer} placeholder="Réponse" minRows={2} />
+            <RichTextEditor ref={el => { answerRefs.current[o.id] = el; }} defaultValue={o.answer} placeholder="Réponse" minRows={2} onChange={markDirty} />
           </div>
         ))}
         <Button type="button" variant="outline" size="sm" className="text-xs h-8 rounded-lg" onClick={addObjection}>
@@ -89,7 +107,7 @@ function MethodologyEditor({ methodology, api, onSaved, onCancel, onDelete }) {
       </div>
 
       <div className="flex gap-3 pt-2">
-        <Button type="button" variant="outline" className="flex-1 h-11 rounded-xl" onClick={onCancel}>Annuler</Button>
+        <Button type="button" variant="outline" className="flex-1 h-11 rounded-xl" onClick={handleCancel}>Annuler</Button>
         <Button type="button" className="btn-primary flex-1" onClick={handleSave} disabled={saving}>
           {saving ? 'Enregistrement...' : 'Enregistrer'}
         </Button>

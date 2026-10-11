@@ -21,7 +21,7 @@ export default function AppLayout() {
   };
 
   const handleChangeMarathon = () => {
-    selectMarathon(null);
+    if (!selectMarathon(null)) return;
     navigate('/select-marathon');
   };
 
