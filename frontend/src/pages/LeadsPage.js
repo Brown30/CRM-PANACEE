@@ -23,7 +23,6 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [vendeurFilter, setVendeurFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('');
-  const [tagFilter, setTagFilter] = useState('all');
   const [editLead, setEditLead] = useState(null);
   const [fichaPdf, setFichaPdf] = useState(null);
   const [fichaPreviewUrl, setFichaPreviewUrl] = useState(null);
@@ -49,7 +48,9 @@ export default function LeadsPage() {
       const params = { marathon_id: selectedMarathon.id };
       if (!isAdmin) params.vendeur_id = user.id;
       else if (vendeurFilter !== 'all') params.vendeur_id = vendeurFilter;
-      if (statusFilter !== 'all') params.status = statusFilter;
+      // "Ansyen Enterese" isn't a real status — it's leads.tag, filtered
+      // client-side below, folded into this same dropdown for simplicity.
+      if (statusFilter !== 'all' && statusFilter !== 'ANSYEN ENTERESE') params.status = statusFilter;
       if (dateFilter) params.date = dateFilter;
       const [leadsRes, vendeursRes] = await Promise.all([
         api.get('/leads', { params }),
@@ -251,7 +252,7 @@ export default function LeadsPage() {
   };
 
   const filtered = leads.filter(l =>
-    (tagFilter === 'all' || l.tag === tagFilter) &&
+    (statusFilter !== 'ANSYEN ENTERESE' || l.tag === 'ANSYEN ENTERESE') &&
     (
       l.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       l.phone?.includes(searchTerm) ||
@@ -259,11 +260,9 @@ export default function LeadsPage() {
     )
   );
 
-  const tagOptions = [...new Set(leads.map(l => l.tag).filter(Boolean))];
-
   const vendeurMap = Object.fromEntries(vendeurs.map(v => [v.id, v.name]));
 
-  // A lead can carry an explicit tag (e.g. "ANSYEN SESYON" set when
+  // A lead can carry an explicit tag (e.g. "ANSYEN ENTERESE" set when
   // transferred from another marathon) — shown as a badge regardless of
   // whatever else is in comments. Falls back to the old heuristic (import
   // batches used to tag leads via a short one-line comment).
@@ -353,6 +352,7 @@ export default function LeadsPage() {
             <SelectItem value="Inscrit">Inscrit</SelectItem>
             <SelectItem value="Participant">Participant</SelectItem>
             <SelectItem value="Pa enterese ditou">Pa enterese ditou</SelectItem>
+            <SelectItem value="ANSYEN ENTERESE">Ansyen Enterese</SelectItem>
           </SelectContent>
         </Select>
         <Input
@@ -362,26 +362,12 @@ export default function LeadsPage() {
           className="w-[160px] h-10 rounded-xl"
           data-testid="filter-date"
         />
-        {tagOptions.length > 0 && (
-          <Select value={tagFilter} onValueChange={setTagFilter}>
-            <SelectTrigger className="w-[160px] h-10 rounded-xl" data-testid="filter-tag">
-              <Filter className="w-4 h-4 mr-1 text-slate-400" />
-              <SelectValue placeholder="Tag" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les tags</SelectItem>
-              {tagOptions.map(t => (
-                <SelectItem key={t} value={t}>{t}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-        {(vendeurFilter !== 'all' || statusFilter !== 'all' || dateFilter || tagFilter !== 'all') && (
+        {(vendeurFilter !== 'all' || statusFilter !== 'all' || dateFilter) && (
           <Button
             variant="ghost"
             size="sm"
             className="h-10 text-xs text-slate-500 flex items-center gap-1"
-            onClick={() => { setVendeurFilter('all'); setStatusFilter('all'); setDateFilter(''); setTagFilter('all'); }}
+            onClick={() => { setVendeurFilter('all'); setStatusFilter('all'); setDateFilter(''); }}
             data-testid="clear-filters"
           >
             <X className="w-3.5 h-3.5" /> Effacer les filtres
