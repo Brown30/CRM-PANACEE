@@ -23,6 +23,7 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [vendeurFilter, setVendeurFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('');
+  const [tagFilter, setTagFilter] = useState('all');
   const [editLead, setEditLead] = useState(null);
   const [fichaPdf, setFichaPdf] = useState(null);
   const [fichaPreviewUrl, setFichaPreviewUrl] = useState(null);
@@ -250,10 +251,15 @@ export default function LeadsPage() {
   };
 
   const filtered = leads.filter(l =>
-    l.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    l.phone?.includes(searchTerm) ||
-    l.comments?.toLowerCase().includes(searchTerm.toLowerCase())
+    (tagFilter === 'all' || l.tag === tagFilter) &&
+    (
+      l.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      l.phone?.includes(searchTerm) ||
+      l.comments?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
+
+  const tagOptions = [...new Set(leads.map(l => l.tag).filter(Boolean))];
 
   const vendeurMap = Object.fromEntries(vendeurs.map(v => [v.id, v.name]));
 
@@ -356,12 +362,26 @@ export default function LeadsPage() {
           className="w-[160px] h-10 rounded-xl"
           data-testid="filter-date"
         />
-        {(vendeurFilter !== 'all' || statusFilter !== 'all' || dateFilter) && (
+        {tagOptions.length > 0 && (
+          <Select value={tagFilter} onValueChange={setTagFilter}>
+            <SelectTrigger className="w-[160px] h-10 rounded-xl" data-testid="filter-tag">
+              <Filter className="w-4 h-4 mr-1 text-slate-400" />
+              <SelectValue placeholder="Tag" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les tags</SelectItem>
+              {tagOptions.map(t => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {(vendeurFilter !== 'all' || statusFilter !== 'all' || dateFilter || tagFilter !== 'all') && (
           <Button
             variant="ghost"
             size="sm"
             className="h-10 text-xs text-slate-500 flex items-center gap-1"
-            onClick={() => { setVendeurFilter('all'); setStatusFilter('all'); setDateFilter(''); }}
+            onClick={() => { setVendeurFilter('all'); setStatusFilter('all'); setDateFilter(''); setTagFilter('all'); }}
             data-testid="clear-filters"
           >
             <X className="w-3.5 h-3.5" /> Effacer les filtres
