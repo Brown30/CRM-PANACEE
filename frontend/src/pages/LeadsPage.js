@@ -209,6 +209,18 @@ export default function LeadsPage() {
     });
   };
 
+  const toggleSelectAllFiltered = () => {
+    setSelectedIds(prev => {
+      const allSelected = filtered.length > 0 && filtered.every(l => prev.has(l.id));
+      if (allSelected) {
+        const next = new Set(prev);
+        for (const l of filtered) next.delete(l.id);
+        return next;
+      }
+      return new Set([...prev, ...filtered.map(l => l.id)]);
+    });
+  };
+
   const openTransfer = async () => {
     setTransferTargetId('');
     setShowTransfer(true);
@@ -356,7 +368,14 @@ export default function LeadsPage() {
       </div>
 
       {/* Leads count */}
-      <p className="text-sm text-slate-500">{filtered.length} lead(s)</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm text-slate-500">{filtered.length} lead(s)</p>
+        {selectMode && filtered.length > 0 && (
+          <button onClick={toggleSelectAllFiltered} className="text-xs font-medium text-emerald-600 hover:text-emerald-700" data-testid="select-all-filtered-btn">
+            {filtered.every(l => selectedIds.has(l.id)) ? 'Tout désélectionner' : `Sélectionner les ${filtered.length} affichés`}
+          </button>
+        )}
+      </div>
 
       {/* Leads List - Card style for mobile */}
       <div className="space-y-3 pb-16">
