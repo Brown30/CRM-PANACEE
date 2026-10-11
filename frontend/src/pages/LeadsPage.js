@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, Search, Phone, Mail, MapPin, Calendar, Filter, X, FileText, Download } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Search, Phone, Mail, MapPin, Calendar, Filter, X, FileText, Download, ArrowRightLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { buildFichaInscricaoPdf } from '@/lib/fichaInscricao';
 import { slugifyFileName } from '@/lib/certificate';
@@ -27,6 +28,12 @@ export default function LeadsPage() {
   const [fichaPreviewUrl, setFichaPreviewUrl] = useState(null);
   const [fichaFileName, setFichaFileName] = useState('');
   const [generatingFicha, setGeneratingFicha] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [transferTargetId, setTransferTargetId] = useState('');
+  const [otherMarathons, setOtherMarathons] = useState([]);
+  const [transferring, setTransferring] = useState(false);
   const [exportingList, setExportingList] = useState(false);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -189,6 +196,47 @@ export default function LeadsPage() {
     setFichaPdf(null);
   };
 
+  const toggleSelectMode = () => {
+    setSelectMode(prev => !prev);
+    setSelectedIds(new Set());
+  };
+
+  const toggleLeadSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const openTransfer = async () => {
+    setTransferTargetId('');
+    setShowTransfer(true);
+    try {
+      const { data } = await api.get('/marathons/all');
+      setOtherMarathons((data.marathons || []).filter(m => m.id !== selectedMarathon.id).sort((a, b) => a.name.localeCompare(b.name)));
+    } catch { toast.error('Erreur chargement'); }
+  };
+
+  const handleTransfer = async () => {
+    if (!transferTargetId) { toast.error('Choisissez la marathon de destination'); return; }
+    setTransferring(true);
+    try {
+      const { data } = await api.post('/leads/bulk-move', {
+        lead_ids: [...selectedIds],
+        target_marathon_id: transferTargetId
+      });
+      toast.success(`${data.moved} lead(s) transféré(s)`);
+      setShowTransfer(false);
+      setSelectMode(false);
+      setSelectedIds(new Set());
+      fetchData();
+    } catch (err) {
+      toast.error(err.message || 'Erreur transfert');
+    }
+    setTransferring(false);
+  };
+
   const filtered = leads.filter(l =>
     l.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     l.phone?.includes(searchTerm) ||
@@ -230,6 +278,16 @@ export default function LeadsPage() {
           >
             <Download className="w-4 h-4" /> {exportingList ? 'Export...' : 'Exporter PDF'}
           </Button>
+          {isAdmin && (
+            <Button
+              onClick={toggleSelectMode}
+              variant={selectMode ? 'default' : 'outline'}
+              className={`flex items-center gap-2 h-10 text-sm rounded-xl ${selectMode ? 'btn-primary' : ''}`}
+              data-testid="toggle-transfer-mode-btn"
+            >
+              <ArrowRightLeft className="w-4 h-4" /> {selectMode ? 'Annuler' : 'Transférer'}
+            </Button>
+          )}
           <Button onClick={openAdd} className="btn-primary flex items-center gap-2 h-10 text-sm" data-testid="add-lead-btn">
             <Plus className="w-4 h-4" /> Ajouter
           </Button>
@@ -301,14 +359,20 @@ export default function LeadsPage() {
       <p className="text-sm text-slate-500">{filtered.length} lead(s)</p>
 
       {/* Leads List - Card style for mobile */}
-      <div className="space-y-3">
+      <div className="space-y-3 pb-16">
         {filtered.map((lead) => (
           <div
             key={lead.id}
-            className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4 hover:shadow-md transition-all cursor-pointer"
-            onClick={() => openEdit(lead)}
+            className={`bg-white rounded-2xl border shadow-sm p-4 hover:shadow-md transition-all cursor-pointer flex items-start gap-3 ${
+              selectMode && selectedIds.has(lead.id) ? 'border-emerald-400 ring-1 ring-emerald-300' : 'border-slate-200/60'
+            }`}
+            onClick={() => selectMode ? toggleLeadSelect(lead.id) : openEdit(lead)}
             data-testid={`lead-card-${lead.id}`}
           >
+            {selectMode && (
+              <Checkbox checked={selectedIds.has(lead.id)} onCheckedChange={() => toggleLeadSelect(lead.id)} className="mt-1 shrink-0" data-testid={`lead-select-${lead.id}`} />
+            )}
+            <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -345,6 +409,7 @@ export default function LeadsPage() {
                 Promesse: {lead.promise_date}
               </div>
             )}
+            </div>
           </div>
         ))}
         {filtered.length === 0 && (
@@ -353,6 +418,15 @@ export default function LeadsPage() {
           </div>
         )}
       </div>
+
+      {selectMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white rounded-2xl shadow-lg px-5 py-3 flex items-center gap-4" data-testid="transfer-bar">
+          <span className="text-sm font-medium">{selectedIds.size} sélectionné(s)</span>
+          <Button size="sm" className="btn-primary h-9 text-xs flex items-center gap-1.5" onClick={openTransfer} data-testid="open-transfer-btn">
+            <ArrowRightLeft className="w-3.5 h-3.5" /> Transférer
+          </Button>
+        </div>
+      )}
 
       {/* Add/Edit Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
@@ -512,6 +586,35 @@ export default function LeadsPage() {
               data-testid="ficha-download-btn"
             >
               <Download className="w-4 h-4" /> Télécharger
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transfer selected leads to another marathon */}
+      <Dialog open={showTransfer} onOpenChange={setShowTransfer}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>Transférer {selectedIds.size} lead(s)</DialogTitle>
+            <DialogDescription>Le vendeur et le statut de chaque lead restent inchangés</DialogDescription>
+          </DialogHeader>
+          <div>
+            <Label className="text-xs font-semibold text-slate-500">Marathon de destination</Label>
+            <Select value={transferTargetId} onValueChange={setTransferTargetId}>
+              <SelectTrigger className="input-field mt-1" data-testid="transfer-target-select">
+                <SelectValue placeholder="Choisir..." />
+              </SelectTrigger>
+              <SelectContent>
+                {otherMarathons.map(m => (
+                  <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => setShowTransfer(false)}>Annuler</Button>
+            <Button type="button" className="btn-primary flex-1" onClick={handleTransfer} disabled={transferring} data-testid="transfer-confirm-btn">
+              {transferring ? 'Transfert...' : 'Transférer'}
             </Button>
           </div>
         </DialogContent>
