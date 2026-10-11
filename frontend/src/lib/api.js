@@ -858,7 +858,7 @@ export const api = {
           marathon_id: target_marathon_id,
           formation: targetMarathon?.formation,
           comments,
-          tag: 'ANSYEN SESYON'
+          tag: 'ANSYEN ENTERESE'
         }).eq('id', lead.id);
         if (error) throw new Error(errMsg(error));
         movedCount++;
