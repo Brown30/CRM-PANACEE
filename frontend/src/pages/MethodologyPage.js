@@ -134,7 +134,7 @@ export default function MethodologyPage() {
   const [showNew, setShowNew] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [creating, setCreating] = useState(false);
-  const [showPush, setShowPush] = useState(false);
+  const [pushingMethodology, setPushingMethodology] = useState(null);
   const [sameFormationMarathons, setSameFormationMarathons] = useState([]);
   const [pushTargetId, setPushTargetId] = useState('');
   const [pushing, setPushing] = useState(false);
@@ -191,9 +191,9 @@ export default function MethodologyPage() {
     setCreating(false);
   };
 
-  const openPush = async () => {
+  const openPush = async (methodology) => {
     setPushTargetId('');
-    setShowPush(true);
+    setPushingMethodology(methodology);
     try {
       const { data } = await api.get('/marathons/all');
       const candidates = (data.marathons || []).filter(m => m.formation === selectedMarathon.formation && m.id !== selectedMarathon.id);
@@ -221,12 +221,12 @@ export default function MethodologyPage() {
     if (!pushTargetId) { toast.error('Choisissez une marathon cible'); return; }
     setPushing(true);
     try {
-      const { data } = await api.post('/methodologies/push', {
-        source_marathon_id: selectedMarathon.id,
+      await api.post('/methodologies/push', {
+        methodology_id: pushingMethodology.id,
         target_marathon_id: pushTargetId
       });
-      toast.success(`${data.copied} méthodologie(s) copiée(s)`);
-      setShowPush(false);
+      toast.success('Méthodologie copiée');
+      setPushingMethodology(null);
     } catch (err) {
       toast.error(err.message || 'Erreur copie');
     }
@@ -254,16 +254,9 @@ export default function MethodologyPage() {
             </Button>
           )}
           {isAdminPrincipal && (
-            <>
-              {methodologies.length > 0 && (
-                <Button onClick={openPush} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="push-methodology-btn">
-                  <Copy className="w-4 h-4" /> Copier vers une autre maratona
-                </Button>
-              )}
-              <Button onClick={() => setShowNew(true)} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="add-methodology-btn">
-                <Plus className="w-4 h-4" /> Nouvelle méthodologie
-              </Button>
-            </>
+            <Button onClick={() => setShowNew(true)} variant="outline" className="flex items-center gap-2 h-10 text-sm rounded-xl" data-testid="add-methodology-btn">
+              <Plus className="w-4 h-4" /> Nouvelle méthodologie
+            </Button>
           )}
         </div>
       </div>
@@ -295,6 +288,17 @@ export default function MethodologyPage() {
                     title="Télécharger en PDF"
                   >
                     <Download className="w-4 h-4" />
+                  </Button>
+                )}
+                {isAdminPrincipal && editingId !== m.id && (
+                  <Button
+                    variant="ghost" size="icon"
+                    className="text-slate-400 hover:text-emerald-600 shrink-0 mr-1"
+                    onClick={() => openPush(m)}
+                    data-testid={`push-methodology-${m.id}`}
+                    title="Copier vers une autre maratona"
+                  >
+                    <Copy className="w-4 h-4" />
                   </Button>
                 )}
                 {isAdminPrincipal && editingId !== m.id && (
@@ -375,12 +379,12 @@ export default function MethodologyPage() {
       </Dialog>
 
       {/* Push Methodology Dialog */}
-      <Dialog open={showPush} onOpenChange={setShowPush}>
+      <Dialog open={!!pushingMethodology} onOpenChange={(open) => !open && setPushingMethodology(null)}>
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>Copier la méthodologie</DialogTitle>
             <DialogDescription>
-              Copie toutes les méthodologies de "{selectedMarathon?.name}" vers une autre maratona du même cours ({selectedMarathon?.formation}). Les copies seront indépendantes et modifiables séparément.
+              Copie "{pushingMethodology?.title}" vers une autre maratona du même cours ({selectedMarathon?.formation}). La copie sera indépendante et modifiable séparément.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -397,14 +401,14 @@ export default function MethodologyPage() {
                 </SelectContent>
               </Select>
               {sameFormationMarathons.length === 0 && (
-                <p className="text-xs text-slate-400 mt-1">Aucune autre marathon active du même cours pour le moment</p>
+                <p className="text-xs text-slate-400 mt-1">Aucune autre maratona du même cours pour le moment</p>
               )}
             </div>
             <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              Si la marathon cible a déjà des méthodologies, celles-ci seront conservées — les copies s'ajoutent, elles ne les remplacent pas.
+              Si la marathon cible a déjà des méthodologies, celles-ci seront conservées — la copie s'ajoute, elle ne les remplace pas.
             </p>
             <div className="flex gap-3 pt-2">
-              <Button type="button" variant="outline" className="flex-1 h-11 rounded-xl" onClick={() => setShowPush(false)}>Annuler</Button>
+              <Button type="button" variant="outline" className="flex-1 h-11 rounded-xl" onClick={() => setPushingMethodology(null)}>Annuler</Button>
               <Button type="button" className="btn-primary flex-1" onClick={handlePush} disabled={pushing || !pushTargetId}>
                 {pushing ? 'Copie...' : 'Copier'}
               </Button>
