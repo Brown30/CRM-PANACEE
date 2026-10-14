@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ArrowLeft, GraduationCap, Calendar, Phone, Check, X, Plus, ClipboardList, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, UserPlus, Search } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Calendar, Phone, Check, X, Plus, ClipboardList, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, UserPlus, Search, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateFr, todayStr } from '@/lib/finance';
 import { weekendDatesBetween, dayLabel } from '@/lib/pedagogie';
@@ -257,6 +257,37 @@ export default function PresenceCourseDetailPage() {
                     </span>
                   </div>
                 ))}
+
+                {/* Irregular attendance (present some days, absent others) —
+                    the early signal for someone about to drop out, as opposed
+                    to someone who never showed up at all (not really "at risk",
+                    already gone) or who never misses (not at risk either). */}
+                {(() => {
+                  const atRisk = report.rows
+                    .filter(r => r.present_count > 0 && r.present_count < r.total_sessions)
+                    .sort((a, b) => a.attendance_rate - b.attendance_rate);
+                  if (atRisk.length === 0) return null;
+                  return (
+                    <div className="mt-4 pt-4 border-t border-slate-100" data-testid="pedagogie-at-risk-section">
+                      <h4 className="text-xs font-semibold text-amber-700 flex items-center gap-1.5 mb-2">
+                        <AlertTriangle className="w-3.5 h-3.5" /> Présence irrégulière — risque d'abandon ({atRisk.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {atRisk.map(row => (
+                          <div key={row.lead_id} className="bg-amber-50 border border-amber-200 rounded-xl p-3" data-testid={`pedagogie-at-risk-row-${row.lead_id}`}>
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm font-medium text-slate-800 truncate">{row.full_name}</p>
+                              <span className="text-xs font-semibold text-amber-700 shrink-0">{row.present_count}/{row.total_sessions}</span>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-1">
+                              Absent le {row.absences.map(formatDateFr).join(', ')}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <p className="text-sm text-slate-400 text-center py-8">Aucune séance passée à comptabiliser pour le moment</p>
