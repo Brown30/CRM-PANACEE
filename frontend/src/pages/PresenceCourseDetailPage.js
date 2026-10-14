@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ArrowLeft, GraduationCap, Calendar, Phone, Check, X, Plus, ClipboardList, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, UserPlus, Search, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatDateFr, todayStr } from '@/lib/finance';
+import { formatDateFr, todayStr, formatAmount } from '@/lib/finance';
 import { weekendDatesBetween, dayLabel } from '@/lib/pedagogie';
 
 export default function PresenceCourseDetailPage() {
@@ -30,6 +30,8 @@ export default function PresenceCourseDetailPage() {
   const [showReport, setShowReport] = useState(false);
   const [report, setReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
+  const [paidByLead, setPaidByLead] = useState({});
+  const [expandedRiskId, setExpandedRiskId] = useState(null);
 
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [inscritLeads, setInscritLeads] = useState([]);
@@ -185,6 +187,15 @@ export default function PresenceCourseDetailPage() {
     try {
       const { data } = await api.get('/pedagogie/attendance-report', { params: { marathon_id: marathonId } });
       setReport(data);
+      // Only an admin can see what someone's already paid — fetched
+      // alongside the report, not exposed to the Directeur Pédagogique or
+      // anyone else who can merely view this page.
+      if (isAdmin) {
+        const { data: payData } = await api.get('/payments/summary', { params: { marathon_id: marathonId } });
+        const map = {};
+        for (const r of payData.rows || []) map[r.lead_id] = r.participation_paid;
+        setPaidByLead(map);
+      }
     } catch { toast.error('Erreur chargement rapport'); }
     setReportLoading(false);
   };
@@ -261,30 +272,60 @@ export default function PresenceCourseDetailPage() {
                 {/* Irregular attendance (present some days, absent others) —
                     the early signal for someone about to drop out, as opposed
                     to someone who never showed up at all (not really "at risk",
-                    already gone) or who never misses (not at risk either). */}
+                    already gone) or who never misses (not at risk either).
+                    Split by severity so the whole list isn't one undifferentiated
+                    pile — a single missed class reads very differently from
+                    missing most of them. */}
                 {(() => {
-                  const atRisk = report.rows
-                    .filter(r => r.present_count > 0 && r.present_count < r.total_sessions)
-                    .sort((a, b) => a.attendance_rate - b.attendance_rate);
-                  if (atRisk.length === 0) return null;
-                  return (
-                    <div className="mt-4 pt-4 border-t border-slate-100" data-testid="pedagogie-at-risk-section">
-                      <h4 className="text-xs font-semibold text-amber-700 flex items-center gap-1.5 mb-2">
-                        <AlertTriangle className="w-3.5 h-3.5" /> Présence irrégulière — risque d'abandon ({atRisk.length})
-                      </h4>
-                      <div className="space-y-2">
-                        {atRisk.map(row => (
-                          <div key={row.lead_id} className="bg-amber-50 border border-amber-200 rounded-xl p-3" data-testid={`pedagogie-at-risk-row-${row.lead_id}`}>
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-sm font-medium text-slate-800 truncate">{row.full_name}</p>
-                              <span className="text-xs font-semibold text-amber-700 shrink-0">{row.present_count}/{row.total_sessions}</span>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-1">
-                              Absent le {row.absences.map(formatDateFr).join(', ')}
-                            </p>
-                          </div>
-                        ))}
+                  const irregular = report.rows.filter(r => r.present_count > 0 && r.present_count < r.total_sessions);
+                  const attention = irregular.filter(r => r.attendance_rate >= 75).sort((a, b) => a.attendance_rate - b.attendance_rate);
+                  const critique = irregular.filter(r => r.attendance_rate < 75).sort((a, b) => a.attendance_rate - b.attendance_rate);
+                  if (irregular.length === 0) return null;
+
+                  const renderRiskRow = (row, tone) => {
+                    const expanded = expandedRiskId === row.lead_id;
+                    const paid = paidByLead[row.lead_id];
+                    return (
+                      <div
+                        key={row.lead_id}
+                        className={`${tone === 'critique' ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'} border rounded-xl p-3 ${isAdmin ? 'cursor-pointer' : ''}`}
+                        onClick={() => isAdmin && setExpandedRiskId(expanded ? null : row.lead_id)}
+                        data-testid={`pedagogie-at-risk-row-${row.lead_id}`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-slate-800 truncate">{row.full_name}</p>
+                          <span className={`text-xs font-semibold shrink-0 ${tone === 'critique' ? 'text-red-700' : 'text-amber-700'}`}>{row.present_count}/{row.total_sessions}</span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Absent le {row.absences.map(formatDateFr).join(', ')}
+                        </p>
+                        {isAdmin && expanded && (
+                          <p className="text-xs text-slate-700 font-medium mt-2 pt-2 border-t border-slate-200/60" data-testid={`pedagogie-at-risk-paid-${row.lead_id}`}>
+                            Payé: {formatAmount(paid || 0)} {marathon.participation_fee > 0 && <>/ {formatAmount(marathon.participation_fee)}</>} HTG
+                          </p>
+                        )}
                       </div>
+                    );
+                  };
+
+                  return (
+                    <div className="mt-4 pt-4 border-t border-slate-100 space-y-4" data-testid="pedagogie-at-risk-section">
+                      {critique.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-semibold text-red-700 flex items-center gap-1.5 mb-2">
+                            <AlertTriangle className="w-3.5 h-3.5" /> Critique — moins de 75% ({critique.length})
+                          </h4>
+                          <div className="space-y-2">{critique.map(row => renderRiskRow(row, 'critique'))}</div>
+                        </div>
+                      )}
+                      {attention.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-semibold text-amber-700 flex items-center gap-1.5 mb-2">
+                            <AlertTriangle className="w-3.5 h-3.5" /> Attention — 75 à 99% ({attention.length})
+                          </h4>
+                          <div className="space-y-2">{attention.map(row => renderRiskRow(row, 'attention'))}</div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
