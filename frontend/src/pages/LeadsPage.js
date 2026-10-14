@@ -64,6 +64,13 @@ export default function LeadsPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Selected leads don't survive a filter change — otherwise a lead picked
+  // under one filter (e.g. "Inscrit") stays silently selected after
+  // switching to another (e.g. "Très intéressé"), and "Sélectionner les N
+  // affichés" only adds to it, so a transfer can end up moving leads that
+  // were never visible under the filter actually being looked at.
+  useEffect(() => { setSelectedIds(new Set()); }, [statusFilter, vendeurFilter, dateFilter]);
+
   const openAdd = () => {
     setEditLead(null);
     setFormData({
