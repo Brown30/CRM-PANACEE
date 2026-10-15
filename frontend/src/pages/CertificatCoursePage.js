@@ -12,7 +12,7 @@ import { buildCertificatePdf, slugifyFileName, CERTIFICATE_TEMPLATES } from '@/l
 export default function CertificatCoursePage() {
   const { marathonId } = useParams();
   const navigate = useNavigate();
-  const { api, isPedagogia, isAdmin } = useAuth();
+  const { api, isPedagogia, isAdmin, isDirecteurPedagogique } = useAuth();
   const [marathon, setMarathon] = useState(null);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -160,7 +160,7 @@ export default function CertificatCoursePage() {
               </Label>
               <Input type="date" value={ficheForm.birth_date} onChange={e => setFicheForm({ ...ficheForm, birth_date: e.target.value })} className="input-field mt-1" />
             </div>
-            {(isAdmin || isPedagogia) && (
+            {(isAdmin || isPedagogia || isDirecteurPedagogique) && (
               <Button type="button" variant="outline" className="w-full h-10 rounded-xl text-sm" onClick={handleSaveFiche}>
                 Enregistrer les informations
               </Button>
@@ -172,7 +172,7 @@ export default function CertificatCoursePage() {
               </p>
             )}
 
-            {isPedagogia && (
+            {(isAdmin || isPedagogia || isDirecteurPedagogique) && (
               <Button
                 type="button"
                 className="btn-primary w-full flex items-center justify-center gap-2"
