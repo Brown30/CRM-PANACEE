@@ -721,6 +721,20 @@ export const api = {
       return res({ entries: data || [] });
     }
 
+    if (url === '/cash/summary') {
+      // Real treasury: a manual opening balance (set once, the day the
+      // school started actually tracking cash) plus every revenue/expense
+      // movement recorded since — never recomputed retroactively from
+      // historical data, which predates and doesn't match this ledger.
+      const { data: entries, error } = await supabase.from('cash_ledger').select('*')
+        .order('entry_date', { ascending: true }).order('created_at', { ascending: true });
+      if (error) throw new Error(errMsg(error));
+      const list = entries || [];
+      const balance = list.reduce((s, e) => s + Number(e.amount), 0);
+      const opening = list.find(e => e.type === 'opening_balance');
+      return res({ balance, opening_balance: opening?.amount || 0, opening_date: opening?.entry_date || null, entries: list });
+    }
+
     console.warn("Unmocked GET", url);
     return res({});
   },
@@ -749,6 +763,22 @@ export const api = {
         .upsert({ expense_id, month, amount: Number(amount) || 0, confirmed: confirmed !== false }, { onConflict: 'expense_id,month' })
         .select().single();
       if (error) throw new Error(errMsg(error));
+
+      // Mirrors this confirmation into the cash ledger — upserted by
+      // expense_entry_id so re-confirming (e.g. correcting the amount) moves
+      // the same movement instead of stacking a new one. "Ne paie pas ce
+      // mois" (confirmed: false) or an amount of 0 means no cash actually
+      // moved, so any previous ledger line for it is removed instead.
+      if (data.confirmed && Number(data.amount) > 0) {
+        const { data: expense } = await supabase.from('expenses').select('category, label').eq('id', expense_id).single();
+        await supabase.from('cash_ledger').upsert({
+          id: uuidv4(), type: 'expense', category: expense?.category || 'Dépense',
+          description: expense?.label || 'Dépense', amount: -Number(data.amount),
+          expense_entry_id: data.id
+        }, { onConflict: 'expense_entry_id' });
+      } else {
+        await supabase.from('cash_ledger').delete().eq('expense_entry_id', data.id);
+      }
       return res({ entry: data });
     }
     if (url === '/commissions/mark-paid') {
@@ -781,6 +811,12 @@ export const api = {
     if (url === '/leads') {
       const { data, error } = await supabase.from('leads').insert({ ...payload, id: uuidv4() }).select().single();
       if (error) throw new Error(errMsg(error));
+      if (isEnrolled(data)) {
+        await supabase.from('cash_ledger').insert({
+          id: uuidv4(), type: 'revenue', category: 'inscription',
+          description: `Inscription - ${data.full_name}`, amount: 1000, lead_id: data.id, marathon_id: data.marathon_id
+        });
+      }
       return res({ lead: data });
     }
     if (url.match(/^\/deletion-requests\/([^/]+)\/approve$/)) {
@@ -1007,6 +1043,13 @@ export const api = {
         id: uuidv4(), lead_id, marathon_id, amount: amt, created_by, created_by_name
       }).select().single();
       if (error) throw new Error(errMsg(error));
+
+      const { data: payLead } = await supabase.from('leads').select('full_name').eq('id', lead_id).single();
+      await supabase.from('cash_ledger').insert({
+        id: uuidv4(), type: 'revenue', category: 'participation',
+        description: `Participation - ${payLead?.full_name || ''}`, amount: amt,
+        lead_id, marathon_id, created_by, created_by_name
+      });
       return res({ payment: data });
     }
   },
@@ -1038,8 +1081,25 @@ export const api = {
     }
     if (url.match(/^\/leads\/([^/]+)$/)) {
       const id = url.split('/')[2];
+      const { data: before } = await supabase.from('leads').select('status').eq('id', id).single();
       const { data, error } = await supabase.from('leads').update(payload).eq('id', id).select().single();
       if (error) throw new Error(errMsg(error));
+
+      // Inscription revenue has no payment record of its own — it's charged
+      // automatically the moment a lead first becomes Inscrit/Participant.
+      // This is the one place that transition is detectable, so it's the
+      // hook point for logging it — guarded so re-saving an already-enrolled
+      // lead (or toggling Inscrit <-> Participant via attendance) never
+      // double-counts it.
+      if (before && !isEnrolled(before) && isEnrolled(data)) {
+        const { data: already } = await supabase.from('cash_ledger').select('id').eq('lead_id', id).eq('category', 'inscription').maybeSingle();
+        if (!already) {
+          await supabase.from('cash_ledger').insert({
+            id: uuidv4(), type: 'revenue', category: 'inscription',
+            description: `Inscription - ${data.full_name}`, amount: 1000, lead_id: id, marathon_id: data.marathon_id
+          });
+        }
+      }
       return res({ lead: data });
     }
     if (url.match(/^\/notifications\/([^/]+)$/)) {
@@ -1076,6 +1136,7 @@ export const api = {
     if (url.match(/^\/expenses\/entries\/([^/]+)$/)) {
       const id = url.split('/')[3];
       await supabase.from('expense_entries').delete().eq('id', id);
+      await supabase.from('cash_ledger').delete().eq('expense_entry_id', id);
       return res({ message: 'Entrée supprimée' });
     }
     if (url.match(/^\/commissions\/payments\/([^/]+)$/)) {
