@@ -1,10 +1,10 @@
 import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Wallet, LayoutDashboard, LogOut, ArrowLeft, TrendingUp } from 'lucide-react';
+import { Wallet, LayoutDashboard, LogOut, ArrowLeft, TrendingUp, CircleDollarSign } from 'lucide-react';
 
 export default function FinanceLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -45,6 +45,15 @@ export default function FinanceLayout() {
           >
             <Wallet className="w-3.5 h-3.5" /> Dépenses
           </NavLink>
+          {isAdmin && (
+            <NavLink
+              to="/finance/caixa"
+              className={({ isActive }) => `text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 ${isActive ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:bg-slate-100'}`}
+              data-testid="finance-nav-caixa"
+            >
+              <CircleDollarSign className="w-3.5 h-3.5" /> Trésorerie
+            </NavLink>
+          )}
         </div>
       </header>
       <main className="max-w-4xl mx-auto">

@@ -27,6 +27,7 @@ import ChooseModulePage from "@/pages/ChooseModulePage";
 import FinanceCoursesPage from "@/pages/FinanceCoursesPage";
 import FinanceCourseDetailPage from "@/pages/FinanceCourseDetailPage";
 import FinanceDespensesPage from "@/pages/FinanceDespensesPage";
+import FinanceCaixaPage from "@/pages/FinanceCaixaPage";
 import PedagogieHomePage from "@/pages/PedagogieHomePage";
 import PresenceCoursesPage from "@/pages/PresenceCoursesPage";
 import PresenceCourseDetailPage from "@/pages/PresenceCourseDetailPage";
@@ -87,6 +88,17 @@ function FinanceRoute({ children }) {
   return children;
 }
 
+// The real cash position is company-wide (not scoped per course), so it's
+// kept out of reach of limited finance viewers like a professeur granted
+// finance_viewer_ids on just one or two courses — admin only.
+function AdminFinanceRoute({ children }) {
+  const { user, loading, isAdmin } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" />;
+  if (!isAdmin) return <Navigate to="/finance" />;
+  return children;
+}
+
 function PedagogieRoute({ children }) {
   const { user, loading, canAccessPedagogie } = useAuth();
   if (loading) return null;
@@ -130,6 +142,7 @@ function App() {
           }>
             <Route index element={<FinanceCoursesPage />} />
             <Route path="despesas" element={<FinanceDespensesPage />} />
+            <Route path="caixa" element={<AdminFinanceRoute><FinanceCaixaPage /></AdminFinanceRoute>} />
             <Route path=":marathonId" element={<FinanceCourseDetailPage />} />
           </Route>
           <Route path="/pedagogie" element={
