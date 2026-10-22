@@ -5,11 +5,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Wallet, Trash2, Pencil, CalendarClock, Check, X, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatAmount } from '@/lib/finance';
 
-const emptyForm = { category: 'Salaire Fixe', label: '', amount: '', day_of_month: '7', variable: false };
+const emptyForm = {
+  category: 'Salaire Fixe', label: '', amount: '', day_of_month: '7', variable: false,
+  cost_type: 'fixed', professeur_id: '', period_months: '3', next_due_date: ''
+};
+
+const COST_TYPE_LABELS = {
+  fixed: 'Fixe obligatoire',
+  optional: 'Optionnel (associé — selon la caisse)',
+  conditional_professor: 'Conditionnel (professeur avec cours en cours)',
+  periodic: 'Périodique (ex. loyer)'
+};
 
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 
@@ -17,6 +28,7 @@ export default function FinanceDespensesPage() {
   const { api } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [entries, setEntries] = useState([]);
+  const [professeurs, setProfesseurs] = useState([]);
   const [month, setMonth] = useState(currentMonth());
   const [loading, setLoading] = useState(true);
   const [loadingEntries, setLoadingEntries] = useState(true);
@@ -32,8 +44,12 @@ export default function FinanceDespensesPage() {
   const fetchExpenses = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/expenses');
+      const [{ data }, { data: profData }] = await Promise.all([
+        api.get('/expenses'),
+        api.get('/users/professeurs')
+      ]);
       setExpenses(data.expenses || []);
+      setProfesseurs(profData.professeurs || []);
     } catch { toast.error('Erreur chargement'); }
     setLoading(false);
   }, [api]);
@@ -64,7 +80,10 @@ export default function FinanceDespensesPage() {
 
   const openEdit = (e) => {
     setEditingId(e.id);
-    setForm({ category: e.category, label: e.label, amount: String(e.amount), day_of_month: String(e.day_of_month || ''), variable: !!e.variable });
+    setForm({
+      category: e.category, label: e.label, amount: String(e.amount), day_of_month: String(e.day_of_month || ''), variable: !!e.variable,
+      cost_type: e.cost_type || 'fixed', professeur_id: e.professeur_id || '', period_months: String(e.period_months || '3'), next_due_date: e.next_due_date || ''
+    });
     setShowForm(true);
   };
 
@@ -73,12 +92,17 @@ export default function FinanceDespensesPage() {
     if (!form.category.trim() || !form.label.trim()) { toast.error('Catégorie et libellé requis'); return; }
     const amount = Number(form.amount) || 0;
     if (!form.variable && amount <= 0) { toast.error('Montant invalide'); return; }
+    if (form.cost_type === 'conditional_professor' && !form.professeur_id) { toast.error('Sélectionnez le professeur'); return; }
     setSaving(true);
     try {
       const payload = {
         category: form.category.trim(), label: form.label.trim(), amount,
         day_of_month: form.day_of_month ? Number(form.day_of_month) : null,
-        variable: form.variable
+        variable: form.variable,
+        cost_type: form.cost_type,
+        professeur_id: form.cost_type === 'conditional_professor' ? form.professeur_id : null,
+        period_months: form.cost_type === 'periodic' ? (Number(form.period_months) || 1) : null,
+        next_due_date: form.cost_type === 'periodic' ? (form.next_due_date || null) : null
       };
       if (editingId) await api.put(`/expenses/${editingId}`, payload);
       else await api.post('/expenses', { ...payload, active: true });
@@ -209,6 +233,11 @@ export default function FinanceDespensesPage() {
                             {e.label}
                             {e.variable && <span className="ml-1.5 text-xs text-blue-600 font-medium">(variable)</span>}
                             {e.active === false && <span className="ml-1.5 text-xs text-amber-600 font-medium">(inactif)</span>}
+                            {e.cost_type && e.cost_type !== 'fixed' && (
+                              <span className="ml-1.5 text-xs text-purple-600 font-medium">
+                                ({e.cost_type === 'optional' ? 'optionnel' : e.cost_type === 'conditional_professor' ? `prof. — ${professeurs.find(p => p.id === e.professeur_id)?.name || '?'}` : `périodique, ${e.period_months || 1} mois`})
+                              </span>
+                            )}
                           </p>
                           {e.day_of_month && (
                             <p className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
@@ -303,6 +332,39 @@ export default function FinanceDespensesPage() {
               <Label className="text-xs font-semibold text-slate-500">Jour du mois (paiement récurrent)</Label>
               <Input type="number" min="1" max="31" value={form.day_of_month} onChange={e => setForm({ ...form, day_of_month: e.target.value })} className="input-field mt-1" placeholder="7" data-testid="expense-day-input" />
             </div>
+            <div>
+              <Label className="text-xs font-semibold text-slate-500">Comportement dans la Trésorerie</Label>
+              <Select value={form.cost_type} onValueChange={v => setForm({ ...form, cost_type: v })}>
+                <SelectTrigger className="input-field mt-1" data-testid="expense-cost-type-select"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(COST_TYPE_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            {form.cost_type === 'conditional_professor' && (
+              <div>
+                <Label className="text-xs font-semibold text-slate-500">Professeur</Label>
+                <Select value={form.professeur_id} onValueChange={v => setForm({ ...form, professeur_id: v })}>
+                  <SelectTrigger className="input-field mt-1" data-testid="expense-professeur-select"><SelectValue placeholder="Choisir..." /></SelectTrigger>
+                  <SelectContent>
+                    {professeurs.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {professeurs.length === 0 && <p className="text-xs text-amber-600 mt-1">Aucun professeur trouvé — créez d'abord son compte utilisateur (rôle Responsable) pour pouvoir le relier ici.</p>}
+              </div>
+            )}
+            {form.cost_type === 'periodic' && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs font-semibold text-slate-500">Tous les combien de mois</Label>
+                  <Input type="number" min="1" value={form.period_months} onChange={e => setForm({ ...form, period_months: e.target.value })} className="input-field mt-1" data-testid="expense-period-months-input" />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-slate-500">Prochaine échéance</Label>
+                  <Input type="date" value={form.next_due_date} onChange={e => setForm({ ...form, next_due_date: e.target.value })} className="input-field mt-1" data-testid="expense-next-due-input" />
+                </div>
+              </div>
+            )}
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => setShowForm(false)}>Annuler</Button>
               <Button type="submit" className="btn-primary flex-1" disabled={saving} data-testid="expense-submit-btn">{saving ? 'Enregistrement...' : 'Confirmer'}</Button>
