@@ -18,20 +18,25 @@ export default function FinanceCaixaPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    // Fetched independently — one source failing (e.g. a column the SQL
+    // migration hasn't been run for yet) shouldn't blank the whole page or
+    // hide which part actually broke, same fix as Payroll's table before it.
     try {
-      const [{ data: cashData }, { data: expData }, { data: usersData }, { data: marathonsData }] = await Promise.all([
-        api.get('/cash/summary'),
-        api.get('/expenses'),
-        api.get('/users'),
-        api.get('/marathons/all')
-      ]);
-      setSummary(cashData);
-      setExpenses(expData.expenses || []);
-      setUsers(usersData.users || []);
-      setMarathons(marathonsData.marathons || []);
-    } catch {
-      toast.error('Erreur chargement de la trésorerie');
-    }
+      const { data } = await api.get('/cash/summary');
+      setSummary(data);
+    } catch (err) { toast.error(err.message || 'Erreur chargement du solde'); }
+    try {
+      const { data } = await api.get('/expenses');
+      setExpenses(data.expenses || []);
+    } catch (err) { toast.error(err.message || 'Erreur chargement des dépenses'); }
+    try {
+      const { data } = await api.get('/users');
+      setUsers(data.users || []);
+    } catch (err) { toast.error(err.message || 'Erreur chargement des utilisateurs'); }
+    try {
+      const { data } = await api.get('/marathons/all');
+      setMarathons(data.marathons || []);
+    } catch (err) { toast.error(err.message || 'Erreur chargement des cours'); }
     setLoading(false);
   }, [api]);
 
