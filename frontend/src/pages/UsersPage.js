@@ -210,8 +210,8 @@ export default function UsersPage() {
                   <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Inactif</span>
                 )}
                 <span className="text-xs text-slate-400">Code: {u.code}</span>
-                {u.role === 'vendeur' && (
-                  <span className="text-xs text-slate-400">Fixe: {(u.salaire_fixe ?? 15000).toLocaleString('de-DE')} HTG</span>
+                {(u.role === 'vendeur' || u.salaire_fixe != null) && (
+                  <span className="text-xs text-slate-400">Fixe: {Number(u.role === 'vendeur' ? (u.salaire_fixe ?? 15000) : u.salaire_fixe).toLocaleString('de-DE')} HTG</span>
                 )}
                 {u.can_manage_attendance && (
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
@@ -284,11 +284,9 @@ export default function UsersPage() {
                 <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-500 h-8 w-8" onClick={() => openCodeEdit(u)} data-testid={`edit-code-${u.id}`} title="Modifier le code">
                   <KeyRound className="w-4 h-4" />
                 </Button>
-                {u.role === 'vendeur' && (
-                  <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-500 h-8 w-8" onClick={() => openSalaryEdit(u)} data-testid={`edit-salary-${u.id}`} title="Modifier le salaire fixe">
-                    <Banknote className="w-4 h-4" />
-                  </Button>
-                )}
+                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-500 h-8 w-8" onClick={() => openSalaryEdit(u)} data-testid={`edit-salary-${u.id}`} title="Modifier le salaire fixe">
+                  <Banknote className="w-4 h-4" />
+                </Button>
                 {u.role !== 'admin_principal' && (
                   u.active === false ? (
                     <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-600 h-8 w-8" onClick={() => handleToggleActive(u)} data-testid={`reactivate-user-${u.id}`} title="Réactiver">
