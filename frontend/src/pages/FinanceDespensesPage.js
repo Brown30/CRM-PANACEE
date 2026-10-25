@@ -22,6 +22,15 @@ const COST_TYPE_LABELS = {
   periodic: 'Périodique (ex. loyer)'
 };
 
+// A starting point, not a closed list — any category typed via "Autre"
+// joins this set automatically next time (see categoryOptions below), so
+// the list grows with real use instead of needing to be maintained here.
+const SUGGESTED_CATEGORIES = [
+  'Salaire Fixe', 'Salaire Associé (optionnel)', 'Loyer / Local',
+  'Publicité / Annonces payées', 'Impression & Photocopies', 'Matériel', 'Équipement'
+];
+const OTHER_CATEGORY = '__other__';
+
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 
 export default function FinanceDespensesPage() {
@@ -36,6 +45,7 @@ export default function FinanceDespensesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [customCategory, setCustomCategory] = useState('');
   const [saving, setSaving] = useState(false);
 
   const [validating, setValidating] = useState(null); // expense being confirmed for the month
@@ -72,14 +82,25 @@ export default function FinanceDespensesPage() {
     return map;
   }, [entries]);
 
+  // The pick-list a category is chosen from: the curated starting set plus
+  // whatever's actually in use already — so a category typed once via
+  // "Autre" shows up as a normal choice from then on.
+  const categoryOptions = useMemo(() => {
+    const set = new Set(SUGGESTED_CATEGORIES);
+    expenses.forEach(e => e.category && set.add(e.category));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [expenses]);
+
   const openAdd = (category) => {
     setEditingId(null);
+    setCustomCategory('');
     setForm({ ...emptyForm, category: category || emptyForm.category });
     setShowForm(true);
   };
 
   const openEdit = (e) => {
     setEditingId(e.id);
+    setCustomCategory('');
     setForm({
       category: e.category, label: e.label, amount: String(e.amount), day_of_month: String(e.day_of_month || ''), variable: !!e.variable,
       cost_type: e.cost_type || 'fixed', professeur_id: e.professeur_id || '', period_months: String(e.period_months || '3'), next_due_date: e.next_due_date || ''
@@ -89,14 +110,15 @@ export default function FinanceDespensesPage() {
 
   const handleSubmit = async (ev) => {
     ev.preventDefault();
-    if (!form.category.trim() || !form.label.trim()) { toast.error('Catégorie et libellé requis'); return; }
+    const category = form.category === OTHER_CATEGORY ? customCategory.trim() : form.category;
+    if (!category || !form.label.trim()) { toast.error('Catégorie et libellé requis'); return; }
     const amount = Number(form.amount) || 0;
     if (!form.variable && amount <= 0) { toast.error('Montant invalide'); return; }
     if (form.cost_type === 'conditional_professor' && !form.professeur_id) { toast.error('Sélectionnez le professeur'); return; }
     setSaving(true);
     try {
       const payload = {
-        category: form.category.trim(), label: form.label.trim(), amount,
+        category, label: form.label.trim(), amount,
         day_of_month: form.day_of_month ? Number(form.day_of_month) : null,
         variable: form.variable,
         cost_type: form.cost_type,
@@ -314,7 +336,16 @@ export default function FinanceDespensesPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label className="text-xs font-semibold text-slate-500">Catégorie</Label>
-              <Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="input-field mt-1" placeholder="Salaire Fixe" data-testid="expense-category-input" required />
+              <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
+                <SelectTrigger className="input-field mt-1" data-testid="expense-category-select"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  <SelectItem value={OTHER_CATEGORY}>Autre (nouvelle catégorie)</SelectItem>
+                </SelectContent>
+              </Select>
+              {form.category === OTHER_CATEGORY && (
+                <Input value={customCategory} onChange={e => setCustomCategory(e.target.value)} className="input-field mt-2" placeholder="Nom de la nouvelle catégorie" data-testid="expense-custom-category-input" required autoFocus />
+              )}
             </div>
             <div>
               <Label className="text-xs font-semibold text-slate-500">Libellé (nom de la personne ou description)</Label>
