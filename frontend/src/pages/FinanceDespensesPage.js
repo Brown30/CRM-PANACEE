@@ -27,7 +27,7 @@ const COST_TYPE_LABELS = {
 // the list grows with real use instead of needing to be maintained here.
 const SUGGESTED_CATEGORIES = [
   'Salaire Fixe', 'Salaire Associé (optionnel)', 'Loyer / Local',
-  'Publicité / Annonces payées', 'Impression & Photocopies', 'Matériel', 'Équipement'
+  'Publicité / Annonces payées', 'Impression & Photocopies', 'Matériel / Équipement'
 ];
 const OTHER_CATEGORY = '__other__';
 
