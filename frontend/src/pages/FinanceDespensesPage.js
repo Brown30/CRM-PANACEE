@@ -124,7 +124,7 @@ export default function FinanceDespensesPage() {
     try {
       const payload = {
         category, label: form.label.trim(), amount,
-        day_of_month: looksLikeSalary(category) && form.day_of_month ? Number(form.day_of_month) : null,
+        day_of_month: looksLikeSalary(category) ? 7 : null,
         variable: form.variable,
         cost_type: form.cost_type,
         professeur_id: form.cost_type === 'conditional_professor' ? form.professeur_id : null,
@@ -367,10 +367,9 @@ export default function FinanceDespensesPage() {
               <Input type="number" min="0" step="1" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="input-field mt-1" data-testid="expense-amount-input" required={!form.variable} />
             </div>
             {isSalaryCategory && (
-              <div>
-                <Label className="text-xs font-semibold text-slate-500">Jour du mois (paiement récurrent)</Label>
-                <Input type="number" min="1" max="31" value={form.day_of_month} onChange={e => setForm({ ...form, day_of_month: e.target.value })} className="input-field mt-1" placeholder="7" data-testid="expense-day-input" />
-              </div>
+              <p className="flex items-center gap-1.5 text-xs text-slate-400">
+                <CalendarClock className="w-3.5 h-3.5" /> Tous les salaires sont payés le 07 de chaque mois
+              </p>
             )}
             <div>
               <Label className="text-xs font-semibold text-slate-500">Comportement dans la Trésorerie</Label>
