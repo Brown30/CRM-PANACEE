@@ -31,6 +31,11 @@ const SUGGESTED_CATEGORIES = [
 ];
 const OTHER_CATEGORY = '__other__';
 
+// Only salary-like categories have a person's name and a recurring payday —
+// everything else (ads, printing, equipment...) is a plain description with
+// no fixed day, so those fields only make sense to show for this group.
+const looksLikeSalary = (category) => (category || '').toLowerCase().includes('salaire');
+
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 
 export default function FinanceDespensesPage() {
@@ -119,7 +124,7 @@ export default function FinanceDespensesPage() {
     try {
       const payload = {
         category, label: form.label.trim(), amount,
-        day_of_month: form.day_of_month ? Number(form.day_of_month) : null,
+        day_of_month: looksLikeSalary(category) && form.day_of_month ? Number(form.day_of_month) : null,
         variable: form.variable,
         cost_type: form.cost_type,
         professeur_id: form.cost_type === 'conditional_professor' ? form.professeur_id : null,
@@ -198,6 +203,8 @@ export default function FinanceDespensesPage() {
     return s + (entry && entry.confirmed ? Number(entry.amount) : 0);
   }, 0);
   const pendingCount = activeExpenses.filter(e => !entryFor[e.id]).length;
+
+  const isSalaryCategory = looksLikeSalary(form.category === OTHER_CATEGORY ? customCategory : form.category);
 
   const byCategory = {};
   for (const e of expenses) {
@@ -348,8 +355,8 @@ export default function FinanceDespensesPage() {
               )}
             </div>
             <div>
-              <Label className="text-xs font-semibold text-slate-500">Libellé (nom de la personne ou description)</Label>
-              <Input value={form.label} onChange={e => setForm({ ...form, label: e.target.value })} className="input-field mt-1" data-testid="expense-label-input" required />
+              <Label className="text-xs font-semibold text-slate-500">{isSalaryCategory ? 'Nom de la personne' : 'Description'}</Label>
+              <Input value={form.label} onChange={e => setForm({ ...form, label: e.target.value })} className="input-field mt-1" placeholder={isSalaryCategory ? 'Ex. Fadens' : 'Ex. Campagne Facebook Elec 08'} data-testid="expense-label-input" required />
             </div>
             <div className="flex items-center gap-2">
               <Checkbox checked={form.variable} onCheckedChange={checked => setForm({ ...form, variable: checked === true })} data-testid="expense-variable-checkbox" />
@@ -359,10 +366,12 @@ export default function FinanceDespensesPage() {
               <Label className="text-xs font-semibold text-slate-500">{form.variable ? 'Montant de référence (facultatif)' : 'Montant (HTG)'}</Label>
               <Input type="number" min="0" step="1" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="input-field mt-1" data-testid="expense-amount-input" required={!form.variable} />
             </div>
-            <div>
-              <Label className="text-xs font-semibold text-slate-500">Jour du mois (paiement récurrent)</Label>
-              <Input type="number" min="1" max="31" value={form.day_of_month} onChange={e => setForm({ ...form, day_of_month: e.target.value })} className="input-field mt-1" placeholder="7" data-testid="expense-day-input" />
-            </div>
+            {isSalaryCategory && (
+              <div>
+                <Label className="text-xs font-semibold text-slate-500">Jour du mois (paiement récurrent)</Label>
+                <Input type="number" min="1" max="31" value={form.day_of_month} onChange={e => setForm({ ...form, day_of_month: e.target.value })} className="input-field mt-1" placeholder="7" data-testid="expense-day-input" />
+              </div>
+            )}
             <div>
               <Label className="text-xs font-semibold text-slate-500">Comportement dans la Trésorerie</Label>
               <Select value={form.cost_type} onValueChange={v => setForm({ ...form, cost_type: v })}>
