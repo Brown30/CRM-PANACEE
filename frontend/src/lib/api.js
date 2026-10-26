@@ -756,6 +756,22 @@ export const api = {
       if (error) throw new Error(errMsg(error));
       return res({ expense: data });
     }
+    if (url === '/cash/expenses') {
+      // A one-off cost (printing, a material purchase...) isn't a recurring
+      // template to confirm every month — it's money that already left the
+      // register once, so it's logged straight as a ledger movement instead
+      // of going through the expenses/expense_entries machinery.
+      const { category, label, amount, entry_date } = payload;
+      if (!category || !label) throw new Error('Catégorie et description requises');
+      const amt = Number(amount);
+      if (!amt || amt <= 0) throw new Error('Montant invalide');
+      const { data, error } = await supabase.from('cash_ledger').insert({
+        id: uuidv4(), type: 'expense', category, description: label,
+        amount: -amt, entry_date: entry_date || new Date().toISOString().split('T')[0]
+      }).select().single();
+      if (error) throw new Error(errMsg(error));
+      return res({ entry: data });
+    }
     if (url === '/expenses/entries') {
       const { expense_id, month, amount, confirmed } = payload;
       if (!expense_id || !month) throw new Error('Dépense et mois requis');

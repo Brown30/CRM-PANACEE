@@ -12,7 +12,7 @@ import { formatAmount, formatDateFr } from '@/lib/finance';
 
 const emptyForm = {
   category: 'Salaire Fixe', label: '', amount: '', day_of_month: '7', variable: false,
-  cost_type: 'fixed', professeur_id: '', period_months: '3', next_due_date: ''
+  cost_type: 'fixed', professeur_id: '', period_months: '3', next_due_date: '', entry_date: ''
 };
 
 const COST_TYPE_LABELS = {
@@ -108,7 +108,7 @@ export default function FinanceDespensesPage() {
   const openAdd = (category) => {
     setEditingId(null);
     setCustomCategory('');
-    setForm({ ...emptyForm, category: category || emptyForm.category });
+    setForm({ ...emptyForm, category: category || emptyForm.category, entry_date: new Date().toISOString().split('T')[0] });
     setShowForm(true);
   };
 
@@ -135,6 +135,16 @@ export default function FinanceDespensesPage() {
     if (costType === 'conditional_professor' && !form.professeur_id) { toast.error('Sélectionnez le professeur'); return; }
     setSaving(true);
     try {
+      // Ad hoc (not salary, not rent) and brand new: a one-off cost, logged
+      // directly as a cash movement instead of becoming a recurring
+      // template that lingers on this page needing monthly action forever.
+      if (!isSalary && !isPeriodic && !editingId) {
+        await api.post('/cash/expenses', { category, label: form.label.trim(), amount, entry_date: form.entry_date || undefined });
+        toast.success('Dépense enregistrée dans la caisse');
+        setShowForm(false);
+        setSaving(false);
+        return;
+      }
       const payload = {
         category, label: form.label.trim(), amount,
         day_of_month: isSalary ? 7 : null,
@@ -222,6 +232,7 @@ export default function FinanceDespensesPage() {
   const isPeriodicCategory = looksLikePeriodic(selectedCategory);
   const showCostTypeSelector = isSalaryCategory || isPeriodicCategory;
   const costTypeOptions = isSalaryCategory ? COST_TYPE_LABELS : { fixed: COST_TYPE_LABELS.fixed, periodic: COST_TYPE_LABELS.periodic };
+  const isAdHoc = !isSalaryCategory && !isPeriodicCategory && !editingId;
 
   const byCategory = {};
   for (const e of expenses) {
@@ -357,8 +368,8 @@ export default function FinanceDespensesPage() {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>{editingId ? 'Modifier la dépense' : 'Ajouter une dépense'}</DialogTitle>
-            <DialogDescription>Dépense récurrente, à valider chaque mois</DialogDescription>
+            <DialogTitle style={{ fontFamily: "'Outfit', sans-serif" }}>{editingId ? 'Modifier la dépense' : isAdHoc ? 'Ajouter une dépense ponctuelle' : 'Ajouter une dépense'}</DialogTitle>
+            <DialogDescription>{isAdHoc ? 'Enregistrée tout de suite dans la caisse — pas de confirmation mensuelle' : 'Dépense récurrente, à valider chaque mois'}</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -398,6 +409,12 @@ export default function FinanceDespensesPage() {
               <p className="flex items-center gap-1.5 text-xs text-slate-400">
                 <CalendarClock className="w-3.5 h-3.5" /> Tous les salaires sont payés le 07 de chaque mois
               </p>
+            )}
+            {isAdHoc && (
+              <div>
+                <Label className="text-xs font-semibold text-slate-500">Date</Label>
+                <Input type="date" value={form.entry_date} onChange={e => setForm({ ...form, entry_date: e.target.value })} className="input-field mt-1" data-testid="expense-entry-date-input" />
+              </div>
             )}
             {showCostTypeSelector && (
               <div>
