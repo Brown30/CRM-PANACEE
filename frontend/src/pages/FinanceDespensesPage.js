@@ -36,6 +36,15 @@ const OTHER_CATEGORY = '__other__';
 // no fixed day, so those fields only make sense to show for this group.
 const looksLikeSalary = (category) => (category || '').toLowerCase().includes('salaire');
 
+// Rent-like categories are the one non-salary case that still needs the
+// fixed/periodic choice (quarterly rent diluted monthly) — everything else
+// ad hoc (printing, ads, equipment...) is just a plain variable expense:
+// no "is it variable?" question, no Trésorerie behavior to pick.
+const looksLikePeriodic = (category) => {
+  const c = (category || '').toLowerCase();
+  return c.includes('loyer') || c.includes('local');
+};
+
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 
 export default function FinanceDespensesPage() {
@@ -117,19 +126,23 @@ export default function FinanceDespensesPage() {
     ev.preventDefault();
     const category = form.category === OTHER_CATEGORY ? customCategory.trim() : form.category;
     if (!category || !form.label.trim()) { toast.error('Catégorie et libellé requis'); return; }
+    const isSalary = looksLikeSalary(category);
+    const isPeriodic = looksLikePeriodic(category);
+    const variable = isSalary ? form.variable : false;
+    const costType = isSalary ? form.cost_type : (isPeriodic && form.cost_type === 'periodic' ? 'periodic' : 'fixed');
     const amount = Number(form.amount) || 0;
-    if (!form.variable && amount <= 0) { toast.error('Montant invalide'); return; }
-    if (form.cost_type === 'conditional_professor' && !form.professeur_id) { toast.error('Sélectionnez le professeur'); return; }
+    if (!variable && amount <= 0) { toast.error('Montant invalide'); return; }
+    if (costType === 'conditional_professor' && !form.professeur_id) { toast.error('Sélectionnez le professeur'); return; }
     setSaving(true);
     try {
       const payload = {
         category, label: form.label.trim(), amount,
-        day_of_month: looksLikeSalary(category) ? 7 : null,
-        variable: form.variable,
-        cost_type: form.cost_type,
-        professeur_id: form.cost_type === 'conditional_professor' ? form.professeur_id : null,
-        period_months: form.cost_type === 'periodic' ? (Number(form.period_months) || 1) : null,
-        next_due_date: form.cost_type === 'periodic' ? (form.next_due_date || null) : null
+        day_of_month: isSalary ? 7 : null,
+        variable,
+        cost_type: costType,
+        professeur_id: costType === 'conditional_professor' ? form.professeur_id : null,
+        period_months: costType === 'periodic' ? (Number(form.period_months) || 1) : null,
+        next_due_date: costType === 'periodic' ? (form.next_due_date || null) : null
       };
       if (editingId) await api.put(`/expenses/${editingId}`, payload);
       else await api.post('/expenses', { ...payload, active: true });
@@ -204,7 +217,11 @@ export default function FinanceDespensesPage() {
   }, 0);
   const pendingCount = activeExpenses.filter(e => !entryFor[e.id]).length;
 
-  const isSalaryCategory = looksLikeSalary(form.category === OTHER_CATEGORY ? customCategory : form.category);
+  const selectedCategory = form.category === OTHER_CATEGORY ? customCategory : form.category;
+  const isSalaryCategory = looksLikeSalary(selectedCategory);
+  const isPeriodicCategory = looksLikePeriodic(selectedCategory);
+  const showCostTypeSelector = isSalaryCategory || isPeriodicCategory;
+  const costTypeOptions = isSalaryCategory ? COST_TYPE_LABELS : { fixed: COST_TYPE_LABELS.fixed, periodic: COST_TYPE_LABELS.periodic };
 
   const byCategory = {};
   for (const e of expenses) {
@@ -343,7 +360,13 @@ export default function FinanceDespensesPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label className="text-xs font-semibold text-slate-500">Catégorie</Label>
-              <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
+              <Select value={form.category} onValueChange={v => {
+                const nextCategory = v === OTHER_CATEGORY ? customCategory : v;
+                const nextIsSalary = looksLikeSalary(nextCategory);
+                const nextIsPeriodic = looksLikePeriodic(nextCategory);
+                const costTypeStillValid = nextIsSalary || (nextIsPeriodic && form.cost_type === 'periodic');
+                setForm({ ...form, category: v, variable: nextIsSalary ? form.variable : false, cost_type: costTypeStillValid ? form.cost_type : 'fixed' });
+              }}>
                 <SelectTrigger className="input-field mt-1" data-testid="expense-category-select"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {categoryOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
@@ -358,10 +381,12 @@ export default function FinanceDespensesPage() {
               <Label className="text-xs font-semibold text-slate-500">{isSalaryCategory ? 'Nom de la personne' : 'Description'}</Label>
               <Input value={form.label} onChange={e => setForm({ ...form, label: e.target.value })} className="input-field mt-1" placeholder={isSalaryCategory ? 'Ex. Fadens' : 'Ex. Campagne Facebook Elec 08'} data-testid="expense-label-input" required />
             </div>
-            <div className="flex items-center gap-2">
-              <Checkbox checked={form.variable} onCheckedChange={checked => setForm({ ...form, variable: checked === true })} data-testid="expense-variable-checkbox" />
-              <Label className="text-xs font-semibold text-slate-500">Montant variable (différent chaque mois, ex. salaire aux heures)</Label>
-            </div>
+            {isSalaryCategory && (
+              <div className="flex items-center gap-2">
+                <Checkbox checked={form.variable} onCheckedChange={checked => setForm({ ...form, variable: checked === true })} data-testid="expense-variable-checkbox" />
+                <Label className="text-xs font-semibold text-slate-500">Montant variable (différent chaque mois, ex. salaire aux heures)</Label>
+              </div>
+            )}
             <div>
               <Label className="text-xs font-semibold text-slate-500">{form.variable ? 'Montant de référence (facultatif)' : 'Montant (HTG)'}</Label>
               <Input type="number" min="0" step="1" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="input-field mt-1" data-testid="expense-amount-input" required={!form.variable} />
@@ -371,15 +396,17 @@ export default function FinanceDespensesPage() {
                 <CalendarClock className="w-3.5 h-3.5" /> Tous les salaires sont payés le 07 de chaque mois
               </p>
             )}
-            <div>
-              <Label className="text-xs font-semibold text-slate-500">Comportement dans la Trésorerie</Label>
-              <Select value={form.cost_type} onValueChange={v => setForm({ ...form, cost_type: v })}>
-                <SelectTrigger className="input-field mt-1" data-testid="expense-cost-type-select"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(COST_TYPE_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+            {showCostTypeSelector && (
+              <div>
+                <Label className="text-xs font-semibold text-slate-500">Comportement dans la Trésorerie</Label>
+                <Select value={form.cost_type} onValueChange={v => setForm({ ...form, cost_type: v })}>
+                  <SelectTrigger className="input-field mt-1" data-testid="expense-cost-type-select"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(costTypeOptions).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {form.cost_type === 'conditional_professor' && (
               <div>
                 <Label className="text-xs font-semibold text-slate-500">Professeur</Label>
