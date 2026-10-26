@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Wallet, Trash2, Pencil, CalendarClock, Check, X, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatAmount } from '@/lib/finance';
+import { formatAmount, formatDateFr } from '@/lib/finance';
 
 const emptyForm = {
   category: 'Salaire Fixe', label: '', amount: '', day_of_month: '7', variable: false,
@@ -289,6 +289,9 @@ export default function FinanceDespensesPage() {
                             <p className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
                               <CalendarClock className="w-3 h-3" /> Payé le {String(e.day_of_month).padStart(2, '0')} de chaque mois
                             </p>
+                          )}
+                          {e.created_at && (
+                            <p className="text-xs text-slate-400 mt-0.5">Ajouté le {formatDateFr(e.created_at.split('T')[0])}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
