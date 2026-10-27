@@ -64,6 +64,7 @@ export default function FinanceDespensesPage() {
 
   const [validating, setValidating] = useState(null); // expense being confirmed for the month
   const [validateAmount, setValidateAmount] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
 
   const fetchExpenses = useCallback(async () => {
     setLoading(true);
@@ -234,8 +235,10 @@ export default function FinanceDespensesPage() {
   const costTypeOptions = isSalaryCategory ? COST_TYPE_LABELS : { fixed: COST_TYPE_LABELS.fixed, periodic: COST_TYPE_LABELS.periodic };
   const isAdHoc = !isSalaryCategory && !isPeriodicCategory && !editingId;
 
+  const inactiveCount = expenses.filter(e => e.active === false).length;
+  const visibleExpenses = showInactive ? expenses : expenses.filter(e => e.active !== false);
   const byCategory = {};
-  for (const e of expenses) {
+  for (const e of visibleExpenses) {
     if (!byCategory[e.category]) byCategory[e.category] = [];
     byCategory[e.category].push(e);
   }
@@ -262,6 +265,12 @@ export default function FinanceDespensesPage() {
           <p className="text-xs text-amber-300 mt-1">{pendingCount} dépense{pendingCount > 1 ? 's' : ''} encore à valider pour ce mois</p>
         )}
       </div>
+
+      {inactiveCount > 0 && (
+        <button onClick={() => setShowInactive(v => !v)} className="text-xs text-slate-400 hover:text-slate-600 underline" data-testid="toggle-show-inactive">
+          {showInactive ? 'Masquer' : 'Afficher'} les dépenses désactivées ({inactiveCount})
+        </button>
+      )}
 
       {loadingEntries ? (
         <div className="flex justify-center py-10">
