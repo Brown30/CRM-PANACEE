@@ -3,10 +3,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Wallet, Plus, Trash2, ChevronDown, ChevronUp, CheckCircle2, Users, CircleDashed, CircleDotDashed } from 'lucide-react';
+import { Search, Wallet, Plus, Trash2, ChevronDown, ChevronUp, CheckCircle2, Users, CircleDashed, CircleDotDashed, X } from 'lucide-react';
 import { toast } from 'sonner';
 import NoMarathonFallback from '@/components/NoMarathonFallback';
-import { INSCRIPTION_FEE, formatAmount } from '@/lib/finance';
+import { INSCRIPTION_FEE, formatAmount, formatDateFr } from '@/lib/finance';
 
 export default function PaymentsPage() {
   const { api, user, selectedMarathon, isAdmin, isAdminPrincipal, canManagePayments } = useAuth();
@@ -216,6 +216,19 @@ export default function PaymentsPage() {
                       Participation: {formatAmount(row.participation_paid)}{limit > 0 && <> / {formatAmount(limit)}</>} HTG
                     </span>
                   </div>
+                  {/* Only surfaced for someone who hasn't fully paid — the
+                      cross-reference that matters here is "are they even
+                      showing up", not attendance in general. */}
+                  {!isComplete && row.recent_attendance?.length > 0 && (
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap" data-testid={`payment-recent-attendance-${row.lead_id}`}>
+                      {row.recent_attendance.map(a => (
+                        <span key={a.date} className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${a.present ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                          {a.present ? <CheckCircle2 className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                          {formatDateFr(a.date)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {row.payments.length > 0 && (
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={() => setExpandedId(isExpanded ? null : row.lead_id)} data-testid={`payment-toggle-${row.lead_id}`}>

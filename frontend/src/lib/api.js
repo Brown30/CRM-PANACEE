@@ -477,12 +477,32 @@ export const api = {
       for (const p of payments) {
         (byLead[p.lead_id] = byLead[p.lead_id] || []).push(p);
       }
+
+      // The 2 most recent class sessions, so a payment card can show at a
+      // glance whether someone who hasn't paid is also skipping class —
+      // the same cross-reference as the Présence report, just read from
+      // the payment side instead.
+      const { data: marathon } = await supabase.from('marathons').select('end_date, course_end_date').eq('id', params.marathon_id).single();
+      const { data: extra } = await supabase.from('class_extra_dates').select('date').eq('marathon_id', params.marathon_id);
+      const today = new Date().toISOString().split('T')[0];
+      const weekend = weekendDatesBetween(marathon?.end_date, marathon?.course_end_date);
+      const sessionDates = [...new Set([...weekend, ...(extra || []).map(e => e.date)])].filter(d => d <= today).sort();
+      const recentDates = sessionDates.slice(-2);
+
+      let presentSet = new Set();
+      if (recentDates.length > 0 && leadIds.length > 0) {
+        const { data: att } = await supabase.from('attendance').select('lead_id, date, present')
+          .eq('marathon_id', params.marathon_id).in('date', recentDates).in('lead_id', leadIds);
+        presentSet = new Set((att || []).filter(a => a.present === true).map(a => `${a.lead_id}|${a.date}`));
+      }
+
       const rows = (leads || []).map(l => {
         const entries = byLead[l.id] || [];
         const participation_paid = entries.reduce((s, e) => s + Number(e.amount), 0);
+        const recent_attendance = recentDates.map(date => ({ date, present: presentSet.has(`${l.id}|${date}`) })).reverse();
         return {
           lead_id: l.id, full_name: l.full_name, vendeur_id: l.vendeur_id,
-          participation_paid, payments: entries
+          participation_paid, payments: entries, recent_attendance
         };
       });
       return res({ rows });
