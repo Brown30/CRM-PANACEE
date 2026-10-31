@@ -329,6 +329,45 @@ export default function PresenceCourseDetailPage() {
                     </div>
                   );
                 })()}
+
+                {/* Cross-reference: who missed the most recent class AND still
+                    owes money — the sharpest, most actionable combination for
+                    a follow-up call, independent of the overall attendance-rate
+                    tiers above (someone can be "Attention" tier but have paid
+                    in full, or vice versa). Admin-only, same as payment data
+                    everywhere else on this page. */}
+                {isAdmin && (() => {
+                  const lastDate = report.session_dates[report.session_dates.length - 1];
+                  if (!lastDate) return null;
+                  const feeSet = marathon.participation_fee > 0;
+                  const flagged = report.rows
+                    .filter(r => r.absences.includes(lastDate) && (!feeSet || (paidByLead[r.lead_id] || 0) < marathon.participation_fee))
+                    .sort((a, b) => (paidByLead[a.lead_id] || 0) - (paidByLead[b.lead_id] || 0));
+                  if (flagged.length === 0) return null;
+                  return (
+                    <div className="mt-4 pt-4 border-t border-slate-100" data-testid="pedagogie-unpaid-absent-section">
+                      <h4 className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 mb-2">
+                        <Phone className="w-3.5 h-3.5 text-purple-600" /> Absents le {formatDateFr(lastDate)} et pas encore payés totalement ({flagged.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {flagged.map(row => {
+                          const paid = paidByLead[row.lead_id] || 0;
+                          return (
+                            <div key={row.lead_id} className="bg-purple-50 border border-purple-200 rounded-xl p-3" data-testid={`pedagogie-unpaid-absent-row-${row.lead_id}`}>
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-medium text-slate-800 truncate">{row.full_name}</p>
+                                <span className="text-xs font-semibold text-purple-700 shrink-0">{row.present_count}/{row.total_sessions}</span>
+                              </div>
+                              <p className="text-xs text-slate-600 mt-1">
+                                Payé: {formatAmount(paid)} {feeSet && <>/ {formatAmount(marathon.participation_fee)}</>} HTG
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <p className="text-sm text-slate-400 text-center py-8">Aucune séance passée à comptabiliser pour le moment</p>
