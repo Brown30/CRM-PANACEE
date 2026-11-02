@@ -28,6 +28,7 @@ import FinanceCoursesPage from "@/pages/FinanceCoursesPage";
 import FinanceCourseDetailPage from "@/pages/FinanceCourseDetailPage";
 import FinanceDespensesPage from "@/pages/FinanceDespensesPage";
 import FinanceCaixaPage from "@/pages/FinanceCaixaPage";
+import FinanceCursosPage from "@/pages/FinanceCursosPage";
 import PedagogieHomePage from "@/pages/PedagogieHomePage";
 import PresenceCoursesPage from "@/pages/PresenceCoursesPage";
 import PresenceCourseDetailPage from "@/pages/PresenceCourseDetailPage";
@@ -143,6 +144,7 @@ function App() {
             <Route index element={<FinanceCoursesPage />} />
             <Route path="despesas" element={<FinanceDespensesPage />} />
             <Route path="caixa" element={<AdminFinanceRoute><FinanceCaixaPage /></AdminFinanceRoute>} />
+            <Route path="cursos" element={<AdminFinanceRoute><FinanceCursosPage /></AdminFinanceRoute>} />
             <Route path=":marathonId" element={<FinanceCourseDetailPage />} />
           </Route>
           <Route path="/pedagogie" element={

@@ -53,6 +53,7 @@ export default function MarathonPage() {
   const [importAllocations, setImportAllocations] = useState({});
   const [importLoading, setImportLoading] = useState(false);
   const [showClosed, setShowClosed] = useState(false);
+  const [cursos, setCursos] = useState([]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -64,6 +65,12 @@ export default function MarathonPage() {
       setVendeurs(vRes.data.vendeurs);
     } catch { toast.error('Erreur chargement'); }
     setLoading(false);
+  }, [api, isAdmin]);
+
+  // Pre-fills the price from the course catalog when creating a brand new
+  // marathon — never overwrites an existing/edited one.
+  useEffect(() => {
+    if (isAdmin) api.get('/cursos').then(({ data }) => setCursos(data.cursos || [])).catch(() => {});
   }, [api, isAdmin]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -403,7 +410,10 @@ export default function MarathonPage() {
             </div>
             <div>
               <Label className="text-xs font-semibold text-slate-500">Formation *</Label>
-              <Select value={formData.formation} onValueChange={v => setFormData({...formData, formation: v})}>
+              <Select value={formData.formation} onValueChange={v => {
+                const curso = cursos.find(c => c.formation === v);
+                setFormData({ ...formData, formation: v, participation_fee: !editMarathon && curso ? curso.preco_padrao : formData.participation_fee });
+              }}>
                 <SelectTrigger className="input-field mt-1" data-testid="marathon-formation">
                   <SelectValue placeholder="Choisir formation..." />
                 </SelectTrigger>
