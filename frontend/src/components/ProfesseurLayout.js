@@ -1,11 +1,16 @@
 import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, LogOut, ClipboardList, Wallet } from 'lucide-react';
+import { GraduationCap, LogOut, ClipboardList, Wallet, LayoutDashboard, Users, Trophy, RefreshCw } from 'lucide-react';
 
 export default function ProfesseurLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, canViewCommercial, selectedMarathon, selectMarathon } = useAuth();
   const navigate = useNavigate();
+
+  const handleChangeMarathon = () => {
+    if (!selectMarathon(null)) return;
+    navigate('/select-marathon');
+  };
 
   return (
     <div className="min-h-screen bg-slate-50" data-testid="professeur-layout">
@@ -16,7 +21,7 @@ export default function ProfesseurLayout() {
               <GraduationCap className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-wide text-teal-600 font-semibold leading-none">Responsable</p>
+              <p className="text-[11px] uppercase tracking-wide text-teal-600 font-semibold leading-none">{user?.title || 'Responsable'}</p>
               <p className="font-bold text-slate-900 text-base leading-tight mt-0.5" style={{ fontFamily: "'Outfit', sans-serif" }} data-testid="professeur-header-name">
                 {user?.name}
               </p>
@@ -26,7 +31,7 @@ export default function ProfesseurLayout() {
             <LogOut className="w-4 h-4" />
           </Button>
         </div>
-        <div className="max-w-4xl mx-auto px-4 md:px-6 pb-2 flex items-center gap-2">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 pb-2 flex items-center gap-2 flex-wrap">
           <NavLink
             to="/mon-programme"
             end
@@ -42,6 +47,36 @@ export default function ProfesseurLayout() {
           >
             <Wallet className="w-3.5 h-3.5" /> Finance
           </NavLink>
+          {canViewCommercial && (
+            <>
+              <NavLink
+                to="/mon-programme/dashboard"
+                className={({ isActive }) => `text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 ${isActive ? 'bg-teal-100 text-teal-700' : 'text-slate-500 hover:bg-slate-100'}`}
+                data-testid="professeur-nav-dashboard"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" /> Dashboard
+              </NavLink>
+              <NavLink
+                to="/mon-programme/leads"
+                className={({ isActive }) => `text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 ${isActive ? 'bg-teal-100 text-teal-700' : 'text-slate-500 hover:bg-slate-100'}`}
+                data-testid="professeur-nav-leads"
+              >
+                <Users className="w-3.5 h-3.5" /> Leads
+              </NavLink>
+              <NavLink
+                to="/mon-programme/classement"
+                className={({ isActive }) => `text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 ${isActive ? 'bg-teal-100 text-teal-700' : 'text-slate-500 hover:bg-slate-100'}`}
+                data-testid="professeur-nav-classement"
+              >
+                <Trophy className="w-3.5 h-3.5" /> Classement
+              </NavLink>
+              {selectedMarathon && (
+                <button onClick={handleChangeMarathon} className="text-xs text-slate-400 hover:text-slate-700 flex items-center gap-1 ml-auto" data-testid="professeur-change-marathon">
+                  <RefreshCw className="w-3 h-3" /> {selectedMarathon.name}
+                </button>
+              )}
+            </>
+          )}
         </div>
       </header>
       <main className="max-w-4xl mx-auto">

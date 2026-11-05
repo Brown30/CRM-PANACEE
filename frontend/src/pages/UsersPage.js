@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap, CalendarCheck, Wallet, Ban, RotateCcw, DollarSign, ClipboardCheck, Banknote, UserCheck } from 'lucide-react';
+import { Plus, User, Shield, ShieldCheck, Trash2, KeyRound, GraduationCap, CalendarCheck, Wallet, Ban, RotateCcw, DollarSign, ClipboardCheck, Banknote, UserCheck, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function UsersPage() {
@@ -85,6 +85,16 @@ export default function UsersPage() {
     try {
       await api.put(`/users/${u.id}`, { can_access_pedagogie: !u.can_access_pedagogie });
       toast.success(u.can_access_pedagogie ? 'Accès Pédagogie et Contrôle retiré' : 'Accès Pédagogie et Contrôle accordé');
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.message || 'Erreur');
+    }
+  };
+
+  const handleToggleViewCommercial = async (u) => {
+    try {
+      await api.put(`/users/${u.id}`, { can_view_commercial: !u.can_view_commercial });
+      toast.success(u.can_view_commercial ? 'Accès lecture seule (leads, dashboard) retiré' : 'Accès lecture seule (leads, dashboard) accordé');
       fetchUsers();
     } catch (err) {
       toast.error(err.message || 'Erreur');
@@ -204,7 +214,7 @@ export default function UsersPage() {
               <p className="font-semibold text-slate-800 text-sm">{u.name}</p>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getRoleBadge(u.role)}`}>
-                  {getRoleLabel(u.role)}
+                  {u.title || getRoleLabel(u.role)}
                 </span>
                 {u.active === false && (
                   <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Inactif</span>
@@ -268,6 +278,17 @@ export default function UsersPage() {
                     title={u.can_access_finance ? 'Retirer accès Module Financier' : 'Accorder accès Module Financier'}
                   >
                     <DollarSign className="w-4 h-4" />
+                  </Button>
+                )}
+                {u.role !== 'admin_principal' && u.role !== 'admin_secondary' && (
+                  <Button
+                    variant="ghost" size="icon"
+                    className={`h-8 w-8 ${u.can_view_commercial ? 'text-teal-500 hover:text-teal-600' : 'text-slate-400 hover:text-teal-500'}`}
+                    onClick={() => handleToggleViewCommercial(u)}
+                    data-testid={`toggle-view-commercial-${u.id}`}
+                    title={u.can_view_commercial ? 'Retirer accès lecture seule (leads, dashboard, classement)' : 'Accorder accès lecture seule (leads, dashboard, classement)'}
+                  >
+                    <Users className="w-4 h-4" />
                   </Button>
                 )}
                 {u.role === 'vendeur' && (

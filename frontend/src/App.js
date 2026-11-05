@@ -7,6 +7,7 @@ import LoginPage from "@/pages/LoginPage";
 import MarathonSelectPage from "@/pages/MarathonSelectPage";
 import DashboardPage from "@/pages/DashboardPage";
 import LeadsPage from "@/pages/LeadsPage";
+import LeadsOverviewPage from "@/pages/LeadsOverviewPage";
 import MarathonPage from "@/pages/MarathonPage";
 import PromisesPage from "@/pages/PromisesPage";
 import RankingPage from "@/pages/RankingPage";
@@ -72,12 +73,26 @@ function MarathonRoute({ children }) {
 // The CRM Commercial (marathon list, leads, ranking...) isn't part of the
 // professeur's or Directeur Pédagogique's job — they're routed to their own
 // module instead of ever landing in it, even by typing the URL directly.
+// The one exception is the marathon picker itself: a professeur granted
+// canViewCommercial needs it to choose which marathon their read-only
+// Dashboard/Leads/Classement tabs (under /mon-programme) are scoped to.
 function CommercialRoute({ children }) {
-  const { user, loading, isProfesseur, isDirecteurPedagogique } = useAuth();
+  const { user, loading, isProfesseur, isDirecteurPedagogique, canViewCommercial } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/login" />;
-  if (isProfesseur) return <Navigate to="/mon-programme" />;
+  if (isProfesseur && !canViewCommercial) return <Navigate to="/mon-programme" />;
   if (isDirecteurPedagogique) return <Navigate to="/pedagogie" />;
+  return children;
+}
+
+// Read-only window into the commercial side (all vendors' leads, dashboard,
+// ranking), reached from within the professeur's own module — never grants
+// any write/edit/transfer action there, those stay admin-only.
+function CommercialViewRoute({ children }) {
+  const { user, loading, canViewCommercial } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" />;
+  if (!canViewCommercial) return <Navigate to="/mon-programme" />;
   return children;
 }
 
@@ -162,6 +177,9 @@ function App() {
             <Route index element={<MesCoursProfesseurPage />} />
             <Route path="finance" element={<ProfesseurFinanceCoursesPage />} />
             <Route path="finance/:marathonId" element={<ProfesseurFinanceCourseDetailPage />} />
+            <Route path="dashboard" element={<CommercialViewRoute><DashboardPage /></CommercialViewRoute>} />
+            <Route path="leads" element={<CommercialViewRoute><LeadsOverviewPage /></CommercialViewRoute>} />
+            <Route path="classement" element={<CommercialViewRoute><RankingPage /></CommercialViewRoute>} />
             <Route path=":marathonId" element={<ProfesseurProgramPage />} />
           </Route>
           <Route path="/vendeur-home" element={
