@@ -90,12 +90,16 @@ export function AuthProvider({ children }) {
   // the admins, only the Directeur Pédagogique can touch it — a plain pedagogia
   // grant only gets read access there (see PresenceCourseDetailPage).
   const canManagePresence = isAdmin || isDirecteurPedagogique;
+  // Read-only window into the commercial side (all vendors' leads, dashboard,
+  // ranking) for someone like a professeur acting as a general coordinator —
+  // never implies any write/edit/transfer right there, those stay admin-only.
+  const canViewCommercial = isAdmin || !!user?.can_view_commercial;
 
   return (
     <AuthContext.Provider value={{
       user, token, loading, login, logout,
       selectedMarathon, selectMarathon, setHasUnsavedChanges,
-      api: axiosInstance, isAdmin, isAdminPrincipal, isPedagogia, isProfesseur, isDirecteurPedagogique, canManageAttendance, canManagePayments, canAccessFinance, canAccessPedagogie, canManagePresence
+      api: axiosInstance, isAdmin, isAdminPrincipal, isPedagogia, isProfesseur, isDirecteurPedagogique, canManageAttendance, canManagePayments, canAccessFinance, canAccessPedagogie, canManagePresence, canViewCommercial
     }}>
       {children}
     </AuthContext.Provider>
