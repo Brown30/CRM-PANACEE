@@ -59,6 +59,11 @@ export default function LeadsOverviewPage() {
         <p className="text-sm text-slate-500 mt-0.5">Vue d'ensemble en lecture seule — {selectedMarathon.name}</p>
       </div>
 
+      <div className="bg-slate-900 rounded-2xl shadow-sm p-5 text-white" data-testid="leads-overview-count">
+        <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Total des leads</p>
+        <p className="text-3xl font-bold mt-1" style={{ fontFamily: "'Outfit', sans-serif" }}>{filtered.length}</p>
+      </div>
+
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <Input
