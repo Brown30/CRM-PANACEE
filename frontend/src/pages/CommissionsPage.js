@@ -23,7 +23,6 @@ export default function CommissionsPage() {
   const [commissionVendors, setCommissionVendors] = useState([]);
   const [limit, setLimit] = useState(0);
   const [totalCommissionAllMarathons, setTotalCommissionAllMarathons] = useState(0);
-  const [commissionBreakdown, setCommissionBreakdown] = useState([]);
   const [commissionHistory, setCommissionHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -57,7 +56,6 @@ export default function CommissionsPage() {
           const excludedIds = new Set(breakdown.filter(b => b.excluded).map(b => b.marathon_id));
           list = list.filter(m => !excludedIds.has(m.id));
           setTotalCommissionAllMarathons(Number(totalData.total_commission || 0));
-          setCommissionBreakdown(breakdown.filter(b => !b.excluded));
           setCommissionHistory(historyData.history || []);
         }
 
@@ -257,19 +255,15 @@ export default function CommissionsPage() {
                   <p className="text-xs text-slate-300 font-semibold uppercase tracking-wide">Ce que vous allez recevoir au prochain payroll</p>
                   <p className="text-2xl font-bold text-emerald-400 mt-1">{formatAmount((user.salaire_fixe ?? 15000) + totalCommissionAllMarathons)} HTG</p>
                   <p className="text-xs text-slate-400 mt-1">Fixe {formatAmount(user.salaire_fixe ?? 15000)} HTG + Commission restante {formatAmount(totalCommissionAllMarathons)} HTG — déjà payé déduit</p>
-                  {commissionBreakdown.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-slate-700 space-y-1">
-                      <p className="text-[11px] text-slate-500 mb-1">Commission restante, par cours</p>
-                      {commissionBreakdown.map(b => (
-                        <div key={b.marathon_id} className="flex items-center justify-between text-xs" data-testid={`commission-breakdown-${b.marathon_id}`}>
-                          <span className="text-slate-300 truncate mr-2">{b.marathon_name}</span>
-                          <span className="text-white font-medium shrink-0">{formatAmount(b.commission)} HTG</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
+                {/* No per-course breakdown here on purpose: what's "already
+                    paid" is only ever tracked as one lump sum per person, not
+                    per course, so any per-course number here could only be
+                    the lifetime total — which looked exactly like a second
+                    "à recevoir" and was the whole source of confusion.
+                    "Historique des commissions reçues" below already answers
+                    "what did I get paid and when" without that risk. */}
                 <p className="text-xs text-slate-400 pt-1">Détail de « {selectedMarathon?.name} » — total généré depuis le début de ce cours (déjà compté ci-dessus, juste pour information) :</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-slate-50 rounded-xl p-3">
