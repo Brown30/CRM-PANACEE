@@ -249,32 +249,17 @@ export default function CommissionsPage() {
           {!isAdmin && (
             mine ? (
               <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5 space-y-3" data-testid="commission-card-mine">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-slate-50 rounded-xl p-3">
-                    <p className="text-xs text-slate-400">Commission inscription</p>
-                    <p className="text-lg font-bold text-slate-800">{formatAmount(mine.inscription_commission)} HTG</p>
-                  </div>
-                  <div className="bg-slate-50 rounded-xl p-3">
-                    <p className="text-xs text-slate-400">Commission participation</p>
-                    <p className="text-lg font-bold text-slate-800">{formatAmount(mine.participation_commission)} HTG</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-emerald-50 rounded-xl p-4">
-                    <p className="text-xs text-emerald-600 font-semibold uppercase tracking-wide">Commission à recevoir</p>
-                    <p className="text-2xl font-bold text-emerald-700">{formatAmount(mine.total_commission)} HTG</p>
-                  </div>
-                  <div className="bg-amber-50 rounded-xl p-4">
-                    <p className="text-xs text-amber-600 font-semibold uppercase tracking-wide">Commission manquante</p>
-                    <p className="text-2xl font-bold text-amber-700">{formatAmount(mine.potential_commission)} HTG</p>
-                  </div>
-                </div>
+                {/* The real, net, "what you'll actually get paid" figure comes
+                    first and stands alone — everything below it is clearly
+                    historical/informational, so there's only one number that
+                    can be read as "à recevoir". */}
                 <div className="bg-slate-900 rounded-xl p-4" data-testid="payroll-total">
-                  <p className="text-xs text-slate-300 font-semibold uppercase tracking-wide">Total prochain payroll (tous les cours)</p>
-                  <p className="text-2xl font-bold text-white mt-1">{formatAmount((user.salaire_fixe ?? 15000) + totalCommissionAllMarathons)} HTG</p>
-                  <p className="text-xs text-slate-400 mt-1">Fixe {formatAmount(user.salaire_fixe ?? 15000)} HTG + Commission {formatAmount(totalCommissionAllMarathons)} HTG</p>
+                  <p className="text-xs text-slate-300 font-semibold uppercase tracking-wide">Ce que vous allez recevoir au prochain payroll</p>
+                  <p className="text-2xl font-bold text-emerald-400 mt-1">{formatAmount((user.salaire_fixe ?? 15000) + totalCommissionAllMarathons)} HTG</p>
+                  <p className="text-xs text-slate-400 mt-1">Fixe {formatAmount(user.salaire_fixe ?? 15000)} HTG + Commission restante {formatAmount(totalCommissionAllMarathons)} HTG — déjà payé déduit</p>
                   {commissionBreakdown.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-slate-700 space-y-1">
+                      <p className="text-[11px] text-slate-500 mb-1">Commission restante, par cours</p>
                       {commissionBreakdown.map(b => (
                         <div key={b.marathon_id} className="flex items-center justify-between text-xs" data-testid={`commission-breakdown-${b.marathon_id}`}>
                           <span className="text-slate-300 truncate mr-2">{b.marathon_name}</span>
@@ -284,6 +269,24 @@ export default function CommissionsPage() {
                     </div>
                   )}
                 </div>
+
+                <p className="text-xs text-slate-400 pt-1">Détail de « {selectedMarathon?.name} » — total généré depuis le début de ce cours (déjà compté ci-dessus, juste pour information) :</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <p className="text-xs text-slate-400">Inscription</p>
+                    <p className="text-lg font-bold text-slate-800">{formatAmount(mine.inscription_commission)} HTG</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <p className="text-xs text-slate-400">Participation</p>
+                    <p className="text-lg font-bold text-slate-800">{formatAmount(mine.participation_commission)} HTG</p>
+                  </div>
+                </div>
+                {mine.potential_commission > 0 && (
+                  <div className="bg-amber-50 rounded-xl p-3">
+                    <p className="text-xs text-amber-600 font-semibold uppercase tracking-wide">Potentiel si les paiements en attente se complètent</p>
+                    <p className="text-lg font-bold text-amber-700">{formatAmount(mine.potential_commission)} HTG</p>
+                  </div>
+                )}
               </div>
             ) : null
           )}
