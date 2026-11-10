@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, LogOut, ClipboardList, Wallet, LayoutDashboard, Users, Trophy, RefreshCw } from 'lucide-react';
+import { GraduationCap, LogOut, ClipboardList, Wallet, LayoutDashboard, Users, Trophy, RefreshCw, Banknote } from 'lucide-react';
 
 export default function ProfesseurLayout() {
   const { user, logout, canViewCommercial, selectedMarathon, selectMarathon } = useAuth();
@@ -62,6 +62,13 @@ export default function ProfesseurLayout() {
                 data-testid="professeur-nav-leads"
               >
                 <Users className="w-3.5 h-3.5" /> Leads
+              </NavLink>
+              <NavLink
+                to="/mon-programme/paiements"
+                className={({ isActive }) => `text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 ${isActive ? 'bg-teal-100 text-teal-700' : 'text-slate-500 hover:bg-slate-100'}`}
+                data-testid="professeur-nav-paiements"
+              >
+                <Banknote className="w-3.5 h-3.5" /> Paiements
               </NavLink>
               <NavLink
                 to="/mon-programme/classement"

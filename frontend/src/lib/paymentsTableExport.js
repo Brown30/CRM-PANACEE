@@ -227,3 +227,128 @@ export function buildFullPaymentsTablePdf({ title, subtitle, rows, totalInscript
 
   return pdf;
 }
+
+// Same 3/4-column payment table as buildPaymentsTablePdf, drawn onto a
+// <canvas> instead (no extra dependency — plain Canvas 2D) so it can be
+// shared as a PNG, e.g. over WhatsApp, where a PDF is more friction than a
+// photo. Returns a data URL; the caller triggers the actual download.
+export function buildPaymentsTableImage({ title, subtitle, rows, totalPaid, totalMissing, formatAmount, showStatus = false }) {
+  const columns = [
+    { key: '_idx', label: '#', width: 40 },
+    { key: 'full_name', label: 'Nom complet', width: showStatus ? 260 : 340 },
+    ...(showStatus ? [{ key: 'status', label: 'Statut', width: 110 }] : []),
+    { key: 'paid', label: 'Payé (HTG)', width: 130 },
+    { key: 'missing', label: 'Reste à payer (HTG)', width: showStatus ? 110 : 150 },
+  ];
+  const tableWidth = columns.reduce((s, c) => s + c.width, 0);
+  const rowHeight = 32;
+  const headerHeight = 36;
+  const margin = 30;
+  const topHeight = 70;
+  const footerHeight = 76;
+  const scale = 2; // crisper text on retina/zoomed viewing
+
+  const canvasWidth = tableWidth + margin * 2;
+  const canvasHeight = topHeight + headerHeight + rowHeight * Math.max(rows.length, 1) + footerHeight;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = canvasWidth * scale;
+  canvas.height = canvasHeight * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+  let y = margin;
+  ctx.fillStyle = '#1e293b';
+  ctx.font = 'bold 20px Helvetica, Arial, sans-serif';
+  ctx.fillText(title, margin, y + 18);
+  y += 30;
+  ctx.fillStyle = '#64748b';
+  ctx.font = '13px Helvetica, Arial, sans-serif';
+  ctx.fillText(subtitle, margin, y + 10);
+  y += 26;
+
+  const truncate = (text, maxWidth) => {
+    const clean = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!clean) return '';
+    const safeWidth = maxWidth - 16;
+    if (ctx.measureText(clean).width <= safeWidth) return clean;
+    let t = clean;
+    while (t.length > 1 && ctx.measureText(t + '…').width > safeWidth) t = t.slice(0, -1);
+    return t + '…';
+  };
+
+  const drawHeader = () => {
+    ctx.fillStyle = '#10b981';
+    ctx.fillRect(margin, y, tableWidth, headerHeight);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px Helvetica, Arial, sans-serif';
+    let x = margin;
+    columns.forEach(col => {
+      ctx.fillText(col.label, x + 8, y + headerHeight - 13);
+      x += col.width;
+    });
+    y += headerHeight;
+  };
+
+  drawHeader();
+  ctx.font = '12px Helvetica, Arial, sans-serif';
+
+  rows.forEach((row, i) => {
+    if (i % 2 === 1) {
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(margin, y, tableWidth, rowHeight);
+    }
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.strokeRect(margin, y, tableWidth, rowHeight);
+    ctx.fillStyle = '#1e293b';
+    let x = margin;
+    columns.forEach(col => {
+      const value = col.key === '_idx' ? String(i + 1) : row[col.key];
+      ctx.fillText(truncate(value, col.width), x + 8, y + rowHeight - 11);
+      if (x > margin) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + rowHeight);
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.stroke();
+      }
+      x += col.width;
+    });
+    y += rowHeight;
+  });
+
+  if (rows.length === 0) {
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'italic 13px Helvetica, Arial, sans-serif';
+    ctx.fillText('Aucun participant', margin + 8, y + 20);
+    y += rowHeight;
+  }
+
+  y += 24;
+  ctx.fillStyle = '#1e293b';
+  ctx.font = 'bold 14px Helvetica, Arial, sans-serif';
+  ctx.fillText(`Total payé: ${formatAmount(totalPaid)} HTG`, margin, y);
+  y += 20;
+  ctx.fillText(`Total restant à payer: ${formatAmount(totalMissing)} HTG`, margin, y);
+  y += 20;
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '11px Helvetica, Arial, sans-serif';
+  ctx.fillText(`${rows.length} participant(s)`, margin, y);
+
+  return canvas.toDataURL('image/png');
+}
+
+// Triggers a browser download for a data URL (image export's PNG) without
+// pulling in a file-saving library — the same trick a plain <a download>
+// link does, just without needing the element to live in the page.
+export function downloadDataUrl(dataUrl, filename) {
+  const link = document.createElement('a');
+  link.href = dataUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
