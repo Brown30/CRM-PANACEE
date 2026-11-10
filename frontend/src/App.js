@@ -8,6 +8,7 @@ import MarathonSelectPage from "@/pages/MarathonSelectPage";
 import DashboardPage from "@/pages/DashboardPage";
 import LeadsPage from "@/pages/LeadsPage";
 import LeadsOverviewPage from "@/pages/LeadsOverviewPage";
+import PaymentsOverviewPage from "@/pages/PaymentsOverviewPage";
 import MarathonPage from "@/pages/MarathonPage";
 import PromisesPage from "@/pages/PromisesPage";
 import RankingPage from "@/pages/RankingPage";
@@ -179,6 +180,7 @@ function App() {
             <Route path="finance/:marathonId" element={<ProfesseurFinanceCourseDetailPage />} />
             <Route path="dashboard" element={<CommercialViewRoute><DashboardPage /></CommercialViewRoute>} />
             <Route path="leads" element={<CommercialViewRoute><LeadsOverviewPage /></CommercialViewRoute>} />
+            <Route path="paiements" element={<CommercialViewRoute><PaymentsOverviewPage /></CommercialViewRoute>} />
             <Route path="classement" element={<CommercialViewRoute><RankingPage /></CommercialViewRoute>} />
             <Route path=":marathonId" element={<ProfesseurProgramPage />} />
           </Route>
