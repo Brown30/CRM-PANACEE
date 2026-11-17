@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ArrowLeft, Users, Trophy, Calendar, Mail, Download, CheckCircle2, User } from 'lucide-react';
 import { toast } from 'sonner';
-import { buildCertificatePdf, slugifyFileName, CERTIFICATE_TEMPLATES } from '@/lib/certificate';
+import { buildCertificatePdf, slugifyFileName, CERTIFICATE_TEMPLATES, generateCertificateCode } from '@/lib/certificate';
 
 export default function CertificatCoursePage() {
   const { marathonId } = useParams();
@@ -62,17 +62,21 @@ export default function CertificatCoursePage() {
     setGenerating(true);
     try {
       const dateStr = new Date().toLocaleDateString('fr-FR');
-      const verifyUrl = `${window.location.origin}/verificar/${ficheStudent.id}`;
+      // Re-generating keeps the same code (and thus the same verify link) once
+      // a certificate has already been issued, instead of invalidating it.
+      const code = ficheStudent.certificate_code || generateCertificateCode(marathon.formation);
+      const verifyUrl = `${window.location.origin}/verificar/${code}`;
       const pdf = await buildCertificatePdf({
         fullName: ficheStudent.full_name,
         formation: marathon.formation,
         dateStr,
-        verifyUrl
+        verifyUrl,
+        code
       });
       pdf.save(`Certificat_${slugifyFileName(ficheStudent.full_name)}.pdf`);
       const certificate_date = new Date().toISOString().split('T')[0];
-      await api.put(`/leads/${ficheStudent.id}`, { certified: true, certificate_date });
-      const updated = { ...ficheStudent, certified: true, certificate_date };
+      await api.put(`/leads/${ficheStudent.id}`, { certified: true, certificate_date, certificate_code: code });
+      const updated = { ...ficheStudent, certified: true, certificate_date, certificate_code: code };
       setFicheStudent(updated);
       setStudents(prev => prev.map(s => s.id === updated.id ? updated : s));
       toast.success('Certificat généré');
@@ -167,9 +171,14 @@ export default function CertificatCoursePage() {
             )}
 
             {ficheStudent?.certified && (
-              <p className="text-xs text-emerald-600 flex items-center gap-1 justify-center">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Certifié le {ficheStudent.certificate_date || '—'}
-              </p>
+              <div className="text-center space-y-0.5">
+                <p className="text-xs text-emerald-600 flex items-center gap-1 justify-center">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Certifié le {ficheStudent.certificate_date || '—'}
+                </p>
+                {ficheStudent.certificate_code && (
+                  <p className="text-[11px] text-slate-400 font-mono">{ficheStudent.certificate_code}</p>
+                )}
+              </div>
             )}
 
             {(isAdmin || isPedagogia || isDirecteurPedagogique) && (
