@@ -12,6 +12,29 @@ const DATE_POS = { xPct: 0.5, yPct: 0.93 };
 const QR_POS = { xPct: 0.87, yPct: 0.615, sizePct: 0.085 };
 const QR_LABEL_TEXT = "Scannez pour vérifier l'authenticité";
 
+const CERTIFICATE_CODE_PREFIXES = {
+  'Installation de caméra de surveillance': 'CAM',
+  'Électricité': 'ELEC',
+  'Sheetrock': 'SHE',
+  'Windows': 'WIN',
+  'Rolling Door': 'ROL',
+};
+
+// >20 alphanumeric characters, starting with a per-formation prefix, so a
+// certificate can be identified/verified by this code alone (printed on the
+// certificate and shown back on the /verificar page) instead of only by the
+// internal lead UUID.
+export function generateCertificateCode(formation) {
+  const prefix = CERTIFICATE_CODE_PREFIXES[formation]
+    || (formation || 'CERT').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z]/g, '').slice(0, 4).toUpperCase()
+    || 'CERT';
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const randomBytes = new Uint8Array(18);
+  crypto.getRandomValues(randomBytes);
+  const random = Array.from(randomBytes, (b) => chars[b % chars.length]).join('');
+  return `${prefix}-${random}`;
+}
+
 const loadImage = (src) => new Promise((resolve, reject) => {
   const img = new Image();
   img.crossOrigin = 'anonymous';
@@ -30,7 +53,7 @@ const waitForFonts = async () => {
   }
 };
 
-export async function buildCertificatePdf({ fullName, formation, dateStr, verifyUrl }) {
+export async function buildCertificatePdf({ fullName, formation, dateStr, verifyUrl, code }) {
   const templateSrc = CERTIFICATE_TEMPLATES[formation];
   if (!templateSrc) {
     throw new Error(`Aucun modèle de certificat pour la formation "${formation}"`);
@@ -81,6 +104,13 @@ export async function buildCertificatePdf({ fullName, formation, dateStr, verify
   pdf.setFontSize(canvas.height * 0.0095);
   pdf.setTextColor('#555555');
   pdf.text(QR_LABEL_TEXT, canvas.width * QR_POS.xPct, qrY - canvas.height * 0.012, { align: 'center' });
+
+  if (code) {
+    pdf.setFont('courier', 'normal');
+    pdf.setFontSize(canvas.height * 0.0085);
+    pdf.setTextColor('#777777');
+    pdf.text(code, canvas.width * QR_POS.xPct, qrY + qrSize + canvas.height * 0.018, { align: 'center' });
+  }
 
   return pdf;
 }

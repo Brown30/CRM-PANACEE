@@ -142,6 +142,20 @@ export const api = {
       return res({ marathon_ids });
     }
 
+    if (url.match(/^\/leads\/by-code\/([^/]+)$/)) {
+      const raw = decodeURIComponent(url.split('/')[3] || '');
+      // Public verification lookup: match the printed certificate_code first,
+      // falling back to the lead's own UUID so certificates issued before this
+      // code existed (whose QR still points at the old /verificar/<uuid> link)
+      // stay verifiable. Validated before querying since it's user-supplied.
+      if (!/^[A-Za-z0-9-]{1,64}$/.test(raw)) return res({ lead: null });
+      let { data } = await supabase.from('leads').select('*').eq('certificate_code', raw).maybeSingle();
+      if (!data) {
+        ({ data } = await supabase.from('leads').select('*').eq('id', raw).maybeSingle());
+      }
+      return res({ lead: data });
+    }
+
     if (url.match(/^\/leads\/([^/]+)$/)) {
       const id = url.split('/')[2];
       const { data } = await supabase.from('leads').select('*').eq('id', id).single();

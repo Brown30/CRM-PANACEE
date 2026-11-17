@@ -11,7 +11,7 @@ export default function VerifyCertificatePage() {
   useEffect(() => {
     (async () => {
       try {
-        const { data: leadData } = await api.get(`/leads/${id}`);
+        const { data: leadData } = await api.get(`/leads/by-code/${encodeURIComponent(id)}`);
         const lead = leadData.lead;
         if (!lead || !lead.certified) {
           setStatus('not_found');
@@ -21,7 +21,8 @@ export default function VerifyCertificatePage() {
         setInfo({
           full_name: lead.full_name,
           formation: marathonData.marathon?.formation || '',
-          certificate_date: lead.certificate_date
+          certificate_date: lead.certificate_date,
+          certificate_code: lead.certificate_code
         });
         setStatus('found');
       } catch {
@@ -57,6 +58,9 @@ export default function VerifyCertificatePage() {
             <p className="text-sm font-semibold text-emerald-600">{info.formation}</p>
             {info.certificate_date && (
               <p className="text-xs text-slate-400 mt-4">Délivré le {info.certificate_date}</p>
+            )}
+            {info.certificate_code && (
+              <p className="text-[11px] text-slate-400 font-mono">{info.certificate_code}</p>
             )}
           </div>
         )}
