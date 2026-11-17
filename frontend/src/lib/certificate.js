@@ -9,7 +9,8 @@ export const CERTIFICATE_TEMPLATES = {
 
 const NAME_POS = { xPct: 0.5, yPct: 0.436 };
 const DATE_POS = { xPct: 0.5, yPct: 0.93 };
-const QR_POS = { xPct: 0.895, yPct: 0.72, sizePct: 0.085 };
+const QR_POS = { xPct: 0.87, yPct: 0.615, sizePct: 0.085 };
+const QR_LABEL_TEXT = "Scannez pour vérifier l'authenticité";
 
 const loadImage = (src) => new Promise((resolve, reject) => {
   const img = new Image();
@@ -72,14 +73,14 @@ export async function buildCertificatePdf({ fullName, formation, dateStr, verify
   // its fine black/white pattern needs to stay crisp to remain scannable.
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 400, color: { dark: '#222222' } });
   const qrSize = canvas.width * QR_POS.sizePct;
-  pdf.addImage(
-    qrDataUrl,
-    'PNG',
-    canvas.width * QR_POS.xPct - qrSize / 2,
-    canvas.height * QR_POS.yPct - qrSize / 2,
-    qrSize,
-    qrSize
-  );
+  const qrX = canvas.width * QR_POS.xPct - qrSize / 2;
+  const qrY = canvas.height * QR_POS.yPct - qrSize / 2;
+  pdf.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(canvas.height * 0.0095);
+  pdf.setTextColor('#555555');
+  pdf.text(QR_LABEL_TEXT, canvas.width * QR_POS.xPct, qrY - canvas.height * 0.012, { align: 'center' });
 
   return pdf;
 }
