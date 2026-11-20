@@ -99,12 +99,24 @@ export default function FinanceCaixaPage() {
 
       <div className="bg-slate-900 rounded-2xl shadow-sm p-5 text-white">
         <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide flex items-center gap-1.5">
-          <Wallet className="w-3.5 h-3.5" /> Solde de caisse actuel
+          <Wallet className="w-3.5 h-3.5" /> Solde de caisse (brut)
         </p>
         <p className="text-3xl font-bold mt-1" style={{ fontFamily: "'Outfit', sans-serif" }} data-testid="caixa-balance">
           {formatAmount(balance)} <span className="text-base font-normal text-slate-400">HTG</span>
         </p>
         <p className="text-xs text-slate-500 mt-2">Solde initial du {formatDateFr(summary.opening_date)} : {formatAmount(summary.opening_balance)} HTG</p>
+
+        {/* The raw ledger balance includes money already earmarked for known,
+            near-certain near-term payouts (salaries, pending purchases) that
+            just haven't left the bank yet — this is what's actually free to
+            use, not the number above. */}
+        <div className="mt-4 pt-4 border-t border-slate-700/60">
+          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Argent réellement disponible</p>
+          <p className={`text-2xl font-bold mt-1 ${isDanger ? 'text-red-400' : isTight ? 'text-amber-400' : 'text-emerald-400'}`} data-testid="caixa-available">
+            {formatAmount(projected)} <span className="text-sm font-normal text-slate-400">HTG</span>
+          </p>
+          <p className="text-xs text-slate-500 mt-1">{formatAmount(fixedCostsTotal)} HTG déjà réservés (salaires et coûts fixes à venir)</p>
+        </div>
       </div>
 
       <div className={`rounded-2xl shadow-sm p-4 border ${isDanger ? 'bg-red-50 border-red-200' : isTight ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`} data-testid="caixa-projection">
